@@ -1,0 +1,21 @@
+mixed-port: 7890
+allow-lan: false
+bind-address: '*'
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+ipv6: false
+
+profile:
+  store-selected: false
+
+proxies:
+  - name: "ua3f"
+    type: socks5
+    server: 127.0.0.1
+    port: 1080
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
+
+rules:
+  - PROCESS-NAME,ua3f,DIRECT
+  - MATCH,ua3f

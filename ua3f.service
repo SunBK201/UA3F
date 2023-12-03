@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+start(){
+    /root/ua3f &
+    echo "ua3f is start"
+}
+ 
+stop(){
+    killall ua3f
+    echo "ua3f is stop"
+}
+
+restart(){
+    killall ua3f
+    /root/ua3f &
+}
