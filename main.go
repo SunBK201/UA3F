@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	printAndLog("UA3F-0.0.1", logger, syslog.LOG_INFO)
+	printAndLog("UA3F v0.0.2", logger, syslog.LOG_INFO)
 	printAndLog(fmt.Sprintf("Port: %d", port), logger, syslog.LOG_INFO)
 	printAndLog(fmt.Sprintf("User-Agent: %s", payload), logger, syslog.LOG_INFO)
 
