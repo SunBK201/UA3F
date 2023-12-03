@@ -257,6 +257,7 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 
 func printAndLog(mes string, logger *syslog.Writer, level syslog.Priority) {
 	fmt.Println(mes)
+	return
 	switch level {
 	case syslog.LOG_INFO:
 		logger.Info(mes)
