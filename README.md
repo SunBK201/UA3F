@@ -13,10 +13,11 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 参数:
 - `-p <port>`: 端口号，默认 1080
 - `-f <UA>`: 自定义 UA，默认 FFF
+- `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 
 ### 手动启动
 ```bash
-ua3f -p <port> -f <UA>
+ua3f -p <port> -f <UA> -b <bind addr>
 ```
 
 ### 作为后台服务运行
