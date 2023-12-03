@@ -162,7 +162,7 @@ func Socks5Forward(client, target net.Conn) {
 
 func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 	logger, _ := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
-	buf := make([]byte, 4096*8)
+	buf := make([]byte, 1024*8)
 	nr, err := src.Read(buf)
 	if err != nil && err != io.EOF {
 		printAndLog(fmt.Sprintf("read error: %v", err), logger, syslog.LOG_ERR)
