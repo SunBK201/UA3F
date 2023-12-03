@@ -2,13 +2,13 @@
 
 START=99
 start(){
+    echo "ua3f is starting"
     /root/ua3f &
-    echo "ua3f is start"
 }
  
 stop(){
+    echo "ua3f is stopping"
     killall ua3f
-    echo "ua3f is stop"
 }
 
 restart(){

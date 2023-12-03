@@ -197,7 +197,7 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 		}
 		value, start, end := parser.FindHeader([]byte("User-Agent"))
 		if value != nil && end > start {
-			printAndLog(fmt.Sprintf("Hit User-Agent: %s", string(value)), logger, syslog.LOG_INFO)
+			printAndLog(fmt.Sprintf("[%s] Hit User-Agent: %s", string(parser.Host()), string(value)), logger, syslog.LOG_INFO)
 			for i := start; i < end; i++ {
 				buf[i] = 32
 			}
@@ -208,7 +208,7 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 				buf[start+i] = payloadByte[i]
 			}
 		} else {
-			printAndLog("not found User-Agent", logger, syslog.LOG_INFO)
+			printAndLog(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())), logger, syslog.LOG_INFO)
 		}
 		bodyLen := int(parser.ContentLength())
 		if bodyLen == -1 {
@@ -257,23 +257,26 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 
 func printAndLog(mes string, logger *syslog.Writer, level syslog.Priority) {
 	fmt.Println(mes)
-	return
+	var err error
 	switch level {
 	case syslog.LOG_INFO:
-		logger.Info(mes)
+		err = logger.Info(mes)
 	case syslog.LOG_ERR:
-		logger.Err(mes)
+		err = logger.Err(mes)
 	case syslog.LOG_DEBUG:
-		logger.Debug(mes)
+		err = logger.Debug(mes)
 	case syslog.LOG_WARNING:
-		logger.Warning(mes)
+		err = logger.Warning(mes)
 	case syslog.LOG_CRIT:
-		logger.Crit(mes)
+		err = logger.Crit(mes)
 	case syslog.LOG_ALERT:
-		logger.Alert(mes)
+		err = logger.Alert(mes)
 	case syslog.LOG_EMERG:
-		logger.Emerg(mes)
+		err = logger.Emerg(mes)
 	case syslog.LOG_NOTICE:
-		logger.Notice(mes)
+		err = logger.Notice(mes)
+	}
+	if err != nil {
+		fmt.Println("syslog error:", err)
 	}
 }

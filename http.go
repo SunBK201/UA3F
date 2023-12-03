@@ -275,3 +275,14 @@ func (hp *HTTPParser) ContentLength() int64 {
 	hp.contentLengthRead = true
 	return hp.contentLength
 }
+
+// Return the value of the Host header
+func (hp *HTTPParser) Host() []byte {
+	if hp.hostRead {
+		return hp.host
+	}
+
+	hp.hostRead = true
+	hp.host, _, _ = hp.FindHeader([]byte("Host"))
+	return hp.host
+}
