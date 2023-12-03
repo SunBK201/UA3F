@@ -2,6 +2,8 @@
 
 UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务，可以部署在路由器等设备等设备进行透明 UA 修改。
 
+![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f)
+
 ## 部署
 
 [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
@@ -49,3 +51,10 @@ rules:
   - PROCESS-NAME,ua3f,DIRECT
   - MATCH,ua3f
 ```
+
+## Roadmap
+
+- [ ] 性能提升，降低 CPU 占用，降低内存占用
+- [ ] 优化部署流程
+- [ ] 支持 IPv6
+- [ ] 支持 SOCK5 Auth
