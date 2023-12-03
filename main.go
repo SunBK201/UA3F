@@ -15,7 +15,9 @@ var payloadByte []byte
 
 func main() {
 	var payload string
+	var addr string
 	var port int
+	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")
 	flag.Parse()
@@ -32,12 +34,12 @@ func main() {
 
 	payloadByte = []byte(payload)
 
-	server, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	server, err := net.Listen("tcp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
 		printAndLog(fmt.Sprintf("Listen failed: %v", err), logger, syslog.LOG_ERR)
 		return
 	}
-	printAndLog(fmt.Sprintf("Listen on 127.0.0.1:%d", port), logger, syslog.LOG_INFO)
+	printAndLog(fmt.Sprintf("Listen on %s:%d", addr, port), logger, syslog.LOG_INFO)
 	for {
 		client, err := server.Accept()
 		if err != nil {
