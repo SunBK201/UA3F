@@ -54,6 +54,7 @@ func main() {
 			printAndLog(fmt.Sprintf("Accept failed: %v", err), logger, syslog.LOG_ERR)
 			continue
 		}
+		printAndLog(fmt.Sprintf("Accept %s", client.RemoteAddr().String()), logger, syslog.LOG_DEBUG)
 		go process(client)
 	}
 }
@@ -170,7 +171,6 @@ func Socks5Forward(client, target net.Conn) {
 }
 
 func CopyPileline(dst io.Writer, src io.Reader) {
-	parser := NewHTTPParser()
 	logger, _ := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
 	buf := make([]byte, 1024*8)
 	nr, err := src.Read(buf)
@@ -194,6 +194,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		return
 	}
 	for {
+		parser := NewHTTPParser()
 		httpBodyOffset, err := parser.Parse(buf[0:nr])
 		for err == ErrMissingData {
 			var m int
