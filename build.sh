@@ -1,7 +1,7 @@
 #!/bin/sh
 
 project_name="ua3f"
-release_version="0.0.3"
+release_version="0.0.4"
 
 release_dir=./release
 rm -rf $release_dir/*

@@ -9,11 +9,17 @@ import (
 	"log/syslog"
 	"net"
 	"strings"
+	"time"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
+var version = "0.0.4"
 var payloadByte []byte
+var cache *expirable.LRU[string, string]
 
 func main() {
+
 	var payload string
 	var addr string
 	var port int
@@ -28,9 +34,11 @@ func main() {
 		return
 	}
 
-	printAndLog("UA3F v0.0.3", logger, syslog.LOG_INFO)
+	printAndLog("UA3F v"+version, logger, syslog.LOG_INFO)
 	printAndLog(fmt.Sprintf("Port: %d", port), logger, syslog.LOG_INFO)
 	printAndLog(fmt.Sprintf("User-Agent: %s", payload), logger, syslog.LOG_INFO)
+
+	cache = expirable.NewLRU[string, string](100, nil, time.Second*600)
 
 	payloadByte = []byte(payload)
 
@@ -142,27 +150,27 @@ func Socks5Connect(client net.Conn) (net.Conn, error) {
 
 func Socks5Forward(client, target net.Conn) {
 	forward := func(src, dest net.Conn) {
-		// defer src.Close()
+		defer src.Close()
 		defer dest.Close()
 		io.Copy(src, dest)
 	}
 
-	spforward := func(dst, src net.Conn) {
+	gforward := func(dst, src net.Conn) {
 		defer dst.Close()
 		defer src.Close()
-		parser := NewHTTPParser()
-		MyCopyBuffer(dst, src, parser)
-		// reader := bufio.NewReader(src)
-		// bb, err := reader.Peek(14)
+		CopyPileline(dst, src)
 	}
 
-	// fmt.Println(target.RemoteAddr())
-
 	go forward(client, target)
-	go spforward(target, client)
+	if cache.Contains(string(target.RemoteAddr().String())) {
+		go forward(target, client)
+		return
+	}
+	go gforward(target, client)
 }
 
-func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
+func CopyPileline(dst io.Writer, src io.Reader) {
+	parser := NewHTTPParser()
 	logger, _ := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
 	buf := make([]byte, 1024*8)
 	nr, err := src.Read(buf)
@@ -180,9 +188,9 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 		}
 	}
 	if !is_http {
-		// fmt.Println("not http connection")
 		dst.Write(buf[0:nr])
 		io.Copy(dst, src)
+		cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
 		return
 	}
 	for {
@@ -213,6 +221,7 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 			printAndLog(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())), logger, syslog.LOG_INFO)
 			dst.Write(buf[0:nr])
 			io.Copy(dst, src)
+			cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
 			return
 		}
 		bodyLen := int(parser.ContentLength())
