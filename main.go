@@ -211,6 +211,9 @@ func MyCopyBuffer(dst io.Writer, src io.Reader, parser *HTTPParser) {
 			}
 		} else {
 			printAndLog(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())), logger, syslog.LOG_INFO)
+			dst.Write(buf[0:nr])
+			io.Copy(dst, src)
+			return
 		}
 		bodyLen := int(parser.ContentLength())
 		if bodyLen == -1 {
