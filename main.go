@@ -54,7 +54,7 @@ func main() {
 			printAndLog(fmt.Sprintf("Accept failed: %v", err), logger, syslog.LOG_ERR)
 			continue
 		}
-		printAndLog(fmt.Sprintf("Accept %s", client.RemoteAddr().String()), logger, syslog.LOG_DEBUG)
+		// printAndLog(fmt.Sprintf("Accept %s", client.RemoteAddr().String()), logger, syslog.LOG_DEBUG)
 		go process(client)
 	}
 }
