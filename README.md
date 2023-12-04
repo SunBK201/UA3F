@@ -8,6 +8,11 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
 
+安装（升级）脚本：
+```bash
+export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
+```
+
 ## 使用
 
 参数:
@@ -17,7 +22,7 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 ### 手动启动
 ```bash
-ua3f -p <port> -f <UA> -b <bind addr>
+/root/ua3f -p <port> -f <UA> -b <bind addr>
 ```
 
 ### 作为后台服务运行
