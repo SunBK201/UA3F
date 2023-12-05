@@ -23,6 +23,10 @@ if [ -f "ua3f" ]; then
     rm "ua3f"
 fi
 
+if [ -f "/var/log/ua3f.log" ]; then
+    rm "/var/log/ua3f.log"
+fi
+
 if [ -f "$ua3f_tar" ]; then
     rm "$ua3f_tar"
 fi
