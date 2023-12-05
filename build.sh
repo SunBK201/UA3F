@@ -26,6 +26,8 @@ GOOS=linux GOARCH="mipsle" GOMIPS=hardfloat go build -ldflags="-s -w"
 tar -zcf $release_dir/$project_name-$release_version-mipsle-hardfloat.tar.gz $obj_name
 rm -f $obj_name
 
+cp $release_dir/$project_name-$release_version-arm64.tar.gz $release_dir/$project_name-$release_version-armv8.tar.gz
+
 cd $release_dir
 for file in ./*; do
     md5 -r $file >>sha1sum.txt
