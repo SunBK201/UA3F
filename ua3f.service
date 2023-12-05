@@ -1,17 +1,19 @@
 #!/bin/sh /etc/rc.common
 
 START=99
-start(){
+
+start() {
     echo "ua3f is starting"
-    /root/ua3f > /var/log/ua3f.log 2>&1 &
-}
- 
-stop(){
-    echo "ua3f is stopping"
-    killall ua3f
+    if id -u shellclash >/dev/null 2>&1; then
+        sudo -u shellclash /root/ua3f >/var/log/ua3f.log 2>&1 &
+    elif id -u nobody >/dev/null 2>&1; then
+        sudo -u nobody /root/ua3f >/var/log/ua3f.log 2>&1 &
+    else
+        /root/ua3f >/var/log/ua3f.log 2>&1 &
+    fi
 }
 
-restart(){
+stop() {
+    echo "ua3f is stopping"
     killall ua3f
-    /root/ua3f &
 }

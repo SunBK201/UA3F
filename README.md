@@ -22,7 +22,12 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 
 ### 手动启动
 ```bash
-/root/ua3f -p <port> -f <UA> -b <bind addr>
+sudo -u nobody /root/ua3f -p <port> -f <UA> -b <bind addr>
+```
+
+shellclash 用户建议使用以下命令启动:
+```bash
+sudo -u shellclash /root/ua3f -p <port> -f <UA> -b <bind addr>
 ```
 
 ### 作为后台服务运行
@@ -33,11 +38,22 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 执行下面的命令：
 ```bash
 chmod +x /etc/init.d/ua3f.service
+# 设置 UA3F 开机自启
 service ua3f.service enable
+# 启动 UA3F
 service ua3f.service start
 ```
 
+关闭或重启 UA3F 命令：
+```bash
+# 关闭 UA3F
+service ua3f.service start
+# 重启 UA3F
+service ua3f.service restart
+```
+
 ### Clash 的配置建议
+
 请确保 `PROCESS-NAME,ua3f,DIRECT` 置于规则列表顶部。
 
 可以在 `PROCESS-NAME,ua3f,DIRECT` 与 `MATCH,ua3f` 之间按需加入自定义加密代理规则。如果上述 2 条规则之间加入 DIRECT 规则，请确保匹配该规则的流量属于非 HTTP 协议流量
