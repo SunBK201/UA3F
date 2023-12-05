@@ -19,10 +19,10 @@ var payloadByte []byte
 var cache *expirable.LRU[string, string]
 
 func main() {
-
 	var payload string
 	var addr string
 	var port int
+
 	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")

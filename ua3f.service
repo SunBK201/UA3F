@@ -3,7 +3,7 @@
 START=99
 start(){
     echo "ua3f is starting"
-    /root/ua3f >> /var/log/ua3f.log 2>&1 &
+    /root/ua3f > /var/log/ua3f.log 2>&1 &
 }
  
 stop(){
