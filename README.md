@@ -19,6 +19,9 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 - `-p <port>`: 端口号，默认 1080
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
+- `-l <log level>`: 日志等级，默认 info，可选：debug
+
+默认日志位置：`/var/log/ua3f.log`
 
 ### 手动启动
 ```bash

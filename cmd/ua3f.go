@@ -6,37 +6,39 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log/syslog"
 	"net"
 	"strings"
 	"time"
+	"ua3f/http"
+	"ua3f/log"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sirupsen/logrus"
 )
 
-var version = "0.0.4"
+var version = "0.1.0"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 
 func main() {
+
 	var payload string
 	var addr string
 	var port int
+	var loglevel string
 
 	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")
+	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.Parse()
 
-	logger, err := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
-	if err != nil {
-		fmt.Println("syslog error:", err)
-		return
-	}
+	log.SetLogConf(loglevel)
 
-	printAndLog("UA3F v"+version, logger, syslog.LOG_INFO)
-	printAndLog(fmt.Sprintf("Port: %d", port), logger, syslog.LOG_INFO)
-	printAndLog(fmt.Sprintf("User-Agent: %s", payload), logger, syslog.LOG_INFO)
+	logrus.Info("UA3F v" + version)
+	logrus.Info(fmt.Sprintf("Port: %d", port))
+	logrus.Info(fmt.Sprintf("User-Agent: %s", payload))
+	logrus.Info(fmt.Sprintf("Log level: %s", loglevel))
 
 	cache = expirable.NewLRU[string, string](100, nil, time.Second*600)
 
@@ -44,32 +46,30 @@ func main() {
 
 	server, err := net.Listen("tcp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
-		printAndLog(fmt.Sprintf("Listen failed: %v", err), logger, syslog.LOG_ERR)
+		logrus.Fatal("Listen failed: ", err)
 		return
 	}
-	printAndLog(fmt.Sprintf("Listen on %s:%d", addr, port), logger, syslog.LOG_INFO)
+	logrus.Info(fmt.Sprintf("Listen on %s:%d", addr, port))
 	for {
 		client, err := server.Accept()
 		if err != nil {
-			printAndLog(fmt.Sprintf("Accept failed: %v", err), logger, syslog.LOG_ERR)
+			logrus.Error("Accept failed: ", err)
 			continue
 		}
-		// printAndLog(fmt.Sprintf("Accept %s", client.RemoteAddr().String()), logger, syslog.LOG_DEBUG)
+		logrus.Debug(fmt.Sprintf("Accept %s", client.RemoteAddr().String()))
 		go process(client)
 	}
 }
 
 func process(client net.Conn) {
-	logger, _ := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
-
 	if err := Socks5Auth(client); err != nil {
-		printAndLog(fmt.Sprintf("auth error: %v", err), logger, syslog.LOG_ERR)
+		logrus.Error("Auth failed: ", err)
 		client.Close()
 		return
 	}
 	target, err := Socks5Connect(client)
 	if err != nil {
-		printAndLog(fmt.Sprintf("connect error: %v", err), logger, syslog.LOG_ERR)
+		logrus.Error("Connect failed: ", err)
 		client.Close()
 		return
 	}
@@ -171,11 +171,10 @@ func Socks5Forward(client, target net.Conn) {
 }
 
 func CopyPileline(dst io.Writer, src io.Reader) {
-	logger, _ := syslog.Dial("", "", syslog.LOG_INFO, "UA3F")
 	buf := make([]byte, 1024*8)
 	nr, err := src.Read(buf)
 	if err != nil && err != io.EOF {
-		printAndLog(fmt.Sprintf("read error: %v", err), logger, syslog.LOG_ERR)
+		logrus.Error("read error: ", err)
 		return
 	}
 	hint := string(buf[0:7])
@@ -194,13 +193,13 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		return
 	}
 	for {
-		parser := NewHTTPParser()
+		parser := http.NewHTTPParser()
 		httpBodyOffset, err := parser.Parse(buf[0:nr])
-		for err == ErrMissingData {
+		for err == http.ErrMissingData {
 			var m int
 			m, err = src.Read(buf[nr:])
 			if err != nil {
-				printAndLog(fmt.Sprintf("read error: %v", err), logger, syslog.LOG_ERR)
+				logrus.Error("read error: ", err)
 				break
 			}
 			nr += m
@@ -208,7 +207,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		}
 		value, start, end := parser.FindHeader([]byte("User-Agent"))
 		if value != nil && end > start {
-			printAndLog(fmt.Sprintf("[%s] Hit User-Agent: %s", string(parser.Host()), string(value)), logger, syslog.LOG_INFO)
+			logrus.Debug(fmt.Sprintf("[%s] Hit User-Agent: %s", string(parser.Host()), string(value)))
 			for i := start; i < end; i++ {
 				buf[i] = 32
 			}
@@ -219,7 +218,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 				buf[start+i] = payloadByte[i]
 			}
 		} else {
-			printAndLog(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())), logger, syslog.LOG_INFO)
+			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())))
 			dst.Write(buf[0:nr])
 			io.Copy(dst, src)
 			cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
@@ -232,7 +231,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 
 		_, ew := dst.Write(buf[0:min(httpBodyOffset+bodyLen, nr)])
 		if ew != nil {
-			printAndLog(fmt.Sprintf("write error: %v", ew), logger, syslog.LOG_ERR)
+			logrus.Error("write error: ", ew)
 			break
 		}
 		if httpBodyOffset+bodyLen > nr {
@@ -240,12 +239,12 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 			for left > 0 {
 				m, err := src.Read(buf[0:left])
 				if err != nil {
-					printAndLog(fmt.Sprintf("read error: %v", err), logger, syslog.LOG_ERR)
+					logrus.Error("read error: ", err)
 					break
 				}
 				_, ew := dst.Write(buf[0:m])
 				if ew != nil {
-					printAndLog(fmt.Sprintf("write error: %v", ew), logger, syslog.LOG_ERR)
+					logrus.Error("write error: ", ew)
 					break
 				}
 				left -= m
@@ -261,37 +260,11 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		m, err := src.Read(buf[nr:])
 		nr += m
 		if err != nil && err != io.EOF {
-			printAndLog(fmt.Sprintf("read error: %v", err), logger, syslog.LOG_ERR)
+			logrus.Error("read error: ", err)
 			break
 		}
 		if err == io.EOF {
 			break
 		}
-	}
-}
-
-func printAndLog(mes string, logger *syslog.Writer, level syslog.Priority) {
-	fmt.Println(mes)
-	var err error
-	switch level {
-	case syslog.LOG_INFO:
-		err = logger.Info(mes)
-	case syslog.LOG_ERR:
-		err = logger.Err(mes)
-	case syslog.LOG_DEBUG:
-		err = logger.Debug(mes)
-	case syslog.LOG_WARNING:
-		err = logger.Warning(mes)
-	case syslog.LOG_CRIT:
-		err = logger.Crit(mes)
-	case syslog.LOG_ALERT:
-		err = logger.Alert(mes)
-	case syslog.LOG_EMERG:
-		err = logger.Emerg(mes)
-	case syslog.LOG_NOTICE:
-		err = logger.Notice(mes)
-	}
-	if err != nil {
-		fmt.Println("syslog error:", err)
 	}
 }
