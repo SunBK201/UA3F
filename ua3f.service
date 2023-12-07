@@ -5,11 +5,11 @@ START=99
 start() {
     echo "ua3f is starting"
     if id -u shellclash >/dev/null 2>&1; then
-        sudo -u shellclash /root/ua3f >/var/log/ua3f.log 2>&1 &
+        sudo -u shellclash /root/ua3f >/dev/null 2>&1 &
     elif id -u nobody >/dev/null 2>&1; then
-        sudo -u nobody /root/ua3f >/var/log/ua3f.log 2>&1 &
+        sudo -u nobody /root/ua3f >/dev/null 2>&1 &
     else
-        /root/ua3f >/var/log/ua3f.log 2>&1 &
+        /root/ua3f >/dev/null 2>&1 &
     fi
 }
 

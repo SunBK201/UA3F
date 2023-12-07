@@ -1,0 +1,10 @@
+0f6211146be2756456d875b08c118507 ./ua3f-0.1.0-386.tar.gz
+1c3045a4dd96e5539e167377cb1714af ./ua3f-0.1.0-amd64.tar.gz
+a56e07f9e99c75b7c80e182db7f469f4 ./ua3f-0.1.0-arm.tar.gz
+ab08b81c4698d7e76a9a4ba8008e8787 ./ua3f-0.1.0-arm64.tar.gz
+ab08b81c4698d7e76a9a4ba8008e8787 ./ua3f-0.1.0-armv8.tar.gz
+1ccadf573d3d3b229c6a41af88a715cd ./ua3f-0.1.0-mips64.tar.gz
+20f433bd1572ec219a18ec9fd7e9377a ./ua3f-0.1.0-mipsle-hardfloat.tar.gz
+507b3477b94352638accdfa8f9f211ca ./ua3f-0.1.0-mipsle-softfloat.tar.gz
+d3f018d414310a0e116674ad14b19a62 ./ua3f-0.1.0-mipsle.tar.gz
+f017636a3c599c9ec0e7e8b2432c07dc ./ua3f-0.1.0-riscv64.tar.gz

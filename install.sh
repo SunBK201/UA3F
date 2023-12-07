@@ -16,13 +16,14 @@ getcpucore() {
 cd /root
 getcpucore
 
-version=0.0.4
+version=0.1.0
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if [ -f "ua3f" ]; then
     rm "ua3f"
 fi
 
+chmod ugo+w /var/log
 if [ -f "/var/log/ua3f.log" ]; then
     rm "/var/log/ua3f.log"
 fi
@@ -31,7 +32,7 @@ if [ -f "$ua3f_tar" ]; then
     rm "$ua3f_tar"
 fi
 
-wget https://fastly.jsdelivr.net/gh/SunBK201/UA3F@master/release/$ua3f_tar
+wget https://blog.sunbk201.site/cdn/bin/$ua3f_tar
 if [ $? -ne 0 ]; then
     echo "Download UA3F Failed, Please Retry."
     exit 1
@@ -42,7 +43,7 @@ chmod +x ua3f
 if [ -f "ua3f.service" ]; then
     rm "ua3f.service"
 fi
-wget https://fastly.jsdelivr.net/gh/SunBK201/UA3F@master/ua3f.service
+wget https://blog.sunbk201.site/cdn/ua3f.service
 if [ $? -ne 0 ]; then
     echo "Download ua3f.service Failed, Please Retry."
     exit 1
