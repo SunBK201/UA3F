@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.1.0"
+var version = "0.1.1"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 
@@ -137,10 +137,12 @@ func Socks5Connect(client net.Conn) (net.Conn, error) {
 	}
 	port := binary.BigEndian.Uint16(buf[:2])
 	destAddrPort := fmt.Sprintf("%s:%d", addr, port)
+	logrus.Debug(fmt.Sprintf("Connecting %s", destAddrPort))
 	dest, err := net.Dial("tcp", destAddrPort)
 	if err != nil {
 		return nil, errors.New("dial dst:" + err.Error())
 	}
+	logrus.Debug(fmt.Sprintf("Connected %s", destAddrPort))
 	_, err = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
 	if err != nil {
 		dest.Close()
@@ -199,7 +201,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 			var m int
 			m, err = src.Read(buf[nr:])
 			if err != nil {
-				logrus.Error("read error: ", err)
+				logrus.Error("read error in http accumulation: ", err)
 				break
 			}
 			nr += m
@@ -239,12 +241,12 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 			for left > 0 {
 				m, err := src.Read(buf[0:left])
 				if err != nil {
-					logrus.Error("read error: ", err)
+					logrus.Error("read error in large body: ", err)
 					break
 				}
 				_, ew := dst.Write(buf[0:m])
 				if ew != nil {
-					logrus.Error("write error: ", ew)
+					logrus.Error("write error in large body: ", ew)
 					break
 				}
 				left -= m
@@ -259,11 +261,14 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 
 		m, err := src.Read(buf[nr:])
 		nr += m
-		if err != nil && err != io.EOF {
-			logrus.Error("read error: ", err)
-			break
-		}
-		if err == io.EOF {
+		if err != nil {
+			if err == io.EOF {
+				logrus.Debug("read EOF in next phase")
+			} else if strings.Contains(err.Error(), "use of closed network connection") {
+				logrus.Debug("read closed in next phase: ", err)
+			} else {
+				logrus.Error("read error in next phase: ", err)
+			}
 			break
 		}
 	}

@@ -16,11 +16,12 @@ getcpucore() {
 cd /root
 getcpucore
 
-version=0.1.0
+version=0.1.1
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if [ -f "ua3f" ]; then
     rm "ua3f"
+    killall ua3f >/dev/null 2>&1
 fi
 
 chmod ugo+w /var/log
@@ -53,4 +54,5 @@ mv ua3f.service /etc/init.d/ && chmod +x /etc/init.d/ua3f.service
 
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."
+    echo "Use /etc/init.d/ua3f.service {start|stop|restart} to control UA3F."
 fi
