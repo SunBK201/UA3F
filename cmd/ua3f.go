@@ -220,7 +220,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 				buf[start+i] = payloadByte[i]
 			}
 		} else {
-			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent", string(parser.Host())))
+			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache", string(parser.Host())))
 			dst.Write(buf[0:nr])
 			io.Copy(dst, src)
 			cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
