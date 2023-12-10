@@ -24,7 +24,7 @@ if [ -f "ua3f" ]; then
     killall ua3f &> /dev/null
 fi
 
-if ! command -v sudo &> /dev/null then
+if ! command -v sudo &> /dev/null; then
     opkg update &> /dev/null && opkg install sudo &> /dev/null
 fi
 
