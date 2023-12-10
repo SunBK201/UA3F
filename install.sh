@@ -21,7 +21,11 @@ ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if [ -f "ua3f" ]; then
     rm "ua3f"
-    killall ua3f >/dev/null 2>&1
+    killall ua3f &> /dev/null
+fi
+
+if ! command -v sudo &> /dev/null then
+    opkg update &> /dev/null && opkg install sudo &> /dev/null
 fi
 
 chmod ugo+w /var/log
