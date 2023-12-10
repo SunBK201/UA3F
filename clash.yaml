@@ -1,0 +1,310 @@
+---
+#--------------------------------------------------------------------------------------#
+# Written by SunBK201
+# https://github.com/SunBK201/MyProfiles
+#--------------------------------------------------------------------------------------#
+# Port of HTTP(S) proxy server on the local end
+port: 7890
+# Port of SOCKS5 proxy server on the local end
+socks-port: 7891
+# HTTP(S) and SOCKS4(A)/SOCKS5 server on the same port
+# mixed-port: 7890
+#--------------------------------------------------------------------------------------#
+# Transparent proxy server port for Linux and macOS (Redirect TCP and TProxy UDP)
+redir-port: 7892
+# Transparent proxy server port for Linux (TProxy TCP and TProxy UDP)
+# tproxy-port: 7893
+#--------------------------------------------------------------------------------------#
+# Set to true to allow connections to the local-end server from
+# other LAN IP addresses
+allow-lan: false
+# This is only applicable when `allow-lan` is `true`
+# '*': bind all IP addresses
+# 192.168.122.11: bind a single IPv4 address
+# "[aaaa::a8aa:ff:fe09:57d8]": bind a single IPv6 address
+bind-address: "*"
+#--------------------------------------------------------------------------------------#
+# Clash by default prints logs to STDOUT
+# info / warning / error / debug / silent
+log-level: info
+# RESTful web API listening address
+external-controller: 127.0.0.1:9090
+#--------------------------------------------------------------------------------------#
+# When set to false, resolver won't translate hostnames to IPv6 addresses
+ipv6: false
+# Clash router working mode
+# rule: rule-based packet routing
+# global: all packets will be forwarded to a single endpoint
+# direct: directly forward the packets to the Internet
+mode: rule
+# [Meta Feature]
+tcp-concurrent: true
+#--------------------------------------------------------------------------------------#
+# DNS server settings
+# This section is optional. When not present, the DNS server will be disabled.
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false # when the false, response to AAAA questions will be empty
+  # These nameservers are used to resolve the DNS nameserver hostnames below.
+  # Specify IP addresses only
+  default-nameserver:
+    - 114.114.114.114
+    - 8.8.8.8
+  enhanced-mode: fake-ip # or redir-host (not recommended)
+  fake-ip-range: 198.18.0.1/16 # Fake IP addresses pool CIDR
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "*.msftconnecttest.com"
+  nameserver:
+    - dhcp://en0 # dns from dhcp
+    # - 223.5.5.5
+    # - 114.114.114.114
+    # - https://1.1.1.1/dns-query # DNS over HTTPS
+#--------------------------------------------------------------------------------------#
+proxies:
+  - name: "ua3f"
+    type: socks5
+    server: 127.0.0.1
+    port: 1080
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
+#--------------------------------------------------------------------------------------#
+proxy-providers:
+  Global-ISP:
+    type: http
+    url: ""
+    interval: 3600
+    path: "./Proxy-Providers/Global-ISP.yaml"
+    health-check:
+      enable: true
+      interval: 600
+      url: http://1.1.1.1/generate_204
+#--------------------------------------------------------------------------------------#
+proxy-groups:
+  - name: "Switch"
+    type: select
+    proxies:
+      - Fallback
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Fallback"
+    type: fallback
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Global-ISP"
+    type: select
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "CN"
+    type: select
+    proxies:
+      - ua3f
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
+    interval: 300
+  - name: "Netflix"
+    type: select
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Bahamut"
+    type: select
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "HongKong"
+    type: select
+    filter: "^(?!.*?(Premium)).*(香港|Hong Kong|HK)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Taiwan"
+    type: select
+    filter: "^(?!.*?(Premium)).*(台湾|Taiwan|TW)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Singapore"
+    type: select
+    filter: "^(?!.*?(Premium)).*(新加坡|Singapore|SG)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Japan"
+    type: select
+    filter: "^(?!.*?(Premium)).*(日本|Japan|JP)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "USA"
+    type: select
+    filter: "^(?!.*?(Premium)).*(美国|USA|US)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+#--------------------------------------------------------------------------------------#
+rules:
+  # Personal Define
+  - DOMAIN,speed.cloudflare.com,CN
+  - DOMAIN-SUFFIX,test-ipv6.com,CN
+  # Unbreak
+  - RULE-SET,Unbreak,CN
+  # Apple
+  - RULE-SET,Apple,CN
+  # Microsoft
+  - RULE-SET,Microsoft,CN
+  # Nintendo
+  - RULE-SET,Nintendo,Switch
+  # Notion
+  - DOMAIN,http-inputs-notion.splunkcloud.com,Switch
+  - RULE-SET,Notion,Switch
+  # Steam
+  - DOMAIN-SUFFIX,steamcommunity.com,Switch
+  - DOMAIN,avatars.akamai.steamstatic.com,Switch
+  - DOMAIN,api.steampowered.com,Switch
+  - DOMAIN,store.steampowered.com,Switch
+  - RULE-SET,SteamCN,CN
+  # Telegram
+  - RULE-SET,Telegram,Switch
+  # Spotify
+  - DOMAIN,open.spotify.com,Switch
+  - DOMAIN-SUFFIX,akamaized.net,CN
+  - DOMAIN-SUFFIX,spotify.com,CN
+  - DOMAIN-SUFFIX,spotifycdn.com,CN
+  - DOMAIN-SUFFIX,scdn.co,CN
+  - DOMAIN-SUFFIX,branch.io,CN
+  - RULE-SET,Spotify,CN
+  # Streaming
+  - DOMAIN,anime1.me,Switch
+  - DOMAIN-SUFFIX,anime1.me,CN
+  - RULE-SET,Netflix,Netflix
+  - RULE-SET,Bahamut,Bahamut
+  - RULE-SET,Streaming,Switch
+  # Global Domain
+  - DOMAIN-SUFFIX,imap.gmail.com,Switch # Gmail
+  - DOMAIN-SUFFIX,smtp.gmail.com,Switch # Gmail
+  # China Domain
+  - DOMAIN-SUFFIX,ua.233996.xyz,CN
+  - DOMAIN-SUFFIX,httpbin.org,CN
+  - DOMAIN-SUFFIX,ghproxy.com,CN
+  # Global SET
+  - RULE-SET,Global,Switch
+  # China SET
+  - RULE-SET,China,CN
+  #---!---DNS-Resolve---!--- #
+  #---!---DNS-Resolve---!--- #
+  #---!---DNS-Resolve---!--- #
+  # GeoIP China
+  - GEOIP,CN,CN
+  # Local Area Network
+  - GEOIP,LAN,DIRECT
+  # FINAL
+  - MATCH,Switch
+#--------------------------------------------------------------------------------------#
+rule-providers:
+  Unbreak:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Unbreak.yaml
+    url: https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/Unbreak.yaml
+    interval: 86400
+  Apple:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Apple.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.yaml
+    interval: 86400
+  Microsoft:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Microsoft.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml
+    interval: 86400
+  Nintendo:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Nintendo.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Nintendo/Nintendo.yaml
+    interval: 86400
+  Notion:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Notion.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Notion/Notion.yaml
+    interval: 86400
+  SteamCN:
+    type: http
+    behavior: classical
+    path: ./RuleSet/SteamCN.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN.yaml
+    interval: 86400
+  Telegram:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Telegram.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml
+    interval: 86400
+  Spotify:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Spotify.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Spotify/Spotify.yaml
+    interval: 86400
+  Netflix:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Netflix.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Netflix/Netflix.yaml
+    interval: 86400
+  Bahamut:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Bahamut.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Bahamut/Bahamut.yaml
+    interval: 86400
+  Streaming:
+    type: http
+    behavior: domain
+    path: ./RuleSet/Streaming.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GlobalMedia/GlobalMedia_Domain.yaml
+    interval: 86400
+  Global:
+    type: http
+    behavior: domain
+    path: ./RuleSet/Global.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Global/Global_Domain.yaml
+    interval: 86400
+  China:
+    type: http
+    behavior: domain
+    path: ./RuleSet/China.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/China/China_Domain.yaml
+    interval: 86400
+#--------------------------------------------------------------------------------------#
+parsers:
+#--------------------------------------------------------------------------------------#

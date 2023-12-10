@@ -69,6 +69,12 @@ rules:
 请不要将从 [Release](https://github.com/SunBK201/UA3F/releases) 下载解压得到的 `ua3f` 二进制文件修改名称，
 如需修改，则需要在 `PROCESS-NAME,ua3f,DIRECT` 中修改相应的名称。
 
+### Clash 懒人配置
+
+与 UA3F 适配的懒人配置：[clash.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash.yaml)
+
+注意需要在 proxy-providers > Global-ISP > url 中（第 76 行）加入你的代理节点订阅链接。
+
 ## Roadmap
 
 - [ ] 性能提升，降低 CPU 占用，降低内存占用

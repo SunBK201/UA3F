@@ -19,6 +19,10 @@ getcpucore
 version=0.1.1
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
+if id -u shellclash &> /dev/null; then
+    chmod o+w /etc/clash &> /dev/null
+fi
+
 if [ -f "ua3f" ]; then
     rm "ua3f"
     killall ua3f &> /dev/null
