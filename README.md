@@ -13,41 +13,18 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
 ```
 
-脚本执行成功后可通过以下命令启动 UA3F：
-```sh
-service ua3f.service start
-```
-
 ## 使用
 
 参数:
 - `-p <port>`: 端口号，默认 1080
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
-- `-l <log level>`: 日志等级，默认 info，可选：debug
-
-默认日志位置：`/var/log/ua3f.log`
-
-### 手动启动
-```bash
-sudo -u nobody /root/ua3f -p <port> -f <UA> -b <bind addr>
-```
-
-shellclash 用户建议使用以下命令启动:
-```bash
-sudo -u shellclash /root/ua3f -p <port> -f <UA> -b <bind addr>
-```
+- `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
 
 ### 作为后台服务运行
-将 `ua3f` 置于 `/root/ua3f`
 
-将 [ua3f.service](ua3f.service) 置于 `/etc/init.d/ua3f.service`
-
-执行下面的命令：
-```bash
-chmod +x /etc/init.d/ua3f.service
-# 设置 UA3F 开机自启
-service ua3f.service enable
+安装脚本执行成功后可通过以下命令启动 UA3F：
+```sh
 # 启动 UA3F
 service ua3f.service start
 ```
@@ -58,6 +35,16 @@ service ua3f.service start
 service ua3f.service stop
 # 重启 UA3F
 service ua3f.service restart
+```
+
+### 手动启动
+```bash
+sudo -u nobody /root/ua3f -p <port> -f <UA> -b <bind addr>
+```
+
+shellclash 用户建议使用以下命令启动:
+```bash
+sudo -u shellclash /root/ua3f -p <port> -f <UA> -b <bind addr>
 ```
 
 ### Clash 的配置建议
