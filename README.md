@@ -39,12 +39,12 @@ service ua3f.service restart
 
 ### 手动启动
 ```bash
-sudo -u nobody /root/ua3f -p <port> -f <UA> -b <bind addr>
+sudo -u nobody /root/ua3f
 ```
 
 shellclash 用户建议使用以下命令启动:
 ```bash
-sudo -u shellclash /root/ua3f -p <port> -f <UA> -b <bind addr>
+sudo -u shellclash /root/ua3f
 ```
 
 ### Clash 的配置建议
