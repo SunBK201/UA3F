@@ -172,6 +172,7 @@ rules:
   # Personal Define
   - DOMAIN,speed.cloudflare.com,CN
   - DOMAIN-SUFFIX,test-ipv6.com,CN
+  - DOMAIN-SUFFIX,httpbin.org.CN
   # Unbreak
   - RULE-SET,Unbreak,CN
   # Apple
