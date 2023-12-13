@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.1.1"
+var version = "0.1.2"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 
@@ -67,13 +67,13 @@ func process(client net.Conn) {
 		client.Close()
 		return
 	}
-	target, err := Socks5Connect(client)
+	target, destAddrPort, err := Socks5Connect(client)
 	if err != nil {
 		logrus.Error("Connect failed: ", err)
 		client.Close()
 		return
 	}
-	Socks5Forward(client, target)
+	Socks5Forward(client, target, destAddrPort)
 }
 
 func Socks5Auth(client net.Conn) (err error) {
@@ -97,61 +97,61 @@ func Socks5Auth(client net.Conn) (err error) {
 	return nil
 }
 
-func Socks5Connect(client net.Conn) (net.Conn, error) {
+func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 	buf := make([]byte, 256)
 	n, err := io.ReadFull(client, buf[:4])
 	if n != 4 {
-		return nil, errors.New("read header:" + err.Error())
+		return nil, "", errors.New("read header:" + err.Error())
 	}
 	ver, cmd, _, atyp := buf[0], buf[1], buf[2], buf[3]
 	if ver != 5 || cmd != 1 {
-		return nil, errors.New("invalid ver/cmd")
+		return nil, "", errors.New("invalid ver/cmd")
 	}
 	addr := ""
 	switch atyp {
 	case 1:
 		n, err = io.ReadFull(client, buf[:4])
 		if n != 4 {
-			return nil, errors.New("invalid IPv4:" + err.Error())
+			return nil, "", errors.New("invalid IPv4:" + err.Error())
 		}
 		addr = fmt.Sprintf("%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3])
 	case 3:
 		n, err = io.ReadFull(client, buf[:1])
 		if n != 1 {
-			return nil, errors.New("invalid hostname:" + err.Error())
+			return nil, "", errors.New("invalid hostname:" + err.Error())
 		}
 		addrLen := int(buf[0])
 		n, err = io.ReadFull(client, buf[:addrLen])
 		if n != addrLen {
-			return nil, errors.New("invalid hostname:" + err.Error())
+			return nil, "", errors.New("invalid hostname:" + err.Error())
 		}
 		addr = string(buf[:addrLen])
 	case 4:
-		return nil, errors.New("IPv6: no supported yet")
+		return nil, "", errors.New("IPv6: no supported yet")
 	default:
-		return nil, errors.New("invalid atyp")
+		return nil, "", errors.New("invalid atyp")
 	}
 	n, err = io.ReadFull(client, buf[:2])
 	if n != 2 {
-		return nil, errors.New("read port:" + err.Error())
+		return nil, "", errors.New("read port:" + err.Error())
 	}
 	port := binary.BigEndian.Uint16(buf[:2])
 	destAddrPort := fmt.Sprintf("%s:%d", addr, port)
 	logrus.Debug(fmt.Sprintf("Connecting %s", destAddrPort))
 	dest, err := net.Dial("tcp", destAddrPort)
 	if err != nil {
-		return nil, errors.New("dial dst:" + err.Error())
+		return nil, destAddrPort, errors.New("dial dst:" + err.Error())
 	}
 	logrus.Debug(fmt.Sprintf("Connected %s", destAddrPort))
 	_, err = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
 	if err != nil {
 		dest.Close()
-		return nil, errors.New("write rsp:" + err.Error())
+		return nil, destAddrPort, errors.New("write rsp:" + err.Error())
 	}
-	return dest, nil
+	return dest, destAddrPort, nil
 }
 
-func Socks5Forward(client, target net.Conn) {
+func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	forward := func(src, dest net.Conn) {
 		defer src.Close()
 		defer dest.Close()
@@ -161,22 +161,33 @@ func Socks5Forward(client, target net.Conn) {
 	gforward := func(dst, src net.Conn) {
 		defer dst.Close()
 		defer src.Close()
-		CopyPileline(dst, src)
+		CopyPileline(dst, src, destAddrPort)
 	}
 
 	go forward(client, target)
-	if cache.Contains(string(target.RemoteAddr().String())) {
+	if cache.Contains(destAddrPort) {
+		logrus.Debug(fmt.Sprintf("Hit LRU Relay Cache: %s", destAddrPort))
 		go forward(target, client)
 		return
 	}
 	go gforward(target, client)
 }
 
-func CopyPileline(dst io.Writer, src io.Reader) {
+func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 	buf := make([]byte, 1024*8)
 	nr, err := src.Read(buf)
-	if err != nil && err != io.EOF {
-		logrus.Error("read error: ", err)
+	if err != nil {
+		if err == io.EOF {
+			logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
+		} else if strings.Contains(err.Error(), "use of closed network connection") {
+			logrus.Debug(fmt.Sprintf("[%s][%s] read closed in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+		} else {
+			logrus.Error(fmt.Sprintf("[%s][%s] read error in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+		}
+		return
+	}
+	if nr == 0 {
+		logrus.Debug(fmt.Sprintf("[%s][%s] read 0 in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
 		return
 	}
 	hint := string(buf[0:7])
@@ -191,7 +202,8 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 	if !is_http {
 		dst.Write(buf[0:nr])
 		io.Copy(dst, src)
-		cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
+		cache.Add(destAddrPort, destAddrPort)
+		logrus.Debug(fmt.Sprintf("Not HTTP, Hint: %v, Add LRU Relay Cache: %s", buf[0:7], destAddrPort))
 		return
 	}
 	for {
@@ -201,7 +213,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 			var m int
 			m, err = src.Read(buf[nr:])
 			if err != nil {
-				logrus.Error("read error in http accumulation: ", err)
+				logrus.Error(fmt.Sprintf("[%s] read error in http accumulation: %v", destAddrPort, err))
 				break
 			}
 			nr += m
@@ -209,7 +221,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		}
 		value, start, end := parser.FindHeader([]byte("User-Agent"))
 		if value != nil && end > start {
-			logrus.Debug(fmt.Sprintf("[%s] Hit User-Agent: %s", string(parser.Host()), string(value)))
+			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(value)))
 			for i := start; i < end; i++ {
 				buf[i] = 32
 			}
@@ -220,10 +232,10 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 				buf[start+i] = payloadByte[i]
 			}
 		} else {
-			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache", string(parser.Host())))
+			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache", destAddrPort))
 			dst.Write(buf[0:nr])
 			io.Copy(dst, src)
-			cache.Add(string(dst.(*net.TCPConn).RemoteAddr().String()), string(dst.(*net.TCPConn).RemoteAddr().String()))
+			cache.Add(destAddrPort, destAddrPort)
 			return
 		}
 		bodyLen := int(parser.ContentLength())
@@ -233,7 +245,7 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 
 		_, ew := dst.Write(buf[0:min(httpBodyOffset+bodyLen, nr)])
 		if ew != nil {
-			logrus.Error("write error: ", ew)
+			logrus.Error(fmt.Sprintf("[%s][%s] write error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), ew.Error()))
 			break
 		}
 		if httpBodyOffset+bodyLen > nr {
@@ -241,12 +253,12 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 			for left > 0 {
 				m, err := src.Read(buf[0:left])
 				if err != nil {
-					logrus.Error("read error in large body: ", err)
+					logrus.Error(fmt.Sprintf("[%s][%s] read error in large body: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 					break
 				}
 				_, ew := dst.Write(buf[0:m])
 				if ew != nil {
-					logrus.Error("write error in large body: ", ew)
+					logrus.Error(fmt.Sprintf("[%s][%s] write error in large body: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), ew.Error()))
 					break
 				}
 				left -= m
@@ -263,11 +275,11 @@ func CopyPileline(dst io.Writer, src io.Reader) {
 		nr += m
 		if err != nil {
 			if err == io.EOF {
-				logrus.Debug("read EOF in next phase")
+				logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in next phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
 			} else if strings.Contains(err.Error(), "use of closed network connection") {
-				logrus.Debug("read closed in next phase: ", err)
+				logrus.Debug(fmt.Sprintf("[%s][%s] read closed in next phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			} else {
-				logrus.Error("read error in next phase: ", err)
+				logrus.Error(fmt.Sprintf("[%s][%s] read error in next phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			}
 			break
 		}

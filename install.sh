@@ -16,7 +16,7 @@ getcpucore() {
 cd /root
 getcpucore
 
-version=0.1.1
+version=0.1.2
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash &> /dev/null; then
