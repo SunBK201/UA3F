@@ -35,6 +35,8 @@ service ua3f.service start
 service ua3f.service stop
 # 重启 UA3F
 service ua3f.service restart
+# 开机自启
+service ua3f.service enable
 ```
 
 ### 手动启动
