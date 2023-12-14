@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"strings"
 	"time"
 	"ua3f/http"
@@ -16,12 +17,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.1.2"
+var version = "0.1.3"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 
-func main() {
+var whitelist = []string{
+	"MicroMessenger Client",
+	"ByteDancePcdn",
+	"Go-http-client/1.1",
+}
 
+// var dpool *ants.PoolWithFunc
+// var gpool *ants.PoolWithFunc
+//
+// type RelayConn struct {
+// 	src          net.Conn
+// 	dst          net.Conn
+// 	destAddrPort string
+// }
+
+func main() {
 	var payload string
 	var addr string
 	var port int
@@ -40,7 +55,12 @@ func main() {
 	logrus.Info(fmt.Sprintf("User-Agent: %s", payload))
 	logrus.Info(fmt.Sprintf("Log level: %s", loglevel))
 
-	cache = expirable.NewLRU[string, string](100, nil, time.Second*600)
+	cache = expirable.NewLRU[string, string](300, nil, time.Second*600)
+
+	// dpool, _ = ants.NewPoolWithFunc(1000, forward)
+	// gpool, _ = ants.NewPoolWithFunc(500, gforward)
+	// defer dpool.Release()
+	// defer gpool.Release()
 
 	payloadByte = []byte(payload)
 
@@ -74,6 +94,7 @@ func process(client net.Conn) {
 		return
 	}
 	Socks5Forward(client, target, destAddrPort)
+	// Socks5Relay(client, target, destAddrPort)
 }
 
 func Socks5Auth(client net.Conn) (err error) {
@@ -151,6 +172,39 @@ func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 	return dest, destAddrPort, nil
 }
 
+/*
+func forward(i interface{}) {
+	rc := i.(*RelayConn)
+	defer rc.src.Close()
+	defer rc.dst.Close()
+	io.Copy(rc.src, rc.dst)
+}
+
+func gforward(i interface{}) {
+	rc := i.(*RelayConn)
+	defer rc.dst.Close()
+	defer rc.src.Close()
+	CopyPileline(rc.dst, rc.src, rc.destAddrPort)
+}
+
+func Socks5Relay(client, target net.Conn, destAddrPort string) {
+	rc := &RelayConn{
+		src:          client,
+		dst:          target,
+		destAddrPort: destAddrPort,
+	}
+	logrus.Debug(fmt.Sprintf("dpool: %d left: %d, gpool: %d left: %d", dpool.Running(), dpool.Free(), gpool.Running(), gpool.Free()))
+	dpool.Invoke(rc)
+	if cache.Contains(destAddrPort) {
+		logrus.Debug(fmt.Sprintf("Hit LRU Relay Cache: %s", destAddrPort))
+		rc.src, rc.dst = rc.dst, rc.src
+		dpool.Invoke(rc)
+	} else {
+		gpool.Invoke(rc)
+	}
+}
+*/
+
 func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	forward := func(src, dest net.Conn) {
 		defer src.Close()
@@ -168,9 +222,9 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	if cache.Contains(destAddrPort) {
 		logrus.Debug(fmt.Sprintf("Hit LRU Relay Cache: %s", destAddrPort))
 		go forward(target, client)
-		return
+	} else {
+		go gforward(target, client)
 	}
-	go gforward(target, client)
 }
 
 func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
@@ -203,7 +257,7 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 		dst.Write(buf[0:nr])
 		io.Copy(dst, src)
 		cache.Add(destAddrPort, destAddrPort)
-		logrus.Debug(fmt.Sprintf("Not HTTP, Hint: %v, Add LRU Relay Cache: %s", buf[0:7], destAddrPort))
+		logrus.Debug(fmt.Sprintf("Not HTTP, Hint: %v, Add LRU Relay Cache: %s, Cache Len: %d", buf[0:7], destAddrPort, cache.Len()))
 		return
 	}
 	for {
@@ -221,6 +275,13 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 		}
 		value, start, end := parser.FindHeader([]byte("User-Agent"))
 		if value != nil && end > start {
+			if slices.Contains(whitelist, string(value)) {
+				logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent Whitelist: %s, Add LRU Relay Cache, Cache Len: %d", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(value), cache.Len()))
+				dst.Write(buf[0:nr])
+				io.Copy(dst, src)
+				cache.Add(destAddrPort, destAddrPort)
+				return
+			}
 			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(value)))
 			for i := start; i < end; i++ {
 				buf[i] = 32
@@ -232,7 +293,7 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 				buf[start+i] = payloadByte[i]
 			}
 		} else {
-			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache", destAddrPort))
+			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache, Cache Len: %d", destAddrPort, cache.Len()))
 			dst.Write(buf[0:nr])
 			io.Copy(dst, src)
 			cache.Add(destAddrPort, destAddrPort)

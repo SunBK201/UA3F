@@ -1,7 +1,7 @@
 ---
 #--------------------------------------------------------------------------------------#
 # Written by SunBK201
-# https://github.com/SunBK201/MyProfiles
+# https://github.com/SunBK201/UA3F
 #--------------------------------------------------------------------------------------#
 # Port of HTTP(S) proxy server on the local end
 port: 7890
