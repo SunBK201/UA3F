@@ -20,12 +20,13 @@ import (
 var version = "0.1.3"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
-
 var whitelist = []string{
 	"MicroMessenger Client",
 	"ByteDancePcdn",
 	"Go-http-client/1.1",
 }
+
+const RDBUF = 1024 * 16
 
 // var dpool *ants.PoolWithFunc
 // var gpool *ants.PoolWithFunc
@@ -228,7 +229,7 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 }
 
 func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
-	buf := make([]byte, 1024*8)
+	buf := make([]byte, RDBUF)
 	nr, err := src.Read(buf)
 	if err != nil {
 		if err == io.EOF {
@@ -312,7 +313,8 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 		if httpBodyOffset+bodyLen > nr {
 			left := httpBodyOffset + bodyLen - nr
 			for left > 0 {
-				m, err := src.Read(buf[0:left])
+				lr := min(left, RDBUF)
+				m, err := src.Read(buf[0:lr])
 				if err != nil {
 					logrus.Error(fmt.Sprintf("[%s][%s] read error in large body: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 					break
