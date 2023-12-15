@@ -27,6 +27,10 @@ GOOS=linux GOARCH="mipsle" GOMIPS=hardfloat go build -ldflags="-s -w" $target
 tar -zcf $release_dir/$project_name-$release_version-mipsle-hardfloat.tar.gz $obj_name
 rm -f $obj_name
 
+GOOS=linux GOARCH="arm" GOARM=7 go build -ldflags="-s -w" $target
+tar -zcf $release_dir/$project_name-$release_version-armv7.tar.gz $obj_name
+rm -f $obj_name
+
 cp $release_dir/$project_name-$release_version-arm64.tar.gz $release_dir/$project_name-$release_version-armv8.tar.gz
 
 cd $release_dir
