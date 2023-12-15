@@ -62,9 +62,11 @@ proxies:
     server: 127.0.0.1
     port: 1080
     url: http://connectivitycheck.platform.hicloud.com/generate_204
+    udp: false
 
 rules:
   - PROCESS-NAME,ua3f,DIRECT
+  - NETWORK,udp,DIRECT
   - MATCH,ua3f
 ```
 
