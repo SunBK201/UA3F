@@ -20,6 +20,7 @@ import (
 var version = "0.1.3"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
+var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
 var whitelist = []string{
 	"MicroMessenger Client",
 	"ByteDancePcdn",
@@ -119,6 +120,49 @@ func Socks5Auth(client net.Conn) (err error) {
 	return nil
 }
 
+// func Socks5UDP() {
+//	https://datatracker.ietf.org/doc/html/rfc1928
+// 	// _, _ = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x7f, 0, 0, 0x1, 0x04, 0x38})
+// 	_, _ = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0x04, 0x38})
+// 	server, _ := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 1080})
+// 	_, _ = server.Read(buf[:4])
+// 	frag, atyp := buf[2], buf[3]
+// 	addr := ""
+// 	switch atyp {
+//	case 1:
+//		n, err = server.Read(buf[:4])
+//		if n != 4 {
+//			return nil, "", errors.New("invalid IPv4:" + err.Error())
+//		}
+//		addr = fmt.Sprintf("%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3])
+//	case 3:
+//		n, err = server.Read(buf[:1])
+//		if n != 1 {
+//			return nil, "", errors.New("invalid hostname:" + err.Error())
+//		}
+//		addrLen := int(buf[0])
+//		n, err = server.Read(buf[:addrLen])
+//		if n != addrLen {
+//			return nil, "", errors.New("invalid hostname:" + err.Error())
+//		}
+//		addr = string(buf[:addrLen])
+//	case 4:
+//		return nil, "", errors.New("IPv6: no supported yet")
+//	default:
+//		return nil, "", errors.New("invalid atyp")
+// 	}
+// 	n, err = server.Read(buf[:2])
+// 	port := binary.BigEndian.Uint16(buf[:2])
+// 	destAddrPort := fmt.Sprintf("%s:%d", addr, port)
+// 	logrus.Debug(fmt.Sprintf("Connecting %s", destAddrPort))
+// 	dest, err := net.Dial("udp", destAddrPort)
+// 	if err != nil {
+//		return nil, destAddrPort, errors.New("dial dst:" + err.Error())
+// 	}
+// 	logrus.Debug(fmt.Sprintf("Connected %s", destAddrPort))
+//
+// }
+
 func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 	buf := make([]byte, 256)
 	n, err := io.ReadFull(client, buf[:4])
@@ -126,8 +170,14 @@ func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 		return nil, "", errors.New("read header:" + err.Error())
 	}
 	ver, cmd, _, atyp := buf[0], buf[1], buf[2], buf[3]
-	if ver != 5 || cmd != 1 {
-		return nil, "", errors.New("invalid ver/cmd")
+	if ver != 5 {
+		return nil, "", errors.New("invalid ver")
+	}
+	if cmd == 3 {
+		return nil, "", errors.New("not support UDP")
+	}
+	if cmd != 1 {
+		return nil, "", errors.New("invalid cmd, only support connect")
 	}
 	addr := ""
 	switch atyp {
@@ -246,7 +296,6 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 		return
 	}
 	hint := string(buf[0:7])
-	HTTP_METHOD := []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
 	is_http := false
 	for _, v := range HTTP_METHOD {
 		if strings.HasPrefix(hint, v) {
