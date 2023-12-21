@@ -67,6 +67,23 @@ if [ $? -ne 0 ]; then
 fi
 mv ua3f.uci /etc/config/ua3f
 
+wget https://blog.sunbk201.site/cdn/cbi.lua
+if [ $? -ne 0 ]; then
+    echo "Download cbi.lua Failed, Please Retry."
+    exit 1
+fi
+mv cbi.lua /usr/lib/lua/luci/model/cbi/ua3f.lua
+
+wget https://blog.sunbk201.site/cdn/controller.lua
+if [ $? -ne 0 ]; then
+    echo "Download controller.lua Failed, Please Retry."
+    exit 1
+fi
+mv controller.lua /usr/lib/lua/luci/controller/ua3f.lua
+
+rm /tmp/luci-modulecache/* &> /dev/null
+rm /tmp/luci-indexcache* &> /dev/null
+
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."
 fi
