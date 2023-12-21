@@ -26,26 +26,42 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 安装脚本执行成功后可通过以下命令启动 UA3F：
 ```sh
 # 启动 UA3F
+uci set ua3f.enabled.enabled=1
+uci commit ua3f
 service ua3f.service start
 ```
 
 关闭或重启 UA3F 命令：
-```bash
+```sh
 # 关闭 UA3F
 service ua3f.service stop
 # 重启 UA3F
 service ua3f.service restart
-# 开机自启
-service ua3f.service enable
+```
+
+配置 UA3：
+```sh
+# 自定义 UA
+uci set ua3f.main.ua="FFF"
+# 监听端口号
+uci set ua3f.main.port="1080"
+# 绑定地址
+uci set ua3f.main.bind="127.0.0.1"
+# 日志等级
+uci set ua3f.main.log_level="info"
+
+# 应用配置
+uci commit ua3f
+reload_config
 ```
 
 ### 手动启动
-```bash
+```sh
 sudo -u nobody /root/ua3f
 ```
 
 shellclash 用户建议使用以下命令启动:
-```bash
+```sh
 sudo -u shellclash /root/ua3f
 ```
 

@@ -8,22 +8,45 @@ NAME="ua3f"
 PROG="/root/$NAME"
 
 start_service() {
+    config_load "$NAME"
+
+    local enabled
+    config_get_bool enabled "enabled" "enabled" "0"
+    if [ "$enabled" -ne "1" ]; then
+        return 1
+    fi
+
+    local port
+    local bind
+    local ua
+    local log_level
+    config_get port "main" "port" "1080"
+    config_get bind "main" "bind" "127.0.0.1"
+    config_get ua "main" "ua" "FFF"
+    config_get log_level "main" "log_level" "info"
+
     chmod o+w /var/log
 
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
-    procd_append_param command -b "127.0.0.1"
-    procd_append_param command -p 1080
-    procd_append_param command -f "FFF"
-    procd_append_param command -l info
+    procd_append_param command -b "$bind"
+    procd_append_param command -p $port
+    procd_append_param command -f "$ua"
+    procd_append_param command -l $log_level
 
     procd_set_param respawn
     procd_set_param stdout 1
     procd_set_param stderr 1
 
-    if id -u shellclash &> /dev/null; then
+    if
+        id -u shellclash &
+        >/dev/null
+    then
         procd_set_param user shellclash
-    elif id -u nobody &> /dev/null; then
+    elif
+        id -u nobody &
+        >/dev/null
+    then
         procd_set_param user nobody
     fi
 
@@ -31,6 +54,10 @@ start_service() {
 }
 
 reload_service() {
-	stop
-	start
+    stop
+    start
+}
+
+service_triggers() {
+    procd_add_reload_trigger "$NAME"
 }

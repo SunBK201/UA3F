@@ -60,7 +60,13 @@ fi
 mv ua3f.service /etc/init.d/ && chmod +x /etc/init.d/ua3f.service
 /etc/init.d/ua3f.service enable
 
+wget https://blog.sunbk201.site/cdn/ua3f.uci
+if [ $? -ne 0 ]; then
+    echo "Download ua3f.uci Failed, Please Retry."
+    exit 1
+fi
+mv ua3f.uci /etc/config/ua3f
+
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."
-    echo "Use /etc/init.d/ua3f.service {start|stop|restart|enable} to control UA3F."
 fi

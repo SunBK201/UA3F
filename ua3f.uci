@@ -1,0 +1,8 @@
+config 'ua3f' 'enabled'
+	option enabled '0'
+
+config 'ua3f' 'main'
+    option port '1080'
+    option bind '127.0.0.1'
+	option ua 'FFF'
+    option log_level 'info'
