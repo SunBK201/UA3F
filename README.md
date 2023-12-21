@@ -15,6 +15,10 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 
 ## 使用
 
+UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
+
+![UA3F-LuCI](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci)
+
 参数:
 - `-p <port>`: 端口号，默认 1080
 - `-f <UA>`: 自定义 UA，默认 FFF
