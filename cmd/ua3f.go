@@ -27,7 +27,7 @@ var whitelist = []string{
 	"Go-http-client/1.1",
 }
 
-const RDBUF = 1024 * 16
+const RDBUF = 1024 * 8
 
 // var dpool *ants.PoolWithFunc
 // var gpool *ants.PoolWithFunc
