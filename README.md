@@ -95,13 +95,13 @@ rules:
 
 ### Clash 懒人配置
 
-与 UA3F 适配的懒人配置：[clash.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash.yaml)
-
-注意需要在 proxy-providers > Global-ISP > url 中（第 76 行）加入你的代理节点订阅链接。
+提供 2 个参考配置：
+1. 国内版，无需进行任何修改，可直接使用 [ua3f-cn.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-cn.yaml)
+2. 国际版，针对有特定需求的特殊用户进行适配，[ua3f-global.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-global.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 76 行）加入你的代理节点订阅链接。
 
 ## Roadmap
 
-- [ ] 支持 LuCI
+- [x] 支持 LuCI
 - [x] 优化部署流程
 - [ ] 支持 SOCK5 Auth
 - [ ] 支持 UDP
