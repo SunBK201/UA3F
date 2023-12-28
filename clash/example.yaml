@@ -1,13 +1,7 @@
 mixed-port: 7890
 allow-lan: false
-bind-address: '*'
 mode: rule
-log-level: info
-external-controller: 127.0.0.1:9090
 ipv6: false
-
-profile:
-  store-selected: false
 
 proxies:
   - name: "ua3f"
