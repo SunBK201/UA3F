@@ -18,9 +18,9 @@ status.rawhtml = true
 status.cfgvalue = function(self, section)
     local pid = luci.sys.exec("pidof ua3f")
     if pid == "" then
-        return "<span style='color:green'>" .. translate("Running") .. "</span>"
-    else
         return "<span style='color:red'>" .. translate("Stopped") .. "</span>"
+    else
+        return "<span style='color:green'>" .. translate("Running") .. "</span>"
     end
 end
 
