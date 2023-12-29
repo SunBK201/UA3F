@@ -19,17 +19,17 @@ getcpucore
 version=0.2.0
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
-if id -u shellclash &> /dev/null; then
-    chmod o+w /etc/clash &> /dev/null
+if id -u shellclash >/dev/null 2>&1; then
+    chmod o+w /etc/clash >/dev/null 2>&1
 fi
 
 if [ -f "ua3f" ]; then
     rm "ua3f"
-    killall ua3f &> /dev/null
+    killall ua3f >/dev/null 2>&1
 fi
 
-if ! command -v sudo &> /dev/null; then
-    opkg update &> /dev/null && opkg install sudo &> /dev/null
+if ! command -v sudo >/dev/null 2>&1; then
+    opkg update >/dev/null 2>&1 && opkg install sudo >/dev/null 2>&1
 fi
 
 chmod ugo+w /var/log
@@ -81,8 +81,8 @@ if [ $? -ne 0 ]; then
 fi
 mv controller.lua /usr/lib/lua/luci/controller/ua3f.lua
 
-rm /tmp/luci-modulecache/* &> /dev/null
-rm /tmp/luci-indexcache* &> /dev/null
+rm /tmp/luci-modulecache/* >/dev/null 2>&1
+rm /tmp/luci-indexcache* >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."

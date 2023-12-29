@@ -38,13 +38,9 @@ start_service() {
     procd_set_param stdout 1
     procd_set_param stderr 1
 
-    if
-        id -u shellclash &>/dev/null
-    then
+    if id -u shellclash >/dev/null 2>&1; then
         procd_set_param user shellclash
-    elif
-        id -u nobody &>/dev/null
-    then
+    elif id -u nobody >/dev/null 2>&1; then
         procd_set_param user nobody
     fi
 
