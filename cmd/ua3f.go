@@ -85,7 +85,7 @@ func main() {
 
 func process(client net.Conn) {
 	if err := Socks5Auth(client); err != nil {
-		logrus.Error("Auth failed: ", err)
+		// logrus.Error("Auth failed: ", err)
 		client.Close()
 		return
 	}
@@ -103,18 +103,26 @@ func Socks5Auth(client net.Conn) (err error) {
 	buf := make([]byte, 256)
 	n, err := io.ReadFull(client, buf[:2])
 	if n != 2 {
+		if err == io.EOF {
+			logrus.Warn(fmt.Sprintf("[%s][Auth] read EOF", client.RemoteAddr().String()))
+		} else {
+			logrus.Error(fmt.Sprintf("[%s][Auth] read header: %s", client.RemoteAddr().String(), err.Error()))
+		}
 		return errors.New("reading header:" + err.Error())
 	}
 	ver, nMethods := int(buf[0]), int(buf[1])
 	if ver != 5 {
+		logrus.Error(fmt.Sprintf("[%s][Auth] invalid ver", client.RemoteAddr().String()))
 		return errors.New("invalid version")
 	}
 	n, err = io.ReadFull(client, buf[:nMethods])
 	if n != nMethods {
-		return errors.New("reading methods:" + err.Error())
+		logrus.Error(fmt.Sprintf("[%s][Auth] read methods: %s", client.RemoteAddr().String(), err.Error()))
+		return errors.New("read methods:" + err.Error())
 	}
 	n, err = client.Write([]byte{0x05, 0x00})
 	if n != 2 || err != nil {
+		logrus.Error(fmt.Sprintf("[%s][Auth] write rsp: %s", client.RemoteAddr().String(), err.Error()))
 		return errors.New("write rsp:" + err.Error())
 	}
 	return nil

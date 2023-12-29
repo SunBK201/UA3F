@@ -39,6 +39,8 @@ log_level:value("debug")
 log_level:value("info")
 log_level:value("warn")
 log_level:value("error")
+log_level:value("fatal")
+log_level:value("panic")
 
 log = main:taboption("log", TextValue, "")
 log.readonly = true
