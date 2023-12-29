@@ -9,8 +9,8 @@ ua3f = Map("ua3f",
     ]]
 )
 
-enable = ua3f:section(NamedSection, "enabled", "ua3f", "UA3F Status")
-main = ua3f:section(NamedSection, "main", "ua3f", "UA3F Settings")
+enable = ua3f:section(NamedSection, "enabled", "ua3f", "Status")
+main = ua3f:section(NamedSection, "main", "ua3f", "Settings")
 
 enable:option(Flag, "enabled", "Enabled")
 status = enable:option(DummyValue, "status", "Status")
@@ -18,9 +18,9 @@ status.rawhtml = true
 status.cfgvalue = function(self, section)
     local pid = luci.sys.exec("pidof ua3f")
     if pid == "" then
-        return "<span style='color:red'>" .. translate("Disabled") .. "</span>"
+        return "<span style='color:green'>" .. translate("Running") .. "</span>"
     else
-        return "<span style='color:green'>" .. translate("Enabled") .. "</span>"
+        return "<span style='color:red'>" .. translate("Stopped") .. "</span>"
     end
 end
 
