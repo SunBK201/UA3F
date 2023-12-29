@@ -13,10 +13,14 @@ getcpucore() {
     fi
 }
 
+ckcmd() {
+    command -v sh >/dev/null 2>&1 && command -v $1 >/dev/null 2>&1 || type $1 >/dev/null 2>&1
+}
+
 cd /root
 getcpucore
 
-version=0.2.0
+version=0.2.1
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash >/dev/null 2>&1; then
