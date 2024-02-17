@@ -76,6 +76,7 @@ if [ $? -ne 0 ]; then
     echo "Download cbi.lua Failed, Please Retry."
     exit 1
 fi
+mkdir -p /usr/lib/lua/luci/model/cbi
 mv cbi.lua /usr/lib/lua/luci/model/cbi/ua3f.lua
 
 wget https://blog.sunbk201.site/cdn/controller.lua
@@ -83,6 +84,7 @@ if [ $? -ne 0 ]; then
     echo "Download controller.lua Failed, Please Retry."
     exit 1
 fi
+mkdir -p /usr/lib/lua/luci/controller
 mv controller.lua /usr/lib/lua/luci/controller/ua3f.lua
 
 rm /tmp/luci-modulecache/* >/dev/null 2>&1
