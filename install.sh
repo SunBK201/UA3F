@@ -92,5 +92,6 @@ rm /tmp/luci-modulecache/* >/dev/null 2>&1
 rm /tmp/luci-indexcache* >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
+    /etc/init.d/ua3f.service reload
     echo "Install UA3F Success."
 fi
