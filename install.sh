@@ -20,7 +20,7 @@ ckcmd() {
 cd /root
 getcpucore
 
-version=0.2.1
+version=0.2.2
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash >/dev/null 2>&1; then
