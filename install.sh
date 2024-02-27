@@ -20,10 +20,13 @@ ckcmd() {
 cd /root
 getcpucore
 
-version=0.2.2
+version=0.2.3
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash >/dev/null 2>&1; then
+    chmod o+w /etc/clash >/dev/null 2>&1
+fi
+if id -u shellcrash >/dev/null 2>&1; then
     chmod o+w /etc/clash >/dev/null 2>&1
 fi
 

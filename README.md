@@ -67,9 +67,11 @@ reload_config
 sudo -u nobody /root/ua3f
 ```
 
-shellclash 用户建议使用以下命令启动:
+shellclash/shellcrash 用户建议使用以下命令启动:
 ```sh
 sudo -u shellclash /root/ua3f
+# 如果上面命令报错执行下面该命令
+sudo -u shellcrash /root/ua3f
 ```
 
 ### Clash 的配置建议
