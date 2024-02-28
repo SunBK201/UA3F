@@ -97,3 +97,5 @@ rm /tmp/luci-indexcache* >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."
 fi
+
+service ua3f.service reload >/dev/null 2>&1
