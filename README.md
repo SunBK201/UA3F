@@ -74,6 +74,7 @@ sudo -u shellcrash /root/ua3f
 ```
 
 ### Clash 的配置建议
+Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
 - Clash 需要选用 Meta 内核。
 - 请确保 `PROCESS-NAME,ua3f,DIRECT` 置于规则列表顶部，`MATCH,ua3f` 置于规则列表底部。
