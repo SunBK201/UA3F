@@ -20,7 +20,7 @@ ckcmd() {
 cd /root
 getcpucore
 
-version=0.2.3
+version=0.3.0
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash >/dev/null 2>&1; then
@@ -91,11 +91,12 @@ fi
 mkdir -p /usr/lib/lua/luci/controller
 mv controller.lua /usr/lib/lua/luci/controller/ua3f.lua
 
-rm /tmp/luci-modulecache/* >/dev/null 2>&1
-rm /tmp/luci-indexcache* >/dev/null 2>&1
+chmod +x /etc/config/ua3f >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
     echo "Install UA3F Success."
 fi
 
+rm /tmp/luci-modulecache/* >/dev/null 2>&1
+rm /tmp/luci-indexcache* >/dev/null 2>&1
 service ua3f.service reload >/dev/null 2>&1
