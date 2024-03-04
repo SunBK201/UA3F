@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.2.3"
+var version = "0.3.0"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
@@ -91,6 +91,12 @@ func process(client net.Conn) {
 	}
 	target, destAddrPort, err := Socks5Connect(client)
 	if err != nil {
+		// UDP
+		if strings.Contains(err.Error(), "UDP Associate") {
+			Socks5UDP(client)
+			client.Close()
+			return
+		}
 		logrus.Error("Connect failed: ", err)
 		client.Close()
 		return
@@ -128,48 +134,134 @@ func Socks5Auth(client net.Conn) (err error) {
 	return nil
 }
 
-// func Socks5UDP() {
-//	https://datatracker.ietf.org/doc/html/rfc1928
-// 	// _, _ = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x7f, 0, 0, 0x1, 0x04, 0x38})
-// 	_, _ = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0x04, 0x38})
-// 	server, _ := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 1080})
-// 	_, _ = server.Read(buf[:4])
-// 	frag, atyp := buf[2], buf[3]
-// 	addr := ""
-// 	switch atyp {
-//	case 1:
-//		n, err = server.Read(buf[:4])
-//		if n != 4 {
-//			return nil, "", errors.New("invalid IPv4:" + err.Error())
-//		}
-//		addr = fmt.Sprintf("%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3])
-//	case 3:
-//		n, err = server.Read(buf[:1])
-//		if n != 1 {
-//			return nil, "", errors.New("invalid hostname:" + err.Error())
-//		}
-//		addrLen := int(buf[0])
-//		n, err = server.Read(buf[:addrLen])
-//		if n != addrLen {
-//			return nil, "", errors.New("invalid hostname:" + err.Error())
-//		}
-//		addr = string(buf[:addrLen])
-//	case 4:
-//		return nil, "", errors.New("IPv6: no supported yet")
-//	default:
-//		return nil, "", errors.New("invalid atyp")
-// 	}
-// 	n, err = server.Read(buf[:2])
-// 	port := binary.BigEndian.Uint16(buf[:2])
-// 	destAddrPort := fmt.Sprintf("%s:%d", addr, port)
-// 	logrus.Debug(fmt.Sprintf("Connecting %s", destAddrPort))
-// 	dest, err := net.Dial("udp", destAddrPort)
-// 	if err != nil {
-//		return nil, destAddrPort, errors.New("dial dst:" + err.Error())
-// 	}
-// 	logrus.Debug(fmt.Sprintf("Connected %s", destAddrPort))
-//
-// }
+func isAlive(conn net.Conn) bool {
+	one := make([]byte, 1)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+	_, err := conn.Read(one)
+	if err != nil {
+		if err == io.EOF {
+			logrus.Debug(fmt.Sprintf("[%s] isAlive: EOF", conn.RemoteAddr().String()))
+			return false
+		} else if strings.Contains(err.Error(), "use of closed network connection") {
+			logrus.Debug(fmt.Sprintf("[%s] isAlive: closed", conn.RemoteAddr().String()))
+			return false
+		} else if strings.Contains(err.Error(), "i/o timeout") {
+			logrus.Debug(fmt.Sprintf("[%s] isAlive: timeout", conn.RemoteAddr().String()))
+			return true
+		} else {
+			logrus.Debug(fmt.Sprintf("[%s] isAlive: %s", conn.RemoteAddr().String(), err.Error()))
+			return false
+		}
+	}
+	conn.SetReadDeadline(time.Time{})
+	return true
+}
+
+func Socks5UDP(client net.Conn) {
+	udpserver, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	if err != nil {
+		logrus.Error(fmt.Sprintf("[%s][UDP] ListenUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+		return
+	}
+	_, port, _ := net.SplitHostPort(udpserver.LocalAddr().String())
+	logrus.Debug(fmt.Sprintf("[%s][UDP] ListenUDP on %s", client.RemoteAddr().String(), port))
+	portInt, _ := net.LookupPort("udp", port)
+	portBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(portBytes, uint16(portInt))
+	_, err = client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, portBytes[0], portBytes[1]})
+	if err != nil {
+		logrus.Error(fmt.Sprintf("[%s][UDP] Write rsp failed: %s", client.RemoteAddr().String(), err.Error()))
+		return
+	}
+	buf := make([]byte, 65535)
+	udpPortMap := make(map[string][]byte)
+	var clientAddr *net.UDPAddr
+	var isDomain bool = false
+	for {
+		udpserver.SetReadDeadline(time.Now().Add(time.Second * 10))
+		n, fromAddr, err := udpserver.ReadFromUDP(buf)
+		if err != nil {
+			if strings.Contains(err.Error(), "i/o timeout") {
+				logrus.Debug(fmt.Sprintf("[%s][UDP] ReadFromUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+				if !isAlive(client) {
+					logrus.Debug(fmt.Sprintf("[%s][UDP] client is not alive", client.RemoteAddr().String()))
+					udpserver.Close()
+					return
+				}
+			} else {
+				logrus.Error(fmt.Sprintf("[%s][UDP] ReadFromUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+			}
+
+			continue
+		}
+		if clientAddr == nil {
+			clientAddr = fromAddr
+		}
+
+		if clientAddr.IP.Equal(fromAddr.IP) && clientAddr.Port == fromAddr.Port {
+			// from client
+			atyp := buf[3]
+			targetAddr := ""
+			var targetPort uint16 = 0
+			var payload []byte
+			var header []byte
+			var targetIP net.IP
+			if atyp == 1 {
+				isDomain = false
+				targetAddr = fmt.Sprintf("%d.%d.%d.%d", buf[4], buf[5], buf[6], buf[7])
+				targetIP = net.ParseIP(targetAddr)
+				targetPort = binary.BigEndian.Uint16(buf[8:10])
+				payload = buf[10:n]
+				header = buf[0:10]
+			} else if atyp == 3 {
+				isDomain = true
+				addrLen := int(buf[4])
+				targetAddr = string(buf[5 : 5+addrLen])
+				targetIPaddr, err := net.ResolveIPAddr("ip", targetAddr)
+				if err != nil {
+					logrus.Error(fmt.Sprintf("[%s][UDP] ResolveIPAddr failed: %s", client.RemoteAddr().String(), err.Error()))
+					continue
+				}
+				targetIP = targetIPaddr.IP
+				targetPort = binary.BigEndian.Uint16(buf[5+addrLen : 5+addrLen+2])
+				payload = buf[5+addrLen+2 : n]
+				header = buf[0 : 5+addrLen+2]
+			} else if atyp == 4 {
+				logrus.Error(fmt.Sprintf("[%s][UDP] IPv6: no supported yet", client.RemoteAddr().String()))
+				continue
+			} else {
+				logrus.Error(fmt.Sprintf("[%s][UDP] invalid atyp", client.RemoteAddr().String()))
+				continue
+			}
+			// targetAddrPort := fmt.Sprintf("%s:%d", targetAddr, targetPort)
+			remoteAddr := &net.UDPAddr{IP: targetIP, Port: int(targetPort)}
+			udpPortMap[remoteAddr.String()] = make([]byte, len(header))
+			copy(udpPortMap[remoteAddr.String()], header)
+			udpserver.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if _, err = udpserver.WriteToUDP(payload, remoteAddr); err != nil {
+				logrus.Error(fmt.Sprintf("[%s][UDP] WriteToUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+				continue
+			}
+		} else {
+			// from remote
+			fmt.Print(fromAddr.String())
+			header := udpPortMap[fromAddr.String()]
+			if header == nil {
+				logrus.Error(fmt.Sprintf("[%s][UDP] udpPortMap invalid header", client.RemoteAddr().String()))
+				continue
+			}
+			// header + body
+			if isDomain {
+				header = header[0:4]
+			}
+			body := append(header, buf[:n]...)
+			if _, err = udpserver.WriteToUDP(body, clientAddr); err != nil {
+				logrus.Error(fmt.Sprintf("[%s][UDP] WriteToUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+				continue
+			}
+		}
+	}
+}
 
 func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 	buf := make([]byte, 256)
@@ -182,7 +274,7 @@ func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 		return nil, "", errors.New("invalid ver")
 	}
 	if cmd == 3 {
-		return nil, "", errors.New("not support UDP")
+		return nil, "", errors.New("UDP Associate")
 	}
 	if cmd != 1 {
 		return nil, "", errors.New("invalid cmd, only support connect")

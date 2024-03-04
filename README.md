@@ -109,6 +109,6 @@ rules:
 - [x] 支持 LuCI
 - [x] 优化部署流程
 - [ ] 支持 SOCK5 Auth
-- [ ] 支持 UDP
+- [x] 支持 UDP
 - [ ] 支持 IPv6
 - [ ] 性能提升
