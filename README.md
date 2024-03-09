@@ -13,6 +13,7 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 opkg update
 opkg install curl libcurl luci-compat
 export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
+service ua3f.service reload
 ```
 
 ## 使用
