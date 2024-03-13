@@ -116,6 +116,12 @@ proxy-groups:
     interval: 300
 #--------------------------------------------------------------------------------------#
 rules:
+  # Tencent
+  - DOMAIN-KEYWORD,wx,Switch
+  - DOMAIN-KEYWORD,qq,Switch
+  - DOMAIN-KEYWORD,weixin,Switch
+  - DOMAIN-KEYWORD,wechat,Switch
+  - DOMAIN-KEYWORD,tencent,Switch
   # Personal Define
   - DOMAIN,speed.cloudflare.com,CN
   - DOMAIN-SUFFIX,test-ipv6.com,CN
