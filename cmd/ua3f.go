@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.3.0"
+var version = "0.3.1"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
@@ -95,6 +95,9 @@ func process(client net.Conn) {
 		if strings.Contains(err.Error(), "UDP Associate") {
 			Socks5UDP(client)
 			client.Close()
+			return
+		} else if strings.Contains(err.Error(), "connection timed out") {
+			logrus.Debug("Connect timeout: ", err)
 			return
 		}
 		logrus.Error("Connect failed: ", err)
@@ -185,13 +188,11 @@ func Socks5UDP(client net.Conn) {
 				logrus.Debug(fmt.Sprintf("[%s][UDP] ReadFromUDP failed: %s", client.RemoteAddr().String(), err.Error()))
 				if !isAlive(client) {
 					logrus.Debug(fmt.Sprintf("[%s][UDP] client is not alive", client.RemoteAddr().String()))
-					udpserver.Close()
-					return
+					break
 				}
 			} else {
 				logrus.Error(fmt.Sprintf("[%s][UDP] ReadFromUDP failed: %s", client.RemoteAddr().String(), err.Error()))
 			}
-
 			continue
 		}
 		if clientAddr == nil {
@@ -220,7 +221,7 @@ func Socks5UDP(client net.Conn) {
 				targetIPaddr, err := net.ResolveIPAddr("ip", targetAddr)
 				if err != nil {
 					logrus.Error(fmt.Sprintf("[%s][UDP] ResolveIPAddr failed: %s", client.RemoteAddr().String(), err.Error()))
-					continue
+					break
 				}
 				targetIP = targetIPaddr.IP
 				targetPort = binary.BigEndian.Uint16(buf[5+addrLen : 5+addrLen+2])
@@ -228,10 +229,10 @@ func Socks5UDP(client net.Conn) {
 				header = buf[0 : 5+addrLen+2]
 			} else if atyp == 4 {
 				logrus.Error(fmt.Sprintf("[%s][UDP] IPv6: no supported yet", client.RemoteAddr().String()))
-				continue
+				break
 			} else {
 				logrus.Error(fmt.Sprintf("[%s][UDP] invalid atyp", client.RemoteAddr().String()))
-				continue
+				break
 			}
 			// targetAddrPort := fmt.Sprintf("%s:%d", targetAddr, targetPort)
 			remoteAddr := &net.UDPAddr{IP: targetIP, Port: int(targetPort)}
@@ -239,12 +240,11 @@ func Socks5UDP(client net.Conn) {
 			copy(udpPortMap[remoteAddr.String()], header)
 			udpserver.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if _, err = udpserver.WriteToUDP(payload, remoteAddr); err != nil {
-				logrus.Error(fmt.Sprintf("[%s][UDP] WriteToUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+				logrus.Debug(fmt.Sprintf("[%s][UDP] WriteToUDP to remote failed: %s", client.RemoteAddr().String(), err.Error()))
 				continue
 			}
 		} else {
 			// from remote
-			fmt.Print(fromAddr.String())
 			header := udpPortMap[fromAddr.String()]
 			if header == nil {
 				logrus.Error(fmt.Sprintf("[%s][UDP] udpPortMap invalid header", client.RemoteAddr().String()))
@@ -256,11 +256,12 @@ func Socks5UDP(client net.Conn) {
 			}
 			body := append(header, buf[:n]...)
 			if _, err = udpserver.WriteToUDP(body, clientAddr); err != nil {
-				logrus.Error(fmt.Sprintf("[%s][UDP] WriteToUDP failed: %s", client.RemoteAddr().String(), err.Error()))
+				logrus.Debug(fmt.Sprintf("[%s][UDP] WriteToUDP to client failed: %s", client.RemoteAddr().String(), err.Error()))
 				continue
 			}
 		}
 	}
+	udpserver.Close()
 }
 
 func Socks5Connect(client net.Conn) (net.Conn, string, error) {
@@ -417,7 +418,7 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 			var m int
 			m, err = src.Read(buf[nr:])
 			if err != nil {
-				logrus.Error(fmt.Sprintf("[%s] read error in http accumulation: %v", destAddrPort, err))
+				logrus.Debug(fmt.Sprintf("[%s] read error in http accumulation: %v", destAddrPort, err))
 				break
 			}
 			nr += m
