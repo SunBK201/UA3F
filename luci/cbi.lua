@@ -18,9 +18,9 @@ status.rawhtml = true
 status.cfgvalue = function(self, section)
     local pid = luci.sys.exec("pidof ua3f")
     if pid == "" then
-        return "<span style='color:red'>" .. translate("Stopped") .. "</span>"
+        return "<span style='color:red'>" .. "Stopped" .. "</span>"
     else
-        return "<span style='color:green'>" .. translate("Running") .. "</span>"
+        return "<span style='color:green'>" .. "Running" .. "</span>"
     end
 end
 
@@ -48,5 +48,10 @@ log.cfgvalue = function(self, section)
     return luci.sys.exec("cat /var/log/ua3f.log")
 end
 log.rows = 30
+
+local apply = luci.http.formvalue("cbi.apply")
+if apply then
+    io.popen("/etc/init.d/ua3f.service restart")
+end
 
 return ua3f
