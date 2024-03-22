@@ -100,7 +100,7 @@ func process(client net.Conn) {
 			logrus.Debug("Connect timeout: ", err)
 			return
 		}
-		logrus.Error("Connect failed: ", err)
+		logrus.Warn("Connect failed: ", err)
 		client.Close()
 		return
 	}
