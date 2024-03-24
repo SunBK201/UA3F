@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.3.1"
+var version = "0.4.0"
 var payloadByte []byte
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}

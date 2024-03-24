@@ -20,7 +20,7 @@ ckcmd() {
 cd /root
 getcpucore
 
-version=0.3.1
+version=0.4.0
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 if id -u shellclash >/dev/null 2>&1; then
@@ -55,17 +55,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 tar zxf $ua3f_tar && rm -f $ua3f_tar
-chmod +x ua3f
+mv ua3f /usr/bin/ua3f
+chmod +x /usr/bin/ua3f
 
 if [ -f "/etc/init.d/ua3f.service" ]; then
     rm "/etc/init.d/ua3f.service"
+fi
+if [ -f "/etc/init.d/ua3f" ]; then
+    rm "/etc/init.d/ua3f"
 fi
 wget https://blog.sunbk201.site/cdn/ua3f.service
 if [ $? -ne 0 ]; then
     echo "Download ua3f.service Failed, Please Retry."
     exit 1
 fi
-mv ua3f.service /etc/init.d/ && chmod +x /etc/init.d/ua3f.service
+mv ua3f.service /etc/init.d/ua3f && chmod +x /etc/init.d/ua3f
 /etc/init.d/ua3f.service enable
 
 wget https://blog.sunbk201.site/cdn/ua3f.uci
@@ -99,4 +103,4 @@ fi
 
 rm /tmp/luci-modulecache/* >/dev/null 2>&1
 rm /tmp/luci-indexcache* >/dev/null 2>&1
-service ua3f.service reload >/dev/null 2>&1
+service ua3f reload >/dev/null 2>&1
