@@ -3,7 +3,7 @@ local uci = require("luci.model.uci").cursor()
 ua3f = Map("ua3f",
     "UA3F",
     [[
-        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.3.1</a>
+        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.4.0</a>
         <br>
         Across the Campus we can reach every corner in the world.
     ]]
@@ -51,7 +51,7 @@ log.rows = 30
 
 local apply = luci.http.formvalue("cbi.apply")
 if apply then
-    io.popen("/etc/init.d/ua3f.service restart")
+    io.popen("/etc/init.d/ua3f restart")
 end
 
 return ua3f

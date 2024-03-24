@@ -13,7 +13,7 @@ UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 opkg update
 opkg install curl libcurl luci-compat
 export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
-service ua3f.service reload
+service ua3f reload
 ```
 
 ## 使用
@@ -35,15 +35,15 @@ UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配�
 # 启动 UA3F
 uci set ua3f.enabled.enabled=1
 uci commit ua3f
-service ua3f.service start
+service ua3f start
 ```
 
 关闭或重启 UA3F 命令：
 ```sh
 # 关闭 UA3F
-service ua3f.service stop
+service ua3f stop
 # 重启 UA3F
-service ua3f.service restart
+service ua3f restart
 ```
 
 配置 UA3：
@@ -64,14 +64,14 @@ reload_config
 
 ### 手动启动
 ```sh
-sudo -u nobody /root/ua3f
+sudo -u nobody /usr/bin/ua3f
 ```
 
 shellclash/shellcrash 用户建议使用以下命令启动:
 ```sh
-sudo -u shellclash /root/ua3f
+sudo -u shellclash /usr/bin/ua3f
 # 如果上面命令报错执行下面该命令
-sudo -u shellcrash /root/ua3f
+sudo -u shellcrash /usr/bin/ua3f
 ```
 
 ### Clash 的配置建议
