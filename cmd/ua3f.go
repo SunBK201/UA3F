@@ -1,17 +1,19 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"net"
+	dhttp "net/http"
 	"slices"
 	"strings"
 	"time"
 	"ua3f/http"
-	"ua3f/log"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
@@ -50,7 +52,8 @@ func main() {
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.Parse()
 
-	log.SetLogConf(loglevel)
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetReportCaller(true) // log.SetLogConf(loglevel)
 
 	logrus.Info("UA3F v" + version)
 	logrus.Info(fmt.Sprintf("Port: %d", port))
@@ -392,6 +395,7 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 		}
 		return
 	}
+	logrus.Debug(fmt.Sprintf("[%s][%s] read %d in first phase, %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(buf)))
 	if nr == 0 {
 		logrus.Debug(fmt.Sprintf("[%s][%s] read 0 in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
 		return
@@ -413,6 +417,21 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 	}
 	for {
 		parser := http.NewHTTPParser()
+		reader := bufio.NewReader(bytes.NewReader(buf[0:nr]))
+		r, err := dhttp.ReadRequest(reader)
+		if err != nil {
+			logrus.Debug(fmt.Sprintf("[%s][%s] read error in http request: %v", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err))
+			return
+		}
+		logrus.Debugf("[%s][%s] HTTP Request: %s %s %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), r.Method, r.URL, r.Proto)
+		r.Header.Set("User-Agent", "123123123123123123")
+		logrus.Debugf("%v", r.Header)
+		if err := r.Write(dst); err != nil {
+			logrus.Debug(fmt.Sprintf("[%s][%s] write http request error: %v", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err))
+			return
+		}
+		continue
+
 		httpBodyOffset, err := parser.Parse(buf[0:nr])
 		for err == http.ErrMissingData {
 			var m int
