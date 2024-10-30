@@ -126,16 +126,16 @@ rules:
 
 ## Extra
 
-使用 nftables 固定 TTL 为 64：
+> [!TIP]
+> 使用 nftables 固定 TTL 为 64：
+> ```sh
+> nft add table inet ttl64
+> nft add chain inet ttl64 postrouting { type filter > hook postrouting priority -150\; policy accept\; }
+> nft add rule inet ttl64 postrouting counter ip ttl > set 64
+> ```
 
-```sh
-nft add table inet ttl64
-nft add chain inet ttl64 postrouting { type filter hook postrouting priority -150\; policy accept\; }
-nft add rule inet ttl64 postrouting counter ip ttl set 64
-```
-
-使用 iptables 固定 TTL 为 64：
-
-```sh
-iptables -t mangle -A POSTROUTING -j TTL --ttl-set 64
-```
+> [!TIP]
+> 使用 iptables 固定 TTL 为 64：
+> ```sh
+> iptables -t mangle -A POSTROUTING -j TTL --ttl-set > 64
+> ```
