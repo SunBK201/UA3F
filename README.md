@@ -1,15 +1,22 @@
 # UA3F
 
-UA3F 是新一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务，可以部署在路由器等设备等设备进行透明 UA 修改。
+UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务，可以部署在路由器等设备等设备进行透明 UA 修改。
+
+## 特性
+- User-Agent 自定义
+- 与其他网络加速代理工具共存
+- LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
+- 支持 LuCI Web 图形页面
+- 一键式部署方式，无需编译部署
+- 支持 UDP 转发
 
 ![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f)
 
 ## 部署
 
-[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
+提供 2 种部署方式：
 
-安装（升级）脚本：
-
+1. 使用安装/升级脚本进行部署（推荐）：
 ```sh
 opkg update
 opkg install curl libcurl luci-compat
@@ -17,18 +24,15 @@ export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install
 service ua3f reload
 ```
 
+2. 使用 ipk 安装包进行部署：
+
+[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
+
 ## 使用
 
 UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
 ![UA3F-LuCI](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci)
-
-参数:
-
-- `-p <port>`: 端口号，默认 1080
-- `-f <UA>`: 自定义 UA，默认 FFF
-- `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
-- `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
 
 ### 作为后台服务运行
 
@@ -50,7 +54,7 @@ service ua3f stop
 service ua3f restart
 ```
 
-配置 UA3：
+配置 UA3F：
 
 ```sh
 # 自定义 UA
@@ -67,7 +71,7 @@ uci commit ua3f
 reload_config
 ```
 
-### 手动启动
+### 手动命令行启动
 
 ```sh
 sudo -u nobody /usr/bin/ua3f
@@ -81,7 +85,14 @@ sudo -u shellclash /usr/bin/ua3f
 sudo -u shellcrash /usr/bin/ua3f
 ```
 
-### Clash 的配置建议
+相关启动参数:
+
+- `-p <port>`: 端口号，默认 1080
+- `-f <UA>`: 自定义 UA，默认 FFF
+- `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
+- `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
+
+### Clash 配置建议
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
@@ -128,14 +139,16 @@ rules:
 
 > [!TIP]
 > 使用 nftables 固定 TTL 为 64：
+>
 > ```sh
 > nft add table inet ttl64
-> nft add chain inet ttl64 postrouting { type filter > hook postrouting priority -150\; policy accept\; }
-> nft add rule inet ttl64 postrouting counter ip ttl > set 64
+> nft add chain inet ttl64 postrouting { type filter hook postrouting priority -150\; policy accept\; }
+> nft add rule inet ttl64 postrouting counter ip ttl set 64
 > ```
 
 > [!TIP]
 > 使用 iptables 固定 TTL 为 64：
+>
 > ```sh
-> iptables -t mangle -A POSTROUTING -j TTL --ttl-set > 64
+> iptables -t mangle -A POSTROUTING -j TTL --ttl-set 64
 > ```
