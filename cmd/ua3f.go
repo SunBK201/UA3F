@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -17,8 +18,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.4.0"
+var version = "0.5.0"
 var payloadByte []byte
+var uaPattern string
+var uaRegexp *regexp.Regexp
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
 var whitelist = []string{
@@ -47,6 +50,7 @@ func main() {
 	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")
+	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux)", "UA-Pattern")
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.Parse()
 
@@ -55,6 +59,7 @@ func main() {
 	logrus.Info("UA3F v" + version)
 	logrus.Info(fmt.Sprintf("Port: %d", port))
 	logrus.Info(fmt.Sprintf("User-Agent: %s", payload))
+	logrus.Info(fmt.Sprintf("User-Agent Regex Pattern: %s", uaPattern))
 	logrus.Info(fmt.Sprintf("Log level: %s", loglevel))
 
 	cache = expirable.NewLRU[string, string](300, nil, time.Second*600)
@@ -72,6 +77,11 @@ func main() {
 		return
 	}
 	logrus.Info(fmt.Sprintf("Listen on %s:%d", addr, port))
+	uaRegexp, err = regexp.Compile(uaPattern)
+	if err != nil {
+		logrus.Fatal("Invalid User-Agent Regex Pattern: ", err)
+		return
+	}
 	for {
 		client, err := server.Accept()
 		if err != nil {
@@ -425,15 +435,29 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 			httpBodyOffset, err = parser.Parse(buf[:nr])
 		}
 		value, start, end := parser.FindHeader([]byte("User-Agent"))
+		uaStr := string(value)
 		if value != nil && end > start {
-			if slices.Contains(whitelist, string(value)) {
-				logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent Whitelist: %s, Add LRU Relay Cache, Cache Len: %d", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(value), cache.Len()))
+			isInWhiteList := false
+			isMatchUaPattern := true
+			if uaPattern != "" {
+				isMatchUaPattern = uaRegexp.MatchString(uaStr)
+			}
+			if slices.Contains(whitelist, uaStr) {
+				isInWhiteList = true
+			}
+			if isInWhiteList || !isMatchUaPattern {
+				if !isMatchUaPattern {
+					logrus.Debug(fmt.Sprintf("[%s][%s] Not Hit User-Agent Pattern: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
+				}
+				if isInWhiteList {
+					logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent Whitelist: %s, Add LRU Relay Cache, Cache Len: %d", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr, cache.Len()))
+					cache.Add(destAddrPort, destAddrPort)
+				}
 				dst.Write(buf[0:nr])
 				io.Copy(dst, src)
-				cache.Add(destAddrPort, destAddrPort)
 				return
 			}
-			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), string(value)))
+			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
 			for i := start; i < end; i++ {
 				buf[i] = 32
 			}

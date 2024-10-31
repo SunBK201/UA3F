@@ -23,6 +23,7 @@ start_service() {
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
     config_get ua "main" "ua" "FFF"
+    config_get ua_regex "main" "ua_regex" "(iPhone|iPad|Android|Macintosh|Windows|Linux)"
     config_get log_level "main" "log_level" "info"
 
     chmod o+w /var/log
@@ -32,6 +33,7 @@ start_service() {
     procd_append_param command -b "$bind"
     procd_append_param command -p $port
     procd_append_param command -f "$ua"
+    procd_append_param command -r "$ua_regex"
     procd_append_param command -l $log_level
 
     procd_set_param respawn

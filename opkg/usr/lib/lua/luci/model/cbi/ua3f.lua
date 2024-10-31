@@ -3,7 +3,7 @@ local uci = require("luci.model.uci").cursor()
 ua3f = Map("ua3f",
     "UA3F",
     [[
-        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.4.0</a>
+        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.5.0</a>
         <br>
         Across the Campus we can reach every corner in the world.
     ]]
@@ -34,6 +34,8 @@ bind:value("127.0.0.1")
 bind:value("0.0.0.0")
 ua = main:taboption("general", Value, "ua", "User-Agent")
 ua.placeholder = "FFF"
+uaRegexPattern = main:taboption("general", Value, "ua_regex", "User-Agent Regex Pattern")
+uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux)"
 log_level = main:taboption("general", ListValue, "log_level", "Log Level")
 log_level:value("debug")
 log_level:value("info")
