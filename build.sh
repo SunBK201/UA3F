@@ -1,7 +1,7 @@
 #!/bin/sh
 
 project_name="ua3f"
-release_version="0.4.0"
+release_version="0.5.0"
 target=cmd/ua3f.go
 dist=./dist
 release_dir=./bin
