@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 )
