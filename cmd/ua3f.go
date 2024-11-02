@@ -7,21 +7,21 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
 	"ua3f/http"
 	"ua3f/log"
 
+	"github.com/dlclark/regexp2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
 )
 
-var version = "0.5.0"
+var version = "0.5.1"
 var payloadByte []byte
 var uaPattern string
-var uaRegexp *regexp.Regexp
+var uaRegexp *regexp2.Regexp
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
 var whitelist = []string{
@@ -77,7 +77,7 @@ func main() {
 		return
 	}
 	logrus.Info(fmt.Sprintf("Listen on %s:%d", addr, port))
-	uaRegexp, err = regexp.Compile(uaPattern)
+	uaRegexp, err = regexp2.Compile(uaPattern, regexp2.None)
 	if err != nil {
 		logrus.Fatal("Invalid User-Agent Regex Pattern: ", err)
 		return
@@ -440,7 +440,11 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 			isInWhiteList := false
 			isMatchUaPattern := true
 			if uaPattern != "" {
-				isMatchUaPattern = uaRegexp.MatchString(uaStr)
+				isMatchUaPattern, err = uaRegexp.MatchString(uaStr)
+				if err != nil {
+					logrus.Error(fmt.Sprintf("[%s][%s] User-Agent Regex Pattern Match Error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+					isMatchUaPattern = true
+				}
 			}
 			if slices.Contains(whitelist, uaStr) {
 				isInWhiteList = true
