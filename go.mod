@@ -1,4 +1,4 @@
-module ua3f
+module github.com/sunbk201/ua3f
 
 go 1.21.3
 
@@ -10,5 +10,5 @@ require (
 
 require (
 	github.com/stretchr/testify v1.8.2 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 )
