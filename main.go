@@ -10,12 +10,12 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"ua3f/http"
-	"ua3f/log"
 
 	"github.com/dlclark/regexp2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
+	"github.com/sunbk201/ua3f/http"
+	"github.com/sunbk201/ua3f/log"
 )
 
 var version = "0.5.1"
