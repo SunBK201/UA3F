@@ -2,7 +2,7 @@
 
 project_name="ua3f"
 release_version="0.5.1"
-target=ua3f.go
+target=main.go
 dist=./dist
 release_dir=./bin
 
