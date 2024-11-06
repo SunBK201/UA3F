@@ -58,19 +58,19 @@ tar zxf $ua3f_tar && rm -f $ua3f_tar
 mv ua3f /usr/bin/ua3f
 chmod +x /usr/bin/ua3f
 
-if [ -f "/etc/init.d/ua3f.service" ]; then
-    rm "/etc/init.d/ua3f.service"
+if [ -f "/etc/init.d/ua3f.init" ]; then
+    rm "/etc/init.d/ua3f.init"
 fi
 if [ -f "/etc/init.d/ua3f" ]; then
     rm "/etc/init.d/ua3f"
 fi
-wget https://blog.sunbk201.site/cdn/ua3f.service
+wget https://blog.sunbk201.site/cdn/ua3f.init
 if [ $? -ne 0 ]; then
-    echo "Download ua3f.service Failed, Please Retry."
+    echo "Download ua3f.init Failed, Please Retry."
     exit 1
 fi
-mv ua3f.service /etc/init.d/ua3f && chmod +x /etc/init.d/ua3f
-/etc/init.d/ua3f.service enable
+mv ua3f.init /etc/init.d/ua3f && chmod +x /etc/init.d/ua3f
+/etc/init.d/ua3f enable
 
 wget https://blog.sunbk201.site/cdn/ua3f.uci
 if [ $? -ne 0 ]; then
