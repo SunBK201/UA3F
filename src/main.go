@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"slices"
 	"strings"
 	"time"
 
@@ -446,8 +445,11 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 					isMatchUaPattern = true
 				}
 			}
-			if slices.Contains(whitelist, uaStr) {
-				isInWhiteList = true
+			for _, v := range whitelist {
+				if v == uaStr {
+					isInWhiteList = true
+					break
+				}
 			}
 			if isInWhiteList || !isMatchUaPattern {
 				if !isMatchUaPattern {
