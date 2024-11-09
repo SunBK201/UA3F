@@ -388,6 +388,13 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	}
 }
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 	buf := make([]byte, RDBUF)
 	nr, err := src.Read(buf)
