@@ -17,7 +17,7 @@ import (
 	"github.com/sunbk201/ua3f/log"
 )
 
-var version = "0.5.1"
+var version = "0.6.0"
 var payloadByte []byte
 var payload string
 var uaPattern string

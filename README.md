@@ -52,11 +52,12 @@ UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配�
 > [!NOTE]
 > 设置说明：
 >
-> - Port 为 UA3F 监听端口，默认 `1080`。
-> - Bind Address 为 UA3F 监听地址，默认 `127.0.0.1`。
-> - User-Agent 为自定义 User-Agent，默认 `FFF`。
-> - User-Agent Regex Pattern 为 User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`，即只修改携带设备与系统信息的 User-Agent。
-> - Log Level 为日志等级，默认 `info`, 如果需要调试排查错误可以设置为 `debug`。
+> - Port: UA3F 监听端口，默认 `1080`。
+> - Bind Address: UA3F 监听地址，默认 `127.0.0.1`。
+> - Log Level: 日志等级，默认 `info`, 如果需要调试排查错误可以设置为 `debug`。
+> - User-Agent: 自定义 User-Agent，默认 `FFF`。
+> - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`，即只修改携带设备与系统信息的 User-Agent。
+> - Partial Replace: 部分替换，如果开启，则只替换 User-Agent Regex Pattern 中匹配到的部分。该选项仅在 User-Agent Regex Pattern 不为空时生效。
 
 ### 作为后台服务运行
 
@@ -111,11 +112,12 @@ sudo -u shellcrash /usr/bin/ua3f
 
 相关启动参数:
 
+- `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
+- `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`
-- `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
-- `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
+- `-s`: 部分替换，仅替换正则匹配到的部分
 
 ### Clash 配置建议
 
