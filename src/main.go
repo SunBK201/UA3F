@@ -53,10 +53,15 @@ func main() {
 	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X)", "UA-Pattern")
 	flag.BoolVar(&enablePartialReplace, "s", false, "Enable Regex Partial Replace")
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
+	flag.Bool("v", false, "show version")
 	flag.Parse()
 
-	log.SetLogConf(loglevel)
+	if flag.Lookup("v").Value.String() == "true" {
+		fmt.Println("UA3F v" + version)
+		return
+	}
 
+	log.SetLogConf(loglevel)
 	logrus.Info("UA3F v" + version)
 	logrus.Info(fmt.Sprintf("Port: %d", port))
 	logrus.Info(fmt.Sprintf("User-Agent: %s", payload))
