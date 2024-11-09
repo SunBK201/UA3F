@@ -19,8 +19,10 @@ import (
 
 var version = "0.5.1"
 var payloadByte []byte
+var payload string
 var uaPattern string
 var uaRegexp *regexp2.Regexp
+var enablePartialReplace bool
 var cache *expirable.LRU[string, string]
 var HTTP_METHOD = []string{"GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE", "CONNECT"}
 var whitelist = []string{
@@ -41,7 +43,6 @@ const RDBUF = 1024 * 8
 // }
 
 func main() {
-	var payload string
 	var addr string
 	var port int
 	var loglevel string
@@ -49,7 +50,8 @@ func main() {
 	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")
-	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux)", "UA-Pattern")
+	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X)", "UA-Pattern")
+	flag.BoolVar(&enablePartialReplace, "s", false, "Enable Regex Partial Replace")
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.Parse()
 
@@ -59,6 +61,7 @@ func main() {
 	logrus.Info(fmt.Sprintf("Port: %d", port))
 	logrus.Info(fmt.Sprintf("User-Agent: %s", payload))
 	logrus.Info(fmt.Sprintf("User-Agent Regex Pattern: %s", uaPattern))
+	logrus.Info(fmt.Sprintf("Enable Partial Replace: %v", enablePartialReplace))
 	logrus.Info(fmt.Sprintf("Log level: %s", loglevel))
 
 	cache = expirable.NewLRU[string, string](300, nil, time.Second*600)
@@ -473,6 +476,15 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
 			for i := start; i < end; i++ {
 				buf[i] = 32
+			}
+			if enablePartialReplace && uaRegexp != nil {
+				newUaHearder, err := uaRegexp.Replace(uaStr, payload, -1, -1)
+				if err != nil {
+					logrus.Error(fmt.Sprintf("[%s][%s] User-Agent Replace Error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+					payloadByte = []byte(payload)
+				} else {
+					payloadByte = []byte(newUaHearder)
+				}
 			}
 			for i := range payloadByte {
 				if start+i >= end {
