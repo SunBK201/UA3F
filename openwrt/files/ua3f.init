@@ -20,10 +20,13 @@ start_service() {
     local bind
     local ua
     local log_level
+    local ua_regex
+    local partial_replace
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
     config_get ua "main" "ua" "FFF"
     config_get ua_regex "main" "ua_regex" "(iPhone|iPad|Android|Macintosh|Windows|Linux)"
+    config_get_bool partial_replace "main" "partial_replace" 0
     config_get log_level "main" "log_level" "info"
 
     chmod o+w /var/log
@@ -35,6 +38,7 @@ start_service() {
     procd_append_param command -f "$ua"
     procd_append_param command -r "$ua_regex"
     procd_append_param command -l $log_level
+    [ "$partial_replace" = "1" ] && procd_append_param command -s
 
     procd_set_param respawn
     procd_set_param stdout 1
