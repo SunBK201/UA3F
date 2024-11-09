@@ -3,12 +3,13 @@
 UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务，可以部署在路由器等设备等设备进行透明 UA 修改。
 
 ## 特性
+
 - 支持正则表达式规则匹配修改 User-Agent
 - 自定义 User-Agent 内容
 - 与其他网络加速代理工具共存
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
 - 支持 LuCI Web 图形页面
-- 一键式部署方式，无需编译部署
+- 多种部署方式
 - 支持 UDP 转发
 
 ![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f)
@@ -17,7 +18,8 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 提供 2 种部署方式：
 
-1. 使用安装/升级脚本进行部署（推荐）：
+1. 使用安装/升级脚本进行部署：
+
 ```sh
 opkg update
 opkg install curl libcurl luci-compat
@@ -29,6 +31,18 @@ service ua3f reload
 
 [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
 
+3. OpenWrt 编译安装
+
+```sh
+git clone https://github.com/openwrt/openwrt.git && cd openwrt
+git checkout openwrt-22.03
+./scripts/feeds update -a && ./scripts/feeds install -a
+git clone https://github.com/SunBK201/UA3F.git package/UA3F
+make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
+make download -j$(nproc) V=s
+make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
+```
+
 ## 使用
 
 UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
@@ -37,6 +51,7 @@ UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配�
 
 > [!NOTE]
 > 设置说明：
+>
 > - Port 为 UA3F 监听端口，默认 `1080`。
 > - Bind Address 为 UA3F 监听地址，默认 `127.0.0.1`。
 > - User-Agent 为自定义 User-Agent，默认 `FFF`。
