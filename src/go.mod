@@ -1,6 +1,6 @@
 module github.com/sunbk201/ua3f
 
-go 1.21.3
+go 1.19
 
 require (
 	github.com/dlclark/regexp2 v1.11.4
