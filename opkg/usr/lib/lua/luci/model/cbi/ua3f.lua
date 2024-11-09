@@ -3,7 +3,7 @@ local uci = require("luci.model.uci").cursor()
 ua3f = Map("ua3f",
     "UA3F",
     [[
-        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.5.1</a>
+        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 0.6.0</a>
         <br>
         Across the Campus we can reach every corner in the world.
     ]]
@@ -29,13 +29,11 @@ main:tab("log", "Log")
 
 port = main:taboption("general", Value, "port", "Port")
 port.placeholder = "1080"
+
 bind = main:taboption("general", Value, "bind", "Bind Address")
 bind:value("127.0.0.1")
 bind:value("0.0.0.0")
-ua = main:taboption("general", Value, "ua", "User-Agent")
-ua.placeholder = "FFF"
-uaRegexPattern = main:taboption("general", Value, "ua_regex", "User-Agent Regex Pattern")
-uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux)"
+
 log_level = main:taboption("general", ListValue, "log_level", "Log Level")
 log_level:value("debug")
 log_level:value("info")
@@ -43,7 +41,6 @@ log_level:value("warn")
 log_level:value("error")
 log_level:value("fatal")
 log_level:value("panic")
-
 log = main:taboption("log", TextValue, "")
 log.readonly = true
 log.cfgvalue = function(self, section)
@@ -51,9 +48,23 @@ log.cfgvalue = function(self, section)
 end
 log.rows = 30
 
+ua = main:taboption("general", Value, "ua", "User-Agent")
+ua.placeholder = "FFF"
+
+uaRegexPattern = main:taboption("general", Value, "ua_regex", "User-Agent Regex Pattern")
+uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X)"
+uaRegexPattern.description = "Regular expression pattern for matching User-Agent"
+
+partialRepalce = main:taboption("general", Flag, "partial_replace", "Partial Replace")
+partialRepalce.description =
+"Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
+partialRepalce.default = "0"
+
+--[[
 local apply = luci.http.formvalue("cbi.apply")
 if apply then
     io.popen("/etc/init.d/ua3f restart")
 end
+--]]
 
 return ua3f
