@@ -18,7 +18,11 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 提供 3 种部署方式：
 
-1. 使用安装/升级脚本进行部署：
+1. 使用 ipk 安装包进行部署：
+
+[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
+
+2. 使用安装/升级脚本进行部署：
 
 ```sh
 opkg update
@@ -26,10 +30,6 @@ opkg install curl libcurl luci-compat
 export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
 service ua3f reload
 ```
-
-2. 使用 ipk 安装包进行部署：
-
-[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
 
 3. OpenWrt 编译安装
 
@@ -45,7 +45,7 @@ make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile
 
 ## 使用
 
-UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
+UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
 ![UA3F-LuCI](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci)
 
@@ -58,43 +58,6 @@ UA3F 已支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配�
 > - User-Agent: 自定义 User-Agent，默认 `FFF`。
 > - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`，即只修改携带设备与系统信息的 User-Agent。
 > - Partial Replace: 部分替换，如果开启，则只替换 User-Agent Regex Pattern 中匹配到的部分。该选项仅在 User-Agent Regex Pattern 不为空时生效。
-
-### 作为后台服务运行
-
-安装脚本执行成功后可通过以下命令启动 UA3F：
-
-```sh
-# 启动 UA3F
-uci set ua3f.enabled.enabled=1
-uci commit ua3f
-service ua3f start
-```
-
-关闭或重启 UA3F 命令：
-
-```sh
-# 关闭 UA3F
-service ua3f stop
-# 重启 UA3F
-service ua3f restart
-```
-
-配置 UA3F：
-
-```sh
-# 自定义 UA
-uci set ua3f.main.ua="FFF"
-# 监听端口号
-uci set ua3f.main.port="1080"
-# 绑定地址
-uci set ua3f.main.bind="127.0.0.1"
-# 日志等级
-uci set ua3f.main.log_level="info"
-
-# 应用配置
-uci commit ua3f
-reload_config
-```
 
 ### 手动命令行启动
 
@@ -110,7 +73,7 @@ sudo -u shellclash /usr/bin/ua3f
 sudo -u shellcrash /usr/bin/ua3f
 ```
 
-相关启动参数:
+相关命令行启动参数:
 
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
@@ -152,15 +115,6 @@ rules:
 1. 国内版，无需进行任何修改，可直接使用 [ua3f-cn.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-cn.yaml) (Clash 需要选用 Meta 内核。)
 2. 国际版，针对有特定需求的特殊用户进行适配，[ua3f-global.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-global.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
 3. 国际版(增强)，针对流量特征检测 (DPI) 进行规则补充，注意该配置会对 QQ、微信等平台的流量进行分流代理，因此需要根据自己的需求谨慎选择该配置，[ua3f-global-enhance.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-global-enhance.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
-
-## Roadmap
-
-- [x] 支持 LuCI
-- [x] 优化部署流程
-- [ ] 支持 SOCK5 Auth
-- [x] 支持 UDP
-- [ ] 支持 IPv6
-- [ ] 性能提升
 
 ## Extra
 
