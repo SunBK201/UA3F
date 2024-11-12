@@ -21,3 +21,5 @@
 go.work
 
 .vscode
+bin/
+dist/
