@@ -33,15 +33,6 @@ var whitelist = []string{
 
 const RDBUF = 1024 * 8
 
-// var dpool *ants.PoolWithFunc
-// var gpool *ants.PoolWithFunc
-//
-// type RelayConn struct {
-// 	src          net.Conn
-// 	dst          net.Conn
-// 	destAddrPort string
-// }
-
 func main() {
 	var addr string
 	var port int
@@ -70,11 +61,6 @@ func main() {
 	logrus.Info(fmt.Sprintf("Log level: %s", loglevel))
 
 	cache = expirable.NewLRU[string, string](300, nil, time.Second*600)
-
-	// dpool, _ = ants.NewPoolWithFunc(1000, forward)
-	// gpool, _ = ants.NewPoolWithFunc(500, gforward)
-	// defer dpool.Release()
-	// defer gpool.Release()
 
 	payloadByte = []byte(payload)
 
@@ -340,39 +326,6 @@ func Socks5Connect(client net.Conn) (net.Conn, string, error) {
 	}
 	return dest, destAddrPort, nil
 }
-
-/*
-func forward(i interface{}) {
-	rc := i.(*RelayConn)
-	defer rc.src.Close()
-	defer rc.dst.Close()
-	io.Copy(rc.src, rc.dst)
-}
-
-func gforward(i interface{}) {
-	rc := i.(*RelayConn)
-	defer rc.dst.Close()
-	defer rc.src.Close()
-	CopyPileline(rc.dst, rc.src, rc.destAddrPort)
-}
-
-func Socks5Relay(client, target net.Conn, destAddrPort string) {
-	rc := &RelayConn{
-		src:          client,
-		dst:          target,
-		destAddrPort: destAddrPort,
-	}
-	logrus.Debug(fmt.Sprintf("dpool: %d left: %d, gpool: %d left: %d", dpool.Running(), dpool.Free(), gpool.Running(), gpool.Free()))
-	dpool.Invoke(rc)
-	if cache.Contains(destAddrPort) {
-		logrus.Debug(fmt.Sprintf("Hit LRU Relay Cache: %s", destAddrPort))
-		rc.src, rc.dst = rc.dst, rc.src
-		dpool.Invoke(rc)
-	} else {
-		gpool.Invoke(rc)
-	}
-}
-*/
 
 func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	forward := func(src, dest net.Conn) {
