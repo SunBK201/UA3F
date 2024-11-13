@@ -46,7 +46,7 @@ jobs:
             windows/arm64,
             darwin/amd64,
             darwin/arm64
-          tags: ${{ github.repository }}:latest
+          tags: sunbk201/ua3f:latest
 
       - name: Build and push Docker images with Release tag
         uses: docker/build-push-action@v6
@@ -66,4 +66,4 @@ jobs:
             windows/arm64,
             darwin/amd64,
             darwin/arm64
-          tags: ${{ github.repository }}:latest, ${{ github.repository }}:${{ github.ref_name }}
+          tags: sunbk201/ua3f:latest, sunbk201/ua3f:${{ github.ref_name }}
