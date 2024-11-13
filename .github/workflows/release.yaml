@@ -1,0 +1,47 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          platforms: |
+            linux/amd64,
+            linux/arm/v7,
+            linux/arm64,
+            linux/386,
+            linux/mips64le,
+            linux/mipsle,
+            linux/riscv64,
+            windows/amd64,
+            windows/arm64,
+            darwin/amd64,
+            darwin/arm64
+          tags: sunbk201/ua3f:${{ github.ref }}
