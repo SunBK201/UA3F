@@ -16,7 +16,7 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 ## 部署
 
-提供 3 种部署方式：
+提供 4 种部署方式：
 
 1. 使用 ipk 安装包进行部署：
 
@@ -41,6 +41,12 @@ git clone https://github.com/SunBK201/UA3F.git package/UA3F
 make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
 make download -j$(nproc) V=s
 make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
+```
+
+4. Docker 部署
+
+```sh
+docker run -p 1080:1080 sunbk201/ua3f -f FFF
 ```
 
 ## 使用
