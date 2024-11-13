@@ -388,6 +388,10 @@ func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
 				logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
 			} else if strings.Contains(err.Error(), "use of closed network connection") {
 				logrus.Debug(fmt.Sprintf("[%s][%s] read closed in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+			} else if strings.Contains(err.Error(), "connection reset by peer") {
+				logrus.Debug(fmt.Sprintf("[%s][%s] read reset in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+			} else if strings.Contains(err.Error(), "i/o timeout") {
+				logrus.Debug(fmt.Sprintf("[%s][%s] read timeout in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			} else {
 				logrus.Error(fmt.Sprintf("[%s][%s] read error in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			}
