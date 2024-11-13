@@ -11,7 +11,7 @@ ARG TARGETARCH
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o ua3f
 
-FROM alpine
+FROM --platform=$BUILDPLATFORM alpine
 
 WORKDIR /app
 
