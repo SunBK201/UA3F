@@ -105,9 +105,6 @@ rules:
   - MATCH,ua3f
 ```
 
-请不要将从 [Release](https://github.com/SunBK201/UA3F/releases) 下载解压得到的 `ua3f` 二进制文件修改名称，
-如需修改，则需要在 `PROCESS-NAME,ua3f,DIRECT` 中修改相应的名称。
-
 ### Clash 参考配置
 
 提供 3 个参考配置：
