@@ -1,24 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/dlclark/regexp2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
-	"github.com/sunbk201/ua3f/http"
 	"github.com/sunbk201/ua3f/log"
 )
 
 var version = "0.6.0"
-var payloadByte []byte
 var payload string
 var uaPattern string
 var uaRegexp *regexp2.Regexp
@@ -30,8 +30,6 @@ var whitelist = []string{
 	"ByteDancePcdn",
 	"Go-http-client/1.1",
 }
-
-const RDBUF = 1024 * 8
 
 func main() {
 	var addr string
@@ -62,8 +60,6 @@ func main() {
 
 	cache = expirable.NewLRU[string, string](300, nil, time.Second*600)
 
-	payloadByte = []byte(payload)
-
 	server, err := net.Listen("tcp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
 		logrus.Fatal("Listen failed: ", err)
@@ -88,7 +84,6 @@ func main() {
 
 func process(client net.Conn) {
 	if err := Socks5Auth(client); err != nil {
-		// logrus.Error("Auth failed: ", err)
 		client.Close()
 		return
 	}
@@ -108,7 +103,6 @@ func process(client net.Conn) {
 		return
 	}
 	Socks5Forward(client, target, destAddrPort)
-	// Socks5Relay(client, target, destAddrPort)
 }
 
 func Socks5Auth(client net.Conn) (err error) {
@@ -337,7 +331,7 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	gforward := func(dst, src net.Conn) {
 		defer dst.Close()
 		defer src.Close()
-		CopyPileline(dst, src, destAddrPort)
+		transfer(dst, src, destAddrPort)
 	}
 
 	go forward(client, target)
@@ -349,31 +343,13 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	}
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
-	buf := make([]byte, RDBUF)
-	nr, err := src.Read(buf)
+func isHTTP(reader *bufio.Reader) bool {
+	buf, err := reader.Peek(7)
 	if err != nil {
-		if err == io.EOF {
-			logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
-		} else if strings.Contains(err.Error(), "use of closed network connection") {
-			logrus.Debug(fmt.Sprintf("[%s][%s] read closed in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
-		} else {
-			logrus.Error(fmt.Sprintf("[%s][%s] read error in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
-		}
-		return
+		logrus.Error(fmt.Sprintf("Peek error: %s", err.Error()))
+		return false
 	}
-	if nr == 0 {
-		logrus.Debug(fmt.Sprintf("[%s][%s] read 0 in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
-		return
-	}
-	hint := string(buf[0:7])
+	hint := string(buf)
 	is_http := false
 	for _, v := range HTTP_METHOD {
 		if strings.HasPrefix(hint, v) {
@@ -381,126 +357,85 @@ func CopyPileline(dst io.Writer, src io.Reader, destAddrPort string) {
 			break
 		}
 	}
+	return is_http
+}
+
+func buildNewUA(originUA string, targetUA string, uaRegexp *regexp2.Regexp, enablePartialReplace bool) string {
+	if enablePartialReplace && uaRegexp != nil {
+		newUaHearder, err := uaRegexp.Replace(originUA, targetUA, -1, -1)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("User-Agent Replace Error: %s", err.Error()))
+			return targetUA
+		}
+		return newUaHearder
+	}
+	return targetUA
+}
+
+func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
+	srcReader := bufio.NewReader(src)
+	is_http := isHTTP(srcReader)
 	if !is_http {
-		dst.Write(buf[0:nr])
-		io.Copy(dst, src)
 		cache.Add(destAddrPort, destAddrPort)
-		logrus.Debug(fmt.Sprintf("Not HTTP, Hint: %v, Add LRU Relay Cache: %s, Cache Len: %d", buf[0:7], destAddrPort, cache.Len()))
+		logrus.Debug(fmt.Sprintf("Not HTTP, Add LRU Relay Cache: %s, Cache Len: %d", destAddrPort, cache.Len()))
+		io.Copy(dst, srcReader)
 		return
 	}
 	for {
-		parser := http.NewHTTPParser()
-		httpBodyOffset, err := parser.Parse(buf[0:nr])
-		for err == http.ErrMissingData {
-			var m int
-			m, err = src.Read(buf[nr:])
-			if err != nil {
-				logrus.Debug(fmt.Sprintf("[%s] read error in http accumulation: %v", destAddrPort, err))
-				break
-			}
-			nr += m
-			httpBodyOffset, err = parser.Parse(buf[:nr])
-		}
-		value, start, end := parser.FindHeader([]byte("User-Agent"))
-		uaStr := string(value)
-		if value != nil && end > start {
-			isInWhiteList := false
-			isMatchUaPattern := true
-			if uaPattern != "" {
-				isMatchUaPattern, err = uaRegexp.MatchString(uaStr)
-				if err != nil {
-					logrus.Error(fmt.Sprintf("[%s][%s] User-Agent Regex Pattern Match Error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
-					isMatchUaPattern = true
-				}
-			}
-			for _, v := range whitelist {
-				if v == uaStr {
-					isInWhiteList = true
-					break
-				}
-			}
-			if isInWhiteList || !isMatchUaPattern {
-				if !isMatchUaPattern {
-					logrus.Debug(fmt.Sprintf("[%s][%s] Not Hit User-Agent Pattern: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
-				}
-				if isInWhiteList {
-					logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent Whitelist: %s, Add LRU Relay Cache, Cache Len: %d", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr, cache.Len()))
-					cache.Add(destAddrPort, destAddrPort)
-				}
-				dst.Write(buf[0:nr])
-				io.Copy(dst, src)
-				return
-			}
-			logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
-			for i := start; i < end; i++ {
-				buf[i] = 32
-			}
-			if enablePartialReplace && uaRegexp != nil {
-				newUaHearder, err := uaRegexp.Replace(uaStr, payload, -1, -1)
-				if err != nil {
-					logrus.Error(fmt.Sprintf("[%s][%s] User-Agent Replace Error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
-					payloadByte = []byte(payload)
-				} else {
-					payloadByte = []byte(newUaHearder)
-				}
-			}
-			for i := range payloadByte {
-				if start+i >= end {
-					break
-				}
-				buf[start+i] = payloadByte[i]
-			}
-		} else {
-			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache, Cache Len: %d", destAddrPort, cache.Len()))
-			dst.Write(buf[0:nr])
-			io.Copy(dst, src)
-			cache.Add(destAddrPort, destAddrPort)
-			return
-		}
-		bodyLen := int(parser.ContentLength())
-		if bodyLen == -1 {
-			bodyLen = 0
-		}
-
-		_, ew := dst.Write(buf[0:min(httpBodyOffset+bodyLen, nr)])
-		if ew != nil {
-			logrus.Error(fmt.Sprintf("[%s][%s] write error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), ew.Error()))
-			break
-		}
-		if httpBodyOffset+bodyLen > nr {
-			left := httpBodyOffset + bodyLen - nr
-			for left > 0 {
-				lr := min(left, RDBUF)
-				m, err := src.Read(buf[0:lr])
-				if err != nil {
-					logrus.Error(fmt.Sprintf("[%s][%s] read error in large body: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
-					break
-				}
-				_, ew := dst.Write(buf[0:m])
-				if ew != nil {
-					logrus.Error(fmt.Sprintf("[%s][%s] write error in large body: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), ew.Error()))
-					break
-				}
-				left -= m
-			}
-			nr = 0
-		} else if httpBodyOffset+bodyLen < nr {
-			copy(buf[0:], buf[httpBodyOffset+bodyLen:])
-			nr = nr - httpBodyOffset - bodyLen
-		} else {
-			nr = 0
-		}
-
-		m, err := src.Read(buf[nr:])
-		nr += m
+		request, err := http.ReadRequest(srcReader)
 		if err != nil {
 			if err == io.EOF {
-				logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in next phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
+				logrus.Debug(fmt.Sprintf("[%s][%s] read EOF in first phase", destAddrPort, src.(*net.TCPConn).RemoteAddr().String()))
 			} else if strings.Contains(err.Error(), "use of closed network connection") {
-				logrus.Debug(fmt.Sprintf("[%s][%s] read closed in next phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+				logrus.Debug(fmt.Sprintf("[%s][%s] read closed in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			} else {
-				logrus.Error(fmt.Sprintf("[%s][%s] read error in next phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+				logrus.Error(fmt.Sprintf("[%s][%s] read error in first phase: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			}
+			return
+		}
+		uaStr := request.Header.Get("User-Agent")
+		if uaStr == "" {
+			cache.Add(destAddrPort, destAddrPort)
+			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache, Cache Len: %d", destAddrPort, cache.Len()))
+			io.Copy(dst, srcReader)
+			return
+		}
+		isInWhiteList := false
+		isMatchUaPattern := true
+		if uaPattern != "" {
+			isMatchUaPattern, err = uaRegexp.MatchString(uaStr)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("[%s][%s] User-Agent Regex Pattern Match Error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+				isMatchUaPattern = true
+			}
+		}
+		for _, v := range whitelist {
+			if v == uaStr {
+				isInWhiteList = true
+				break
+			}
+		}
+		if isInWhiteList || !isMatchUaPattern {
+			if !isMatchUaPattern {
+				logrus.Debug(fmt.Sprintf("[%s][%s] Not Hit User-Agent Pattern: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
+			}
+			if isInWhiteList {
+				logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent Whitelist: %s, Add LRU Relay Cache, Cache Len: %d", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr, cache.Len()))
+				cache.Add(destAddrPort, destAddrPort)
+			}
+			err = request.Write(dst)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("[%s][%s] write error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+				break
+			}
+			io.Copy(dst, srcReader)
+			return
+		}
+		logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
+		request.Header.Set("User-Agent", buildNewUA(uaStr, payload, uaRegexp, enablePartialReplace))
+		err = request.Write(dst)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("[%s][%s] write error after replace user-agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			break
 		}
 	}
