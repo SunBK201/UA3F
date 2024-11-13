@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker images
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -44,4 +44,4 @@ jobs:
             windows/arm64,
             darwin/amd64,
             darwin/arm64
-          tags: sunbk201/ua3f:${{ github.ref }}
+          tags: ${{ github.repository }}:latest, ${{ github.repository }}:${{ github.ref_name }}
