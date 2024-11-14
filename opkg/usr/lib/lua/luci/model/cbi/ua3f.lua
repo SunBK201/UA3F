@@ -44,7 +44,7 @@ log_level:value("panic")
 log = main:taboption("log", TextValue, "")
 log.readonly = true
 log.cfgvalue = function(self, section)
-    return luci.sys.exec("cat /var/log/ua3f.log")
+    return luci.sys.exec("cat /var/log/ua3f/ua3f.log")
 end
 log.rows = 30
 
