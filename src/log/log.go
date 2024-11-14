@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type uctFormatter struct {
@@ -27,11 +27,16 @@ func (formatter *uctFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func SetLogConf(level string) {
+	log_file := "/var/log/ua3f/ua3f.log"
 	writer1 := &bytes.Buffer{}
 	writer2 := os.Stdout
-	writer3, err := os.OpenFile("/var/log/ua3f.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
-	if err != nil {
-		log.Fatalf("create file ua3f.log failed: %v", err)
+	writer3 := &lumberjack.Logger{
+		Filename:   log_file,
+		MaxSize:    2, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28, //days
+		LocalTime:  true,
+		Compress:   true,
 	}
 	logrus.SetOutput(io.MultiWriter(writer1, writer2, writer3))
 	formatter := &uctFormatter{}

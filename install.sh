@@ -31,7 +31,7 @@ ck_ua3f_log() {
     if [ -f "/var/log/ua3f.log" ]; then
         rm "/var/log/ua3f.log"
     fi
-    touch /var/log/ua3f.log && chmod 666 /var/log/ua3f.log
+    mkdir -p /var/log/ua3f && chmod ugo+w /var/log/ua3f
 }
 
 dl_ua3f() {
