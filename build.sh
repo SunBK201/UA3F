@@ -66,8 +66,8 @@ mkdir -p $opkg_template/usr/lib/lua/luci/controller
 mkdir -p $opkg_template/usr/lib/lua/luci/model/cbi
 mkdir -p $opkg_template/etc/init.d
 mkdir -p $opkg_template/etc/config
-cp openwrt/files/luci/controller.lua $opkg_template/usr/lib/lua/luci/controller/
-cp openwrt/files/luci/cbi.lua $opkg_template/usr/lib/lua/luci/model/cbi/
+cp openwrt/files/luci/controller.lua $opkg_template/usr/lib/lua/luci/controller/ua3f.lua
+cp openwrt/files/luci/cbi.lua $opkg_template/usr/lib/lua/luci/model/cbi/ua3f.lua
 cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
 for goarch in "amd64" "arm" "arm64" "mipsle" "mips64" "riscv64" "386" "mipsle-softfloat" "mipsle-hardfloat" "armv7" "armv8"; do
