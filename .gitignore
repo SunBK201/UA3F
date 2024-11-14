@@ -23,3 +23,5 @@ go.work
 .vscode
 bin/
 dist/
+ipkg/etc/
+ipkg/usr/
