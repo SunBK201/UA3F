@@ -18,7 +18,7 @@ import (
 	"github.com/sunbk201/ua3f/log"
 )
 
-var version = "0.6.0"
+var version = "0.7.0"
 var payload string
 var uaPattern string
 var uaRegexp *regexp2.Regexp
