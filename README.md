@@ -22,16 +22,7 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
 
-2. 使用安装/升级脚本进行部署：
-
-```sh
-opkg update
-opkg install curl libcurl luci-compat
-export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
-service ua3f reload
-```
-
-3. OpenWrt 编译安装
+2. OpenWrt 编译安装
 
 ```sh
 git clone https://github.com/openwrt/openwrt.git && cd openwrt
@@ -43,10 +34,19 @@ make download -j$(nproc) V=s
 make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
 ```
 
-4. Docker 部署
+3. Docker 部署
 
 ```sh
 docker run -p 1080:1080 sunbk201/ua3f -f FFF
+```
+
+4. 使用安装/升级脚本进行部署：
+
+```sh
+opkg update
+opkg install curl libcurl luci-compat
+export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
+service ua3f reload
 ```
 
 ## 使用
