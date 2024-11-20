@@ -66,6 +66,9 @@ func main() {
 		return
 	}
 	logrus.Info(fmt.Sprintf("Listen on %s:%d", addr, port))
+
+	// ignore case
+	uaPattern = "(?i)" + uaPattern
 	uaRegexp, err = regexp2.Compile(uaPattern, regexp2.None)
 	if err != nil {
 		logrus.Fatal("Invalid User-Agent Regex Pattern: ", err)
