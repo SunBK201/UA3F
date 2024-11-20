@@ -346,11 +346,11 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 	}
 }
 
-func isHTTP(reader *bufio.Reader) bool {
+func isHTTP(reader *bufio.Reader) (bool, error) {
 	buf, err := reader.Peek(7)
 	if err != nil {
 		logrus.Error(fmt.Sprintf("Peek error: %s", err.Error()))
-		return false
+		return false, err
 	}
 	hint := string(buf)
 	is_http := false
@@ -360,7 +360,7 @@ func isHTTP(reader *bufio.Reader) bool {
 			break
 		}
 	}
-	return is_http
+	return is_http, nil
 }
 
 func buildNewUA(originUA string, targetUA string, uaRegexp *regexp2.Regexp, enablePartialReplace bool) string {
@@ -377,8 +377,14 @@ func buildNewUA(originUA string, targetUA string, uaRegexp *regexp2.Regexp, enab
 
 func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
 	srcReader := bufio.NewReader(src)
-	is_http := isHTTP(srcReader)
-	if !is_http {
+	is_http, err := isHTTP(srcReader)
+	if err != nil {
+		if strings.Contains(err.Error(), "use of closed network connection") {
+			logrus.Error(fmt.Sprintf("[%s] isHTTP error: %s", destAddrPort, err.Error()))
+			return
+		}
+	}
+	if !is_http && err == nil {
 		cache.Add(destAddrPort, destAddrPort)
 		logrus.Debug(fmt.Sprintf("Not HTTP, Add LRU Relay Cache: %s, Cache Len: %d", destAddrPort, cache.Len()))
 		io.Copy(dst, srcReader)
