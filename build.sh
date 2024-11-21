@@ -1,7 +1,7 @@
 #!/bin/sh
 
 project_name="ua3f"
-release_version="0.7.1"
+release_version="0.7.2"
 target=main.go
 dist=./dist
 release_dir=./bin
