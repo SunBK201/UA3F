@@ -20,7 +20,7 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 
 1. 使用 ipk 安装包进行部署：
 
-[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载并解压到路由器等设备上。
+[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载到 OpenWrt 上进行安装。
 
 2. OpenWrt 编译安装
 
