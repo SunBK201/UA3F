@@ -92,10 +92,6 @@ sudo -u shellcrash /usr/bin/ua3f
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
-- Clash 需要选用 Meta 内核。
-- 请确保 `PROCESS-NAME,ua3f,DIRECT` 置于规则列表顶部，`MATCH,ua3f` 置于规则列表底部。
-- 可以在 `PROCESS-NAME,ua3f,DIRECT` 与 `MATCH,ua3f` 之间按需加入自定义加密代理规则。如果上述 2 条规则之间加入 DIRECT 规则，请确保匹配该规则的流量属于非 HTTP 协议流量。
-
 ```yaml
 proxies:
   - name: "ua3f"
@@ -106,7 +102,6 @@ proxies:
     udp: false
 
 rules:
-  - PROCESS-NAME,ua3f,DIRECT
   - NETWORK,udp,DIRECT
   - MATCH,ua3f
 ```
