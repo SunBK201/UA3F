@@ -52,7 +52,7 @@ ua = main:taboption("general", Value, "ua", "User-Agent")
 ua.placeholder = "FFF"
 
 uaRegexPattern = main:taboption("general", Value, "ua_regex", "User-Agent Regex Pattern")
-uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X)"
+uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)"
 uaRegexPattern.description = "Regular expression pattern for matching User-Agent"
 
 partialRepalce = main:taboption("general", Flag, "partial_replace", "Partial Replace")

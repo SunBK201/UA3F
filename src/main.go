@@ -39,7 +39,7 @@ func main() {
 	flag.StringVar(&addr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payload, "f", "FFF", "User-Agent")
-	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X)", "UA-Pattern")
+	flag.StringVar(&uaPattern, "r", "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)", "UA-Pattern")
 	flag.BoolVar(&enablePartialReplace, "s", false, "Enable Regex Partial Replace")
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.Bool("v", false, "show version")
