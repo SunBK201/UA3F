@@ -19,4 +19,4 @@ COPY --from=builder /app/ua3f .
 
 EXPOSE 1080
 
-ENTRYPOINT ["/app/ua3f"]
+ENTRYPOINT ["/app/ua3f", "-b", "0.0.0.0"]
