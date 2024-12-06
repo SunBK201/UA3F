@@ -98,7 +98,7 @@ install_ua3f() {
 cd /root
 getcpucore
 
-version=0.7.2
+version=0.7.3
 ua3f_tar=ua3f-$version-$cpucore.tar.gz
 
 chmod_clash
