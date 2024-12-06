@@ -18,7 +18,7 @@ import (
 	"github.com/sunbk201/ua3f/log"
 )
 
-var version = "0.7.2"
+var version = "0.7.3"
 var payload string
 var uaPattern string
 var uaRegexp *regexp2.Regexp
@@ -349,7 +349,11 @@ func Socks5Forward(client, target net.Conn, destAddrPort string) {
 func isHTTP(reader *bufio.Reader) (bool, error) {
 	buf, err := reader.Peek(7)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("Peek error: %s", err.Error()))
+		if strings.Contains(err.Error(), "EOF") {
+			logrus.Debug(fmt.Sprintf("Peek EOF: %s", err.Error()))
+		} else {
+			logrus.Error(fmt.Sprintf("Peek error: %s", err.Error()))
+		}
 		return false, err
 	}
 	hint := string(buf)
