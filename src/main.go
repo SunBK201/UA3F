@@ -430,6 +430,9 @@ func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
 		if uaStr == "" {
 			cache.Add(destAddrPort, destAddrPort)
 			logrus.Debug(fmt.Sprintf("[%s] Not found User-Agent, Add LRU Relay Cache, Cache Len: %d", destAddrPort, cache.Len()))
+			if err = request.Write(dst); err != nil {
+				logrus.Error(fmt.Sprintf("[%s][%s] write error: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
+			}
 			io.Copy(dst, srcReader)
 			return
 		}
