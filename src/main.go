@@ -400,7 +400,7 @@ func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
 	is_http, err := isHTTP(srcReader)
 	if err != nil {
 		if strings.Contains(err.Error(), "use of closed network connection") {
-			logrus.Error(fmt.Sprintf("[%s] isHTTP error: %s", destAddrPort, err.Error()))
+			logrus.Warn(fmt.Sprintf("[%s] isHTTP error: %s", destAddrPort, err.Error()))
 			return
 		}
 	}
