@@ -40,15 +40,6 @@ make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile
 docker run -p 1080:1080 sunbk201/ua3f -f FFF
 ```
 
-4. 使用安装/升级脚本进行部署：
-
-```sh
-opkg update
-opkg install curl libcurl luci-compat
-export url='https://blog.sunbk201.site/cdn' && sh -c "$(curl -kfsSl $url/install.sh)"
-service ua3f reload
-```
-
 ## 使用
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
