@@ -15,7 +15,8 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
-	"github.com/sunbk201/ua3f/log"
+	"github.com/sunbk201/ua3f/internal/log"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 var (
@@ -79,6 +80,9 @@ func main() {
 		logrus.Fatal("Invalid User-Agent Regex Pattern: ", err)
 		return
 	}
+
+	go statistics.StartStatWorker()
+
 	for {
 		client, err := server.Accept()
 		if err != nil {
@@ -468,11 +472,17 @@ func transfer(dst net.Conn, src net.Conn, destAddrPort string) {
 			return
 		}
 		logrus.Debug(fmt.Sprintf("[%s][%s] Hit User-Agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), uaStr))
-		request.Header.Set("User-Agent", buildNewUA(uaStr, payload, uaRegexp, enablePartialReplace))
+		mockedUA := buildNewUA(uaStr, payload, uaRegexp, enablePartialReplace)
+		request.Header.Set("User-Agent", mockedUA)
 		err = request.Write(dst)
 		if err != nil {
 			logrus.Error(fmt.Sprintf("[%s][%s] write error after replace user-agent: %s", destAddrPort, src.(*net.TCPConn).RemoteAddr().String(), err.Error()))
 			break
 		}
+		statistics.AddStat(&statistics.StatRecord{
+			Host:     destAddrPort,
+			OriginUA: uaStr,
+			MockedUA: mockedUA,
+		})
 	}
 }

@@ -1,0 +1,66 @@
+"Language: zh_CN\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "General"
+msgstr "常规"
+
+msgid "Enabled"
+msgstr "启用"
+
+msgid "Running"
+msgstr "运行中"
+
+msgid "Stopped"
+msgstr "未运行"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Statistics"
+msgstr "统计信息"
+
+msgid "Log"
+msgstr "运行日志"
+
+msgid "Port"
+msgstr "端口"
+
+msgid "Bind Address"
+msgstr "绑定地址"
+
+msgid "Log Level"
+msgstr "日志级别"
+
+msgid "User-Agent"
+msgstr "User-Agent"
+
+msgid "User-Agent Regex Pattern"
+msgstr "User-Agent 正则表达式"
+
+msgid "Regular expression pattern for matching User-Agent"
+msgstr "用于匹配 User-Agent，只有匹配成功的 User-Agent 才会被修改，为空则匹配所有 User-Agent"
+
+msgid "Partial Replace"
+msgstr "部分替换"
+
+msgid "Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
+msgstr "仅替换 User-Agent 正则匹配的部分，仅在 User-Agent 正则表达式非空时有效"
+
+msgid "User-Agent Mock Statistics"
+msgstr "User-Agent 修改次数实时统计"
+
+msgid "Host"
+msgstr "地址"
+
+msgid "Modified Count"
+msgstr "修改次数"
+
+msgid "Original User-Agent"
+msgstr "原始 User-Agent"
+
+msgid "Mocked User-Agent"
+msgstr "修改后 User-Agent"

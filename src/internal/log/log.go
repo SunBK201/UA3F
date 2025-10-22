@@ -11,6 +11,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+const log_file = "/var/log/ua3f/ua3f.log"
+
 type uctFormatter struct {
 }
 
@@ -27,7 +29,6 @@ func (formatter *uctFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func SetLogConf(level string) {
-	log_file := "/var/log/ua3f/ua3f.log"
 	writer1 := &bytes.Buffer{}
 	writer2 := os.Stdout
 	writer3 := &lumberjack.Logger{
