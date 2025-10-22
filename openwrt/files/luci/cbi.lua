@@ -9,60 +9,63 @@ ua3f = Map("ua3f",
     ]]
 )
 
-enable = ua3f:section(NamedSection, "enabled", "ua3f", "Status")
-main = ua3f:section(NamedSection, "main", "ua3f", "Settings")
+status = ua3f:section(NamedSection, "enabled", "ua3f", translate("Status"))
+general = ua3f:section(NamedSection, "main", "ua3f", translate("General"))
 
-enable:option(Flag, "enabled", "Enabled")
-status = enable:option(DummyValue, "status", "Status")
-status.rawhtml = true
-status.cfgvalue = function(self, section)
+status:option(Flag, "enabled", translate("Enabled"))
+
+running = status:option(DummyValue, "running", translate("Status"))
+running.rawhtml = true
+running.cfgvalue = function(self, section)
     local pid = luci.sys.exec("pidof ua3f")
     if pid == "" then
-        return "<span style='color:red'>" .. "Stopped" .. "</span>"
+        return "<input disabled type='button' style='opacity: 1;' class='btn cbi-button cbi-button-reset' value='" ..
+        translate("Stop") .. "'/>"
     else
-        return "<span style='color:green'>" .. "Running" .. "</span>"
+        return "<input disabled type='button' style='opacity: 1;' class='btn cbi-button cbi-button-add' value='" ..
+        translate("Running") .. "'/>"
     end
 end
 
-main:tab("general", "General Settings")
-main:tab("log", "Log")
+general:tab("general", translate("Settings"))
+general:tab("stats", translate("Statistics"))
+general:tab("log", translate("Log"))
 
-port = main:taboption("general", Value, "port", "Port")
+port = general:taboption("general", Value, "port", translate("Port"))
 port.placeholder = "1080"
 
-bind = main:taboption("general", Value, "bind", "Bind Address")
+bind = general:taboption("general", Value, "bind", translate("Bind Address"))
 bind:value("127.0.0.1")
 bind:value("0.0.0.0")
 
-log_level = main:taboption("general", ListValue, "log_level", "Log Level")
+log_level = general:taboption("general", ListValue, "log_level", translate("Log Level"))
 log_level:value("debug")
 log_level:value("info")
 log_level:value("warn")
 log_level:value("error")
 log_level:value("fatal")
 log_level:value("panic")
-log = main:taboption("log", TextValue, "")
+
+ua = general:taboption("general", Value, "ua", translate("User-Agent"))
+ua.placeholder = "FFF"
+
+uaRegexPattern = general:taboption("general", Value, "ua_regex", translate("User-Agent Regex Pattern"))
+uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)"
+uaRegexPattern.description = translate("Regular expression pattern for matching User-Agent")
+
+partialRepalce = general:taboption("general", Flag, "partial_replace", translate("Partial Replace"))
+partialRepalce.description =
+    translate("Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty")
+partialRepalce.default = "0"
+
+log = general:taboption("log", TextValue, "")
 log.readonly = true
 log.cfgvalue = function(self, section)
     return luci.sys.exec("cat /var/log/ua3f/ua3f.log")
 end
 log.rows = 30
 
-ua = main:taboption("general", Value, "ua", "User-Agent")
-ua.placeholder = "FFF"
-
-uaRegexPattern = main:taboption("general", Value, "ua_regex", "User-Agent Regex Pattern")
-uaRegexPattern.placeholder = "(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)"
-uaRegexPattern.description = "Regular expression pattern for matching User-Agent"
-
-partialRepalce = main:taboption("general", Flag, "partial_replace", "Partial Replace")
-partialRepalce.description =
-"Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
-partialRepalce.default = "0"
-
-local apply = luci.http.formvalue("cbi.apply")
-if apply then
-    io.popen("/etc/init.d/ua3f restart")
-end
+stats = general:taboption("stats", DummyValue, "")
+stats.template = "ua3f/statistics"
 
 return ua3f

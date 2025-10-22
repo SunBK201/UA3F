@@ -1,0 +1,82 @@
+<%
+local stats = {}
+local file = io.open("/var/log/ua3f/stats", "r")
+if file then
+    for line in file:lines() do
+        local host, count, origin_ua, mocked_ua = line:match("^(%S+)%s+(%d+)%s+(.-)SEQSEQ(.-)%s*$")
+        if host and count then
+            table.insert(stats, {host = host, count = count, origin_ua = origin_ua, mocked_ua = mocked_ua})
+        end
+    end
+    file:close()
+end
+
+local function rowstyle(i)
+    return (i % 2 == 0) and "cbi-rowstyle-2" or "cbi-rowstyle-1"
+end
+%>
+
+<h3><%:Statistics%></h3>
+<div class="cbi-section-descr"><%:User-Agent Mock Statistics%></div>
+
+<table id="stats-table" class="table cbi-section-table">
+    <tr class="tr table-titles">
+        <th class="th"><%:Host%></th>
+        <th class="th"><%:Modified Count%></th>
+        <th class="th"><%:Original User-Agent%></th>
+        <th class="th"><%:Mocked User-Agent%></th>
+    </tr>
+
+    <% for i, item in ipairs(stats) do %>
+        <tr class="tr <%= rowstyle(i) %>">
+            <td class="td" data-title="<%:Host%>"><span><%= item.host %></span></td>
+            <td class="td" data-title="<%:Modified Count%>"><%= item.count %></td>
+            <td class="td" data-title="<%:Original User-Agent%>"><span><%= item.origin_ua %></span></td>
+            <td class="td" data-title="<%:Mocked User-Agent%>"><span><%= item.mocked_ua %></span></td>
+        </tr>
+    <% end %>
+</table>
+
+<script type="text/javascript">
+    async function updateStats() {
+        try {
+            const response = await fetch(window.location.href, {cache: "no-store"});
+            const text = await response.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, "text/html");
+            const newTable = doc.querySelector("#stats-table");
+
+            if (newTable) {
+                document.querySelector("#stats-table").innerHTML = newTable.innerHTML;
+            }
+        } catch (err) {
+            console.error("update stats error:", err);
+        }
+    }
+    setInterval(updateStats, 5000);
+</script>
+
+<style>
+#stats-table th:nth-child(1),
+#stats-table td:nth-child(1) {
+  width: 20%;
+}
+
+#stats-table th:nth-child(2),
+#stats-table td:nth-child(2) {
+  width: 10%;
+  text-align: center;
+}
+
+#stats-table th:nth-child(3),
+#stats-table td:nth-child(3) {
+  width: 35%;
+}
+
+#stats-table th:nth-child(4),
+#stats-table td:nth-child(4) {
+  width: 35%;
+}
+
+</style>

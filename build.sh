@@ -64,12 +64,16 @@ ipkg_build=ipkg-build.sh
 mkdir -p $opkg_template/usr/bin
 mkdir -p $opkg_template/usr/lib/lua/luci/controller
 mkdir -p $opkg_template/usr/lib/lua/luci/model/cbi
+mkdir -p $opkg_template/usr/lib/lua/luci/view/ua3f
+mkdir -p $opkg_template/usr/lib/lua/luci/i18n
 mkdir -p $opkg_template/etc/init.d
 mkdir -p $opkg_template/etc/config
 cp openwrt/files/luci/controller.lua $opkg_template/usr/lib/lua/luci/controller/ua3f.lua
 cp openwrt/files/luci/cbi.lua $opkg_template/usr/lib/lua/luci/model/cbi/ua3f.lua
+cp openwrt/files/luci/statistics.htm $opkg_template/usr/lib/lua/luci/view/ua3f/statistics.htm
 cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
+./po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 for goarch in "amd64" "arm" "arm64" "mipsle" "mips64" "riscv64" "386" "mipsle-softfloat" "mipsle-hardfloat" "armv7" "armv8"; do
     obj_name=$project_name-$release_version-$goarch
     mv $dist/bin/$obj_name $opkg_template/usr/bin/ua3f

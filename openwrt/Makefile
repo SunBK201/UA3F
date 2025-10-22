@@ -37,6 +37,7 @@ endef
 
 define Build/Prepare
 	$(CP) ../src/* $(PKG_BUILD_DIR)
+	po2lmo ./po/zh_cn/ua3f.po $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo
 endef
 
 define Package/ua3f/conffiles
@@ -57,6 +58,10 @@ define Package/ua3f/install
 	$(INSTALL_CONF) ./files/luci/cbi.lua $(1)/usr/lib/lua/luci/model/cbi/ua3f.lua
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/
 	$(INSTALL_CONF) ./files/luci/controller.lua $(1)/usr/lib/lua/luci/controller/ua3f.lua
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view/ua3f/
+	$(INSTALL_CONF) ./files/luci/statistics.htm $(1)/usr/lib/lua/luci/view/ua3f/statistics.htm
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 	
 endef
 
