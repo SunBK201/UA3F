@@ -24,7 +24,7 @@ var (
 	ErrInvalidSocksCmd     = errors.New("invalid socks cmd")
 )
 
-var version = "0.7.3"
+var version = "0.8.0"
 var payload string
 var uaPattern string
 var uaRegexp *regexp2.Regexp
