@@ -12,6 +12,13 @@ UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务
 - 多种部署方式
 - 支持 UDP 转发
 
+<table>
+  <tr>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-statistics" alt="UA3F-Statistics"></td>
+  </tr>
+</table>
+
 ![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f)
 
 ## 部署
@@ -43,13 +50,6 @@ docker run -p 1080:1080 sunbk201/ua3f -f FFF
 ## 使用
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
-
-<table>
-  <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-statistics" alt="UA3F-Statistics"></td>
-  </tr>
-</table>
 
 > [!NOTE]
 > 设置说明：
