@@ -44,7 +44,12 @@ docker run -p 1080:1080 sunbk201/ua3f -f FFF
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
-![UA3F-LuCI](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci)
+<table>
+  <tr>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-statistics" alt="UA3F-Statistics"></td>
+  </tr>
+</table>
 
 > [!NOTE]
 > 设置说明：
