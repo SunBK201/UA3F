@@ -17,22 +17,22 @@ end
 %>
 
 <h3><%:Statistics%></h3>
-<div class="cbi-section-descr"><%:User-Agent Mock Statistics%></div>
+<div class="cbi-section-descr"><%:User-Agent Rewrite Statistics%></div>
 
 <table id="stats-table" class="table cbi-section-table">
     <tr class="tr table-titles">
         <th class="th"><%:Host%></th>
-        <th class="th"><%:Modified Count%></th>
+        <th class="th"><%:Rewrite Count%></th>
         <th class="th"><%:Original User-Agent%></th>
-        <th class="th"><%:Mocked User-Agent%></th>
+        <th class="th"><%:Modified User-Agent%></th>
     </tr>
 
     <% for i, item in ipairs(stats) do %>
         <tr class="tr <%= rowstyle(i) %>">
             <td class="td" data-title="<%:Host%>"><span><%= item.host %></span></td>
-            <td class="td" data-title="<%:Modified Count%>"><%= item.count %></td>
+            <td class="td" data-title="<%:Rewrite Count%>"><%= item.count %></td>
             <td class="td" data-title="<%:Original User-Agent%>"><span><%= item.origin_ua %></span></td>
-            <td class="td" data-title="<%:Mocked User-Agent%>"><span><%= item.mocked_ua %></span></td>
+            <td class="td" data-title="<%:Modified User-Agent%>"><span><%= item.mocked_ua %></span></td>
         </tr>
     <% end %>
 </table>
