@@ -61,7 +61,8 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)`，即只修改携带设备与系统信息的 User-Agent。
 > - Partial Replace: 部分替换，如果开启，则只替换 User-Agent Regex Pattern 中匹配到的部分。该选项仅在 User-Agent Regex Pattern 不为空时生效。
 
-### 手动命令行启动
+<details>
+<summary>手动命令行启动</summary>
 
 ```sh
 sudo -u nobody /usr/bin/ua3f
@@ -83,6 +84,7 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`
 - `-s`: 部分替换，仅替换正则匹配到的部分
+</details>
 
 ### Clash 配置建议
 
@@ -103,7 +105,7 @@ rules:
 ```
 
 > [!IMPORTANT]
-> 不要使用 Fake-IP 模式，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
+> 不要使用 Fake-IP 模式和本地 DNS 劫持，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
 
 ### Clash 参考配置
 
