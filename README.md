@@ -102,6 +102,9 @@ rules:
   - MATCH,ua3f
 ```
 
+> [!IMPORTANT]
+> 不要使用 Fake-IP 模式，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
+
 ### Clash 参考配置
 
 提供 3 个参考配置：
