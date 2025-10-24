@@ -50,17 +50,17 @@ msgstr "部分替换"
 msgid "Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
 msgstr "仅替换 User-Agent 正则匹配的部分，仅在 User-Agent 正则表达式非空时有效"
 
-msgid "User-Agent Mock Statistics"
-msgstr "User-Agent 修改次数实时统计"
+msgid "User-Agent Rewrite Statistics"
+msgstr "User-Agent 重写次数实时统计"
 
 msgid "Host"
 msgstr "地址"
 
-msgid "Modified Count"
-msgstr "修改次数"
+msgid "Rewrite Count"
+msgstr "重写次数"
 
 msgid "Original User-Agent"
 msgstr "原始 User-Agent"
 
-msgid "Mocked User-Agent"
-msgstr "修改后 User-Agent"
+msgid "Modified User-Agent"
+msgstr "重写后 User-Agent"
