@@ -52,6 +52,7 @@ start_service() {
     elif id -u nobody >/dev/null 2>&1; then
         procd_set_param user nobody
     fi
+    procd_set_param group nogroup
 
     procd_close_instance
 }
