@@ -44,6 +44,7 @@ start_service() {
     procd_set_param respawn
     procd_set_param stdout 1
     procd_set_param stderr 1
+    procd_set_param limits nproc="unlimited" as="unlimited" memlock="unlimited" nofile="65535 65535"
 
     if id -u shellclash >/dev/null 2>&1; then
         procd_set_param user shellclash
@@ -51,9 +52,7 @@ start_service() {
         procd_set_param user shellcrash
     fi
     procd_set_param group nogroup
-
-    ulimit -n 65536
-
+    
     procd_close_instance
 }
 
