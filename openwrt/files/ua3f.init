@@ -52,6 +52,8 @@ start_service() {
     fi
     procd_set_param group nogroup
 
+    ulimit -n 65536
+
     procd_close_instance
 }
 
