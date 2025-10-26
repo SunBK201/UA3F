@@ -49,8 +49,6 @@ start_service() {
         procd_set_param user shellclash
     elif id -u shellcrash >/dev/null 2>&1; then
         procd_set_param user shellcrash
-    elif id -u nobody >/dev/null 2>&1; then
-        procd_set_param user nobody
     fi
     procd_set_param group nogroup
 
