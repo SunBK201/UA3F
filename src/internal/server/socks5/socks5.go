@@ -56,7 +56,7 @@ func (s *Server) Start() (err error) {
 	}
 
 	// Start statistics worker
-	go statistics.StartStatWorker()
+	go statistics.StartRecorder()
 
 	var client net.Conn
 	for {
