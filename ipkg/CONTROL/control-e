@@ -8,4 +8,4 @@ Section: net
 SourceDateEpoch: 1711267200
 Architecture: all
 Installed-Size:  3696640
-Description: Implementation of the next generation of HTTP User-Agent modification methodology.
+Description: Advanced HTTP User-Agent Rewriting Tool.
