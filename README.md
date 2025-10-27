@@ -1,6 +1,6 @@
 # UA3F
 
-UA3F 是下一代 HTTP User-Agent 修改方法，对外作为一个 SOCK5 服务，可以部署在路由器等设备等设备进行透明 UA 修改。
+UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5 服务，可以部署在路由器等设备等设备进行透明 User-Agent 修改。
 
 ## 特性
 
@@ -58,7 +58,7 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > - Bind Address: UA3F 监听地址，默认 `127.0.0.1`。
 > - Log Level: 日志等级，默认 `info`, 如果需要调试排查错误可以设置为 `debug`。
 > - User-Agent: 自定义 User-Agent，默认 `FFF`。
-> - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux|Apple|Mac OS X|Mobile)`，即只修改携带设备与系统信息的 User-Agent。
+> - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。例如 `(Apple|iPhone|iPad|Mac|Macintosh|Mac OS X|Microsoft|Windows|Linux|Android|Mobile)`，即只修改携带设备与系统信息的 User-Agent。
 > - Partial Replace: 部分替换，如果开启，则只替换 User-Agent Regex Pattern 中匹配到的部分。该选项仅在 User-Agent Regex Pattern 不为空时生效。
 
 <details>
@@ -82,7 +82,7 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-p <port>`: 端口号，默认 1080
 - `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
 - `-f <UA>`: 自定义 UA，默认 FFF
-- `-r <regex>`: 自定义正则匹配 User-Agent, 默认 `(iPhone|iPad|Android|Macintosh|Windows|Linux)`
+- `-r <regex>`: 自定义正则匹配 User-Agent, 默认为空, 表示所有 User-Agent 都会被重写
 - `-s`: 部分替换，仅替换正则匹配到的部分
 </details>
 
@@ -105,7 +105,8 @@ rules:
 ```
 
 > [!IMPORTANT]
-> 不要使用 Fake-IP 模式和本地 DNS 劫持，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
+> 不推荐使用 Fake-IP 模式和本地 DNS 劫持，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
+> 如果使用 Fake-IP 模式，确保 OpenClash 本地 DNS 劫持选择「使用防火墙转发」，不要使用「Dnsmasq 转发」。
 
 ### Clash 参考配置
 
