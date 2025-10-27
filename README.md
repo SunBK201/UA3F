@@ -1,10 +1,10 @@
 # UA3F
 
-UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5 服务，可以部署在路由器等设备等设备进行透明 User-Agent 修改。
+UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5 服务部署在路由器等设备进行透明 User-Agent 重写。
 
 ## 特性
 
-- 支持正则表达式规则匹配修改 User-Agent
+- 支持正则表达式规则匹配重写 User-Agent
 - 自定义 User-Agent 内容
 - 与其他网络加速代理工具共存
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
