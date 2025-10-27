@@ -1,14 +1,26 @@
 <%
-local stats = {}
-local file = io.open("/var/log/ua3f/stats", "r")
-if file then
-    for line in file:lines() do
+local rewrite_stats = {}
+local rewrite_stats_file = io.open("/var/log/ua3f/rewrite_stats", "r")
+if rewrite_stats_file then
+    for line in rewrite_stats_file:lines() do
         local host, count, origin_ua, mocked_ua = line:match("^(%S+)%s+(%d+)%s+(.-)SEQSEQ(.-)%s*$")
         if host and count then
-            table.insert(stats, {host = host, count = count, origin_ua = origin_ua, mocked_ua = mocked_ua})
+            table.insert(rewrite_stats, {host = host, count = count, origin_ua = origin_ua, mocked_ua = mocked_ua})
         end
     end
-    file:close()
+    rewrite_stats_file:close()
+end
+
+local pass_stats = {}
+local pass_stats_file = io.open("/var/log/ua3f/passthrough_stats", "r")
+if pass_stats_file then
+    for line in pass_stats_file:lines() do
+        local host, count, ua = line:match("^(%S+)%s(%d+)%s(.+)$")
+        if ua and count then
+            table.insert(pass_stats, {ua = ua, count = count, host = host})
+        end
+    end
+    pass_stats_file:close()
 end
 
 local function rowstyle(i)
@@ -17,9 +29,9 @@ end
 %>
 
 <h3><%:Statistics%></h3>
-<div class="cbi-section-descr"><%:User-Agent Rewrite Statistics%></div>
 
-<table id="stats-table" class="table cbi-section-table">
+<div class="cbi-section-descr"><%:User-Agent Rewrite Statistics%></div>
+<table id="rewrite-stats-table" class="table cbi-section-table">
     <tr class="tr table-titles">
         <th class="th"><%:Host%></th>
         <th class="th"><%:Rewrite Count%></th>
@@ -27,7 +39,7 @@ end
         <th class="th"><%:Modified User-Agent%></th>
     </tr>
 
-    <% for i, item in ipairs(stats) do %>
+    <% for i, item in ipairs(rewrite_stats) do %>
         <tr class="tr <%= rowstyle(i) %>">
             <td class="td" data-title="<%:Host%>"><span><%= item.host %></span></td>
             <td class="td" data-title="<%:Rewrite Count%>"><%= item.count %></td>
@@ -37,6 +49,24 @@ end
     <% end %>
 </table>
 
+<div class="cbi-section-descr"><%:User-Agent Pass-Through Statistics%></div>
+<table id="pass-stats-table" class="table cbi-section-table">
+    <tr class="tr table-titles">
+        <th class="th"><%:User-Agent%></th>
+        <th class="th"><%:Pass-Through Count%></th>
+        <th class="th"><%:Last Host%></th>
+    </tr>
+
+    <% for i, item in ipairs(pass_stats) do %>
+        <tr class="tr <%= rowstyle(i) %>">
+            <td class="td" data-title="<%:User-Agent%>"><span><%= item.ua %></span></td>
+            <td class="td" data-title="<%:Pass-Through Count%>"><%= item.count %></td>
+            <td class="td" data-title="<%:Last Host%>"><span><%= item.host %></span></td>
+        </tr>
+    <% end %>
+</table>
+
+
 <script type="text/javascript">
     async function updateStats() {
         try {
@@ -45,10 +75,14 @@ end
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, "text/html");
-            const newTable = doc.querySelector("#stats-table");
+            const newRewriteTable = doc.querySelector("#rewrite-stats-table");
+            const newPassTable = doc.querySelector("#pass-stats-table");
 
-            if (newTable) {
-                document.querySelector("#stats-table").innerHTML = newTable.innerHTML;
+            if (newRewriteTable) {
+                document.querySelector("#rewrite-stats-table").innerHTML = newRewriteTable.innerHTML;
+            }
+            if (newPassTable) {
+                document.querySelector("#pass-stats-table").innerHTML = newPassTable.innerHTML;
             }
         } catch (err) {
             console.error("update stats error:", err);
@@ -58,25 +92,40 @@ end
 </script>
 
 <style>
-#stats-table th:nth-child(1),
-#stats-table td:nth-child(1) {
+#rewrite-stats-table th:nth-child(1),
+#rewrite-stats-table td:nth-child(1) {
   width: 20%;
 }
 
-#stats-table th:nth-child(2),
-#stats-table td:nth-child(2) {
+#rewrite-stats-table th:nth-child(2),
+#rewrite-stats-table td:nth-child(2) {
   width: 10%;
   text-align: center;
 }
 
-#stats-table th:nth-child(3),
-#stats-table td:nth-child(3) {
+#rewrite-stats-table th:nth-child(3),
+#rewrite-stats-table td:nth-child(3) {
   width: 35%;
 }
 
-#stats-table th:nth-child(4),
-#stats-table td:nth-child(4) {
+#rewrite-stats-table th:nth-child(4),
+#rewrite-stats-table td:nth-child(4) {
   width: 35%;
 }
 
+#pass-stats-table th:nth-child(1),
+#pass-stats-table td:nth-child(1) {
+  width: 50%;
+}
+
+#pass-stats-table th:nth-child(2),
+#pass-stats-table td:nth-child(2) {
+    width: 20%;
+    text-align: center;
+}
+
+#pass-stats-table th:nth-child(3),
+#pass-stats-table td:nth-child(3) {
+    width: 30%;
+}
 </style>

@@ -148,6 +148,10 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddrPort strin
 					destAddrPort, srcAddr, originalUA, r.cache.Len())
 				r.cache.Add(destAddrPort, destAddrPort)
 			}
+			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+				Host: destAddrPort,
+				UA:   originalUA,
+			})
 			if err := req.Write(dst); err != nil {
 				logrus.Errorf("[%s][%s] write error: %s", destAddrPort, srcAddr, err.Error())
 				return err
@@ -166,10 +170,10 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddrPort strin
 			return err
 		}
 
-		statistics.AddStat(&statistics.StatRecord{
-			Host:     destAddrPort,
-			OriginUA: originalUA,
-			MockedUA: mockedUA,
+		statistics.AddRewriteRecord(&statistics.RewriteRecord{
+			Host:       destAddrPort,
+			OriginalUA: originalUA,
+			MockedUA:   mockedUA,
 		})
 	}
 }
@@ -196,7 +200,7 @@ func (r *Rewriter) isHTTP(reader *bufio.Reader) (bool, error) {
 
 // buildNewUA returns either a partial replacement (regex) or full overwrite.
 func (r *Rewriter) buildNewUA(originUA string) string {
-	if r.enablePartialReplace && r.uaRegex != nil {
+	if r.enablePartialReplace && r.uaRegex != nil && r.pattern != "" {
 		newUA, err := r.uaRegex.Replace(originUA, r.payloadUA, -1, -1)
 		if err != nil {
 			logrus.Errorf("User-Agent Replace Error: %s, use full overwrite", err.Error())

@@ -64,3 +64,12 @@ msgstr "原始 User-Agent"
 
 msgid "Modified User-Agent"
 msgstr "重写后 User-Agent"
+
+msgid "User-Agent Pass-Through Statistics"
+msgstr "User-Agent 放行次数实时统计"
+
+msgid "Pass-Through Count"
+msgstr "放行次数"
+
+msgid "Last Host"
+msgstr "最后访问地址"
