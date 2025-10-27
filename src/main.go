@@ -11,7 +11,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/server/socks5"
 )
 
-const version = "0.8.0"
+const version = "0.9.0"
 
 func main() {
 	cfg, showVer := config.Parse()

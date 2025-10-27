@@ -1,5 +1,5 @@
 Package: ua3f
-Version: 0.8.0-1
+Version: 0.9.0-1
 Depends: luci-compat
 Source: /feed/openwrt
 SourceName: UA3F
