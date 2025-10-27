@@ -5,6 +5,6 @@ config 'ua3f' 'main'
     option port '1080'
     option bind '127.0.0.1'
 	option ua 'FFF'
-    option ua_regex '(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Microsoft|Windows|Linux|Android|Mobile)'
+    option ua_regex '(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Microsoft|Windows|Linux|Android|OpenHarmony|Mobile)'
     option partial_replace false
     option log_level 'info'
