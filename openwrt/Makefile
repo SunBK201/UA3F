@@ -26,13 +26,13 @@ define Package/ua3f
 	SECTION:=net
 	CATEGORY:=Network
 	SUBMENU:=Web Servers/Proxies
-	TITLE:=A SOCKS5 Server for Change User-Agent
+	TITLE:=A SOCKS5 Server for User-Agent Rewriting
 	URL:=https://github.com/SunBK201/UA3F
 	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat
 endef
 
 define Package/ua3f/description
-	Implementation of the next generation of HTTP User-Agent modification methodology.
+	Advanced HTTP User-Agent Rewriting Tool.
 endef
 
 define Build/Prepare
