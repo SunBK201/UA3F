@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/sunbk201/ua3f/internal/config"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -60,4 +61,13 @@ func SetLogConf(level string) {
 	default:
 		logrus.SetLevel(logrus.InfoLevel)
 	}
+}
+
+func LogHeader(version string, addr string, cfg *config.Config) {
+	logrus.Info("UA3F v" + version)
+	logrus.Infof("Listen on %s", addr)
+	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
+	logrus.Infof("User-Agent Regex Pattern: '%s'", cfg.UAPattern)
+	logrus.Infof("Enable Partial Replace: %v", cfg.EnablePartialReplace)
+	logrus.Infof("Log level: %s", cfg.LogLevel)
 }
