@@ -337,11 +337,11 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 
 			case socksATYPv6:
 				logrus.Errorf("[%s][UDP] IPv6: not supported yet", client.RemoteAddr().String())
-				break
+				return
 
 			default:
 				logrus.Errorf("[%s][UDP] invalid atyp", client.RemoteAddr().String())
-				break
+				return
 			}
 
 			remoteAddr := &net.UDPAddr{IP: targetIP, Port: int(targetPort)}
