@@ -3,11 +3,13 @@ package config
 import (
 	"flag"
 	"fmt"
+	"strings"
 )
 
 const (
-	ServerModeSocks5 = "socks5"
-	ServerModeTProxy = "tproxy"
+	ServerModeSocks5   = "SOCKS5"
+	ServerModeTProxy   = "TPROXY"
+	ServerModeRedirect = "REDIRECT"
 )
 
 type Config struct {
@@ -33,7 +35,7 @@ func Parse() (*Config, bool) {
 		showVer    bool
 	)
 
-	flag.StringVar(&serverMode, "m", ServerModeSocks5, "server mode: socks5 or tproxy (default: socks5)")
+	flag.StringVar(&serverMode, "m", ServerModeSocks5, "server mode: SOCKS5, TPROXY, REDIRECT (default: SOCKS5)")
 	flag.StringVar(&bindAddr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
@@ -44,7 +46,7 @@ func Parse() (*Config, bool) {
 	flag.Parse()
 
 	cfg := &Config{
-		ServerMode:           serverMode,
+		ServerMode:           strings.ToUpper(serverMode),
 		BindAddr:             bindAddr,
 		Port:                 port,
 		ListenAddr:           fmt.Sprintf("%s:%d", bindAddr, port),

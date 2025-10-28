@@ -1,11 +1,11 @@
 Package: ua3f
 Version: 0.9.0-1
-Depends: luci-compat
+Depends: luci-compat, ipset, iptables, kmod-nft-tproxy, iptables-mod-tproxy, iptables-mod-extra, iptables-mod-nat-extra, kmod-ipt-conntrack
 Source: /feed/openwrt
 SourceName: UA3F
 License: GPL-3.0-only
 Section: net
 SourceDateEpoch: 1711267200
 Architecture: all
-Installed-Size:  3696640
+Installed-Size:  3706880
 Description: Advanced HTTP User-Agent Rewriting Tool.
