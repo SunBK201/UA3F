@@ -8,7 +8,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
-	"github.com/sunbk201/ua3f/internal/server/socks5"
+	"github.com/sunbk201/ua3f/internal/server"
 )
 
 const version = "0.9.0"
@@ -26,8 +26,13 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	srv := socks5.New(cfg, rw)
-	log.LogHeader(version, srv.ListenAddr, cfg)
+	srv, err := server.NewServer(cfg, rw)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	log.LogHeader(version, cfg)
+
 	if err := srv.Start(); err != nil {
 		logrus.Fatal(err)
 	}
