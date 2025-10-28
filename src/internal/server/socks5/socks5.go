@@ -97,7 +97,7 @@ func (s *Server) HandleClient(client net.Conn) {
 		_ = client.Close()
 		return
 	}
-	s.forwardTCP(client, target, destAddrPort)
+	s.ForwardTCP(client, target, destAddrPort)
 }
 
 // socks5Auth performs a minimal "no-auth" negotiation.
@@ -206,15 +206,15 @@ func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, 
 	return target, nil
 }
 
-// forwardTCP proxies traffic in both directions.
+// ForwardTCP proxies traffic in both directions.
 // target->client uses raw copy.
 // client->target is processed by the rewriter (or raw if cached).
-func (s *Server) forwardTCP(client, target net.Conn, destAddrPort string) {
+func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
 	// Client -> Server (rewriter)
-	go utils.ProxyHalf(target, client, s.rw, destAddrPort)
+	go utils.ProxyHalf(target, client, s.rw, destAddr)
 }
 
 // handleUDPAssociate handles a UDP ASSOCIATE request by creating a UDP relay socket.

@@ -13,6 +13,7 @@ import (
 type Server interface {
 	Start() error
 	HandleClient(net.Conn)
+	ForwardTCP(client, target net.Conn, destAddr string)
 }
 
 func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {
