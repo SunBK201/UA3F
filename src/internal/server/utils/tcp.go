@@ -1,0 +1,54 @@
+package utils
+
+import (
+	"io"
+	"net"
+
+	"github.com/sirupsen/logrus"
+	"github.com/sunbk201/ua3f/internal/rewrite"
+)
+
+// Connect dials the target address and returns the connection.
+func Connect(Addr string) (target net.Conn, err error) {
+	logrus.Debugf("Connecting %s", Addr)
+	if target, err = net.Dial("tcp", Addr); err != nil {
+		return nil, err
+	}
+	logrus.Debugf("Connected %s", Addr)
+	return target, nil
+}
+
+// CopyHalf copies from src to dst and half-closes both sides when done.
+func CopyHalf(dst, src net.Conn) {
+	defer func() {
+		// Prefer TCP half-close to allow the opposite direction to drain.
+		if tc, ok := dst.(*net.TCPConn); ok {
+			_ = tc.CloseWrite()
+		} else {
+			_ = dst.Close()
+		}
+		if tc, ok := src.(*net.TCPConn); ok {
+			_ = tc.CloseRead()
+		} else {
+			_ = src.Close()
+		}
+	}()
+	_, _ = io.Copy(dst, src)
+}
+
+// ProxyHalf runs the rewriter proxy on src->dst and then half-closes both sides.
+func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddrPort string) {
+	defer func() {
+		if tc, ok := dst.(*net.TCPConn); ok {
+			_ = tc.CloseWrite()
+		} else {
+			_ = dst.Close()
+		}
+		if tc, ok := src.(*net.TCPConn); ok {
+			_ = tc.CloseRead()
+		} else {
+			_ = src.Close()
+		}
+	}()
+	_ = rw.ProxyHTTPOrRaw(dst, src, destAddrPort)
+}
