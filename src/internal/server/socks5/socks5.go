@@ -34,24 +34,22 @@ var (
 
 // Server is a minimal SOCKS5 server that delegates HTTP UA rewriting to Rewriter.
 type Server struct {
-	cfg        *config.Config
-	rw         *rewrite.Rewriter
-	listener   net.Listener
-	ListenAddr string
+	cfg      *config.Config
+	rw       *rewrite.Rewriter
+	listener net.Listener
 }
 
 // New returns a new Server with given config, rewriter, and version string.
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	return &Server{
-		cfg:        cfg,
-		rw:         rw,
-		ListenAddr: fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port),
+		cfg: cfg,
+		rw:  rw,
 	}
 }
 
 // Start begins listening for SOCKS5 clients.
 func (s *Server) Start() (err error) {
-	if s.listener, err = net.Listen("tcp", s.ListenAddr); err != nil {
+	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {
 		return fmt.Errorf("listen failed: %w", err)
 	}
 

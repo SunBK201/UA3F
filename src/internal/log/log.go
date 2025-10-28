@@ -63,9 +63,9 @@ func SetLogConf(level string) {
 	}
 }
 
-func LogHeader(version string, addr string, cfg *config.Config) {
+func LogHeader(version string, cfg *config.Config) {
 	logrus.Info("UA3F v" + version)
-	logrus.Infof("Listen on %s", addr)
+	logrus.Infof("Listen on %s", cfg.ListenAddr)
 	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
 	logrus.Infof("User-Agent Regex Pattern: '%s'", cfg.UAPattern)
 	logrus.Infof("Enable Partial Replace: %v", cfg.EnablePartialReplace)
