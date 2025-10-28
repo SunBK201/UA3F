@@ -2,14 +2,17 @@ package server
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/socks5"
+	"github.com/sunbk201/ua3f/internal/server/tproxy"
 )
 
 type Server interface {
 	Start() error
+	HandleClient(net.Conn)
 }
 
 func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {
