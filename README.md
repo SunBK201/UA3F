@@ -14,8 +14,8 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 
 <table>
   <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-statistics" alt="UA3F-Statistics"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci.png" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-stat.png" alt="UA3F-Statistics"></td>
   </tr>
 </table>
 
@@ -90,7 +90,7 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-s`: 部分替换，仅替换正则匹配到的部分
 </details>
 
-### Clash 配置建议
+## Clash 配置
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 

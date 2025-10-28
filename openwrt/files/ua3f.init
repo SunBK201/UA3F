@@ -32,7 +32,7 @@ nft_available() { command -v nft >/dev/null 2>&1; }
 ipt_available() { command -v iptables >/dev/null 2>&1; }
 detect_backend() {
     if nft_available; then
-        FW_BACKEND="ipt"
+        FW_BACKEND="nft"
         return 0
     fi
     if ipt_available; then
