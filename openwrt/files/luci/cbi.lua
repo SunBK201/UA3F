@@ -20,16 +20,21 @@ running.cfgvalue = function(self, section)
     local pid = luci.sys.exec("pidof ua3f")
     if pid == "" then
         return "<input disabled type='button' style='opacity: 1;' class='btn cbi-button cbi-button-reset' value='" ..
-        translate("Stop") .. "'/>"
+            translate("Stop") .. "'/>"
     else
         return "<input disabled type='button' style='opacity: 1;' class='btn cbi-button cbi-button-add' value='" ..
-        translate("Running") .. "'/>"
+            translate("Running") .. "'/>"
     end
 end
 
 general:tab("general", translate("Settings"))
 general:tab("stats", translate("Statistics"))
 general:tab("log", translate("Log"))
+
+server_mode = general:taboption("general", ListValue, "server_mode", translate("Server Mode"))
+server_mode:value("SOCKS5", "SOCKS5")
+server_mode:value("TPROXY", "TPROXY")
+server_mode:value("REDIRECT", "REDIRECT")
 
 port = general:taboption("general", Value, "port", translate("Port"))
 port.placeholder = "1080"

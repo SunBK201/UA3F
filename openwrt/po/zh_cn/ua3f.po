@@ -26,6 +26,9 @@ msgstr "统计信息"
 msgid "Log"
 msgstr "运行日志"
 
+msgid "Server Mode"
+msgstr "服务模式"
+
 msgid "Port"
 msgstr "端口"
 

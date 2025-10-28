@@ -65,6 +65,7 @@ func SetLogConf(level string) {
 
 func LogHeader(version string, cfg *config.Config) {
 	logrus.Info("UA3F v" + version)
+	logrus.Info("Server Mode: " + cfg.ServerMode)
 	logrus.Infof("Listen on %s", cfg.ListenAddr)
 	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
 	logrus.Infof("User-Agent Regex Pattern: '%s'", cfg.UAPattern)

@@ -28,7 +28,7 @@ define Package/ua3f
 	SUBMENU:=Web Servers/Proxies
 	TITLE:=A SOCKS5 Server for User-Agent Rewriting
 	URL:=https://github.com/SunBK201/UA3F
-	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat
+	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat +ipset +iptables +kmod-nft-tproxy +iptables-mod-tproxy +iptables-mod-extra +iptables-mod-nat-extra +kmod-ipt-conntrack
 endef
 
 define Package/ua3f/description

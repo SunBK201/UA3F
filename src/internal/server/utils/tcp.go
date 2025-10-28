@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"net"
 
@@ -9,12 +10,12 @@ import (
 )
 
 // Connect dials the target address and returns the connection.
-func Connect(Addr string) (target net.Conn, err error) {
-	logrus.Debugf("Connecting %s", Addr)
-	if target, err = net.Dial("tcp", Addr); err != nil {
+func Connect(addr string) (target net.Conn, err error) {
+	logrus.Debugf("Connecting %s", addr)
+	if target, err = net.Dial("tcp", addr); err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Connected %s", Addr)
+	logrus.Debugf("Connected %s", addr)
 	return target, nil
 }
 
@@ -51,4 +52,17 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddrPort string) {
 		}
 	}()
 	_ = rw.ProxyHTTPOrRaw(dst, src, destAddrPort)
+}
+
+func GetConnFD(conn net.Conn) (fd int, err error) {
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		return 0, fmt.Errorf("not a TCP connection")
+	}
+	file, err := tcpConn.File()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(file.Fd()), nil
 }
