@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
+	"github.com/sunbk201/ua3f/internal/server/utils"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -63,12 +64,12 @@ func (s *Server) Start() (err error) {
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
-		go s.handleClient(client)
+		go s.HandleClient(client)
 	}
 }
 
 // handleClient performs SOCKS5 negotiation and dispatches TCP/UDP handling.
-func (s *Server) handleClient(client net.Conn) {
+func (s *Server) HandleClient(client net.Conn) {
 	// Handshake (no auth)
 	if err := s.socks5Auth(client); err != nil {
 		_ = client.Close()
@@ -191,13 +192,12 @@ func (s *Server) parseSocks5Request(client net.Conn) (string, byte, error) {
 
 // socks5Connect dials the target and responds success to the client.
 func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, error) {
-	logrus.Debugf("Connecting %s", destAddrPort)
-	target, err := net.Dial("tcp", destAddrPort)
+	target, err := utils.Connect(destAddrPort)
 	if err != nil {
-		return nil, err
+		// Reply failure
+		_, _ = client.Write([]byte{socksVer5, 0x01, 0x00, socksATYPv4, 0, 0, 0, 0, 0, 0})
+		return nil, fmt.Errorf("dial target %s: %w", destAddrPort, err)
 	}
-	logrus.Debugf("Connected %s", destAddrPort)
-
 	// Reply success (bind set to 0.0.0.0:0)
 	if _, err = client.Write([]byte{socksVer5, 0x00, 0x00, socksATYPv4, 0, 0, 0, 0, 0, 0}); err != nil {
 		_ = target.Close()
@@ -211,45 +211,10 @@ func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, 
 // client->target is processed by the rewriter (or raw if cached).
 func (s *Server) forwardTCP(client, target net.Conn, destAddrPort string) {
 	// Server -> Client (raw)
-	go s.copyHalf(client, target)
+	go utils.CopyHalf(client, target)
 
 	// Client -> Server (rewriter)
-	go s.proxyHalf(target, client, destAddrPort)
-}
-
-// copyHalf copies from src to dst and half-closes both sides when done.
-func (s *Server) copyHalf(dst, src net.Conn) {
-	defer func() {
-		// Prefer TCP half-close to allow the opposite direction to drain.
-		if tc, ok := dst.(*net.TCPConn); ok {
-			_ = tc.CloseWrite()
-		} else {
-			_ = dst.Close()
-		}
-		if tc, ok := src.(*net.TCPConn); ok {
-			_ = tc.CloseRead()
-		} else {
-			_ = src.Close()
-		}
-	}()
-	_, _ = io.Copy(dst, src)
-}
-
-// proxyHalf runs the rewriter proxy on src->dst and then half-closes both sides.
-func (s *Server) proxyHalf(dst, src net.Conn, destAddrPort string) {
-	defer func() {
-		if tc, ok := dst.(*net.TCPConn); ok {
-			_ = tc.CloseWrite()
-		} else {
-			_ = dst.Close()
-		}
-		if tc, ok := src.(*net.TCPConn); ok {
-			_ = tc.CloseRead()
-		} else {
-			_ = src.Close()
-		}
-	}()
-	_ = s.rw.ProxyHTTPOrRaw(dst, src, destAddrPort)
+	go utils.ProxyHalf(target, client, s.rw, destAddrPort)
 }
 
 // handleUDPAssociate handles a UDP ASSOCIATE request by creating a UDP relay socket.
