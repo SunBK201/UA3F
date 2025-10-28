@@ -70,9 +70,10 @@ func (s *Server) Start() (err error) {
 
 // handleClient performs SOCKS5 negotiation and dispatches TCP/UDP handling.
 func (s *Server) HandleClient(client net.Conn) {
+	defer client.Close()
+
 	// Handshake (no auth)
 	if err := s.socks5Auth(client); err != nil {
-		_ = client.Close()
 		return
 	}
 
@@ -81,12 +82,10 @@ func (s *Server) HandleClient(client net.Conn) {
 		if cmd == socksCmdUDP {
 			// UDP Associate
 			s.handleUDPAssociate(client)
-			_ = client.Close()
 			return
 		}
 		logrus.Debugf("[%s][%s] ParseSocks5Request failed: %s",
 			client.RemoteAddr().String(), destAddrPort, err.Error())
-		_ = client.Close()
 		return
 	}
 
@@ -94,7 +93,6 @@ func (s *Server) HandleClient(client net.Conn) {
 	target, err := s.socks5Connect(client, destAddrPort)
 	if err != nil {
 		logrus.Debug("Connect failed: ", err)
-		_ = client.Close()
 		return
 	}
 	s.forwardTCP(client, target, destAddrPort)
