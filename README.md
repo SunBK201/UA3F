@@ -1,16 +1,16 @@
 # UA3F
 
-UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5 服务部署在路由器等设备进行透明 User-Agent 重写。
+UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDIRECT 服务部署在路由器等设备进行透明 User-Agent 重写。
 
 ## 特性
 
+- 支持多种服务模式：SOCKS5、TPROXY、REDIRECT
 - 支持正则表达式规则匹配重写 User-Agent
 - 自定义 User-Agent 内容
 - 与其他网络加速代理工具共存
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
 - 支持 LuCI Web 图形页面
 - 多种部署方式
-- 支持 UDP 转发
 
 <table>
   <tr>
@@ -19,7 +19,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5 服务部�
   </tr>
 </table>
 
-![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f)
+![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f.png)
 
 ## 部署
 
@@ -51,9 +51,12 @@ docker run -p 1080:1080 sunbk201/ua3f -f FFF
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
+`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作（不保证与 Clash 的兼容性）。
+
 > [!NOTE]
 > 设置说明：
 >
+> - Server Mode: UA3F 服务模式，支持 `SOCKS5`、`TPROXY`、`REDIRECT` 三种模式，默认 `SOCKS5`。
 > - Port: UA3F 监听端口，默认 `1080`。
 > - Bind Address: UA3F 监听地址，默认 `127.0.0.1`。
 > - Log Level: 日志等级，默认 `info`, 如果需要调试排查错误可以设置为 `debug`。
@@ -78,6 +81,7 @@ sudo -u shellcrash /usr/bin/ua3f
 
 相关命令行启动参数:
 
+- `-m <mode>`: 服务模式，支持 SOCKS5、TPROXY、REDIRECT，默认 SOCKS5
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
 - `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
