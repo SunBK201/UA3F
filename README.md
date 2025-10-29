@@ -115,7 +115,6 @@ rules:
 ```
 
 > [!IMPORTANT]
-> 不推荐使用 Fake-IP 模式和本地 DNS 劫持，因为可能会影响 UA3F 的 DNS 解析，除非你知道自己在做什么。
 > 如果使用 Fake-IP 模式，确保 OpenClash 本地 DNS 劫持选择「使用防火墙转发」，不要使用「Dnsmasq 转发」。
 
 ### Clash 参考配置
