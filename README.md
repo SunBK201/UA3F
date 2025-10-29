@@ -10,7 +10,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 - 与其他网络加速代理工具共存
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
 - 支持 LuCI Web 图形页面
-- 多种部署方式
+- 支持 opkg 安装、编译安装、Docker 部署多种方式
 
 <table>
   <tr>
@@ -25,27 +25,27 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 
 提供 3 种部署方式：
 
-1. 使用 ipk 安装包进行部署：
+- 使用 ipk 安装包进行部署：
 
-[Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己架构下载到 OpenWrt 上进行安装。
+  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己设备的架构下载到 OpenWrt 上使用 `opkg install` 进行安装。
 
-2. OpenWrt 编译安装
+- OpenWrt 编译安装：
 
-```sh
-git clone https://github.com/openwrt/openwrt.git && cd openwrt
-git checkout openwrt-22.03
-./scripts/feeds update -a && ./scripts/feeds install -a
-git clone https://github.com/SunBK201/UA3F.git package/UA3F
-make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
-make download -j$(nproc) V=s
-make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
-```
+  ```sh
+  git clone https://github.com/openwrt/openwrt.git && cd openwrt
+  git checkout openwrt-22.03
+  ./scripts/feeds update -a && ./scripts/feeds install -a
+  git clone https://github.com/SunBK201/UA3F.git package/UA3F
+  make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
+  make download -j$(nproc) V=s
+  make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
+  ```
 
-3. Docker 部署
+- Docker 部署：
 
-```sh
-docker run -p 1080:1080 sunbk201/ua3f -f FFF
-```
+  ```sh
+  docker run -p 1080:1080 sunbk201/ua3f -f FFF
+  ```
 
 ## 使用
 
@@ -56,13 +56,19 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > [!NOTE]
 > 设置说明：
 >
-> - Server Mode: UA3F 服务模式，支持 `SOCKS5`、`TPROXY`、`REDIRECT` 三种模式，默认 `SOCKS5`。
-> - Port: UA3F 监听端口，默认 `1080`。
-> - Bind Address: UA3F 监听地址，默认 `127.0.0.1`。
-> - Log Level: 日志等级，默认 `info`, 如果需要调试排查错误可以设置为 `debug`。
-> - User-Agent: 自定义 User-Agent，默认 `FFF`。
-> - User-Agent Regex Pattern: User-Agent 正则表达式规则。如果流量中的 User-Agent 匹配该正则表达式，则会被修改为 User-Agent 字段的内容，否则不会被修改；如果该字段为空，则所有流量 User-Agent 都会被修改。例如 `(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Microsoft|Windows|Linux|Android|OpenHarmony|Mobile)`，即只修改携带设备与系统信息的 User-Agent。
-> - Partial Replace: 部分替换，如果开启，则只替换 User-Agent Regex Pattern 中匹配到的部分。该选项仅在 User-Agent Regex Pattern 不为空时生效。
+> - Server Mode (服务模式): 支持 `SOCKS5`、`TPROXY`、`REDIRECT` 三种模式，默认 `SOCKS5`
+> - Port (监听端口): 默认 `1080`
+> - Bind Address (绑定地址): 默认 `127.0.0.1`
+> - Log Level (日志等级): 默认 `info`, 如果需要调试排查错误可以设置为 `debug`
+> - User-Agent (自定义重写 User-Agent): 默认 `FFF`
+> - User-Agent Regex (User-Agent 正则表达式): 只重写匹配成功的 User-Agent。如果为空，全部重写
+> - Partial Replace (部分替换): 只替换正则表达式匹配的部分。该选项仅在 User-Agent 正则表达式非空时生效
+
+设备与系统信息正则表达式参考：
+
+```regex
+(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Microsoft|Windows|Linux|Android|OpenHarmony|Mobile)
+```
 
 <details>
 <summary>手动命令行启动</summary>
