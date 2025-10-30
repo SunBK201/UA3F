@@ -11,7 +11,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
 - 支持 LuCI Web 图形页面
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
-- 兼容 OpenWrt 18.06 及以上版本
+- 兼容 OpenWrt 17.01 及以上版本
 
 <table>
   <tr>
