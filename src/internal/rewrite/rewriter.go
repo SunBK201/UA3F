@@ -100,7 +100,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 	reader := bufio.NewReader(src)
 	defer func() {
 		if err != nil {
-			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("ProxyHTTPOrRaw Error: %s", err.Error()))
+			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("ProxyHTTPOrRaw: %s", err.Error()))
 		}
 		io.Copy(dst, reader)
 	}()
