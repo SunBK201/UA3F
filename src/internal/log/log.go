@@ -72,3 +72,19 @@ func LogHeader(version string, cfg *config.Config) {
 	logrus.Infof("Enable Partial Replace: %v", cfg.EnablePartialReplace)
 	logrus.Infof("Log level: %s", cfg.LogLevel)
 }
+
+func LogDebugWithAddr(src string, dest string, msg string) {
+	logrus.Debugf("[%s -> %s] %s", src, dest, msg)
+}
+
+func LogInfoWithAddr(src string, dest string, msg string) {
+	logrus.Infof("[%s -> %s] %s", src, dest, msg)
+}
+
+func LogWarnWithAddr(src string, dest string, msg string) {
+	logrus.Warnf("[%s -> %s] %s", src, dest, msg)
+}
+
+func LogErrorWithAddr(src string, dest string, msg string) {
+	logrus.Errorf("[%s -> %s] %s", src, dest, msg)
+}
