@@ -30,7 +30,17 @@ try_modprobe() { command -v modprobe >/dev/null 2>&1 && modprobe "$1" 2>/dev/nul
 
 nft_available() { command -v nft >/dev/null 2>&1; }
 ipt_available() { command -v iptables >/dev/null 2>&1; }
+opkg_available() { command -v opkg >/dev/null 2>&1; }
 detect_backend() {
+    if opkg_available; then
+        if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
+            FW_BACKEND="nft"
+            return 0
+        else
+            FW_BACKEND="ipt"
+            return 0
+        fi
+    fi
     if nft_available; then
         FW_BACKEND="nft"
         return 0
