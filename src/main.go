@@ -11,7 +11,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/server"
 )
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 func main() {
 	cfg, showVer := config.Parse()
