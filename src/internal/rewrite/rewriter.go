@@ -53,7 +53,7 @@ type Rewriter struct {
 	enablePartialReplace bool
 
 	uaRegex   *regexp2.Regexp
-	cache     *expirable.LRU[string, string]
+	Cache     *expirable.LRU[string, string]
 	whitelist map[string]struct{}
 }
 
@@ -78,7 +78,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		pattern:              cfg.UAPattern,
 		enablePartialReplace: cfg.EnablePartialReplace,
 		uaRegex:              uaRegex,
-		cache:                cache,
+		Cache:                cache,
 		whitelist:            whitelist,
 	}, nil
 }
@@ -87,17 +87,9 @@ func New(cfg *config.Config) (*Rewriter, error) {
 // - If target in LRU cache: pass-through (raw).
 // - Else if HTTP: rewrite UA (unless whitelisted or pattern not matched).
 // - Else: mark target in LRU and pass-through.
-func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (err error) {
-	srcAddr := src.RemoteAddr().String()
-
-	// Fast path: known pass-through
-	if r.cache.Contains(destAddr) {
-		log.LogDebugWithAddr(src.RemoteAddr().String(), destAddr, "LRU Relay Cache Hit, pass-through")
-		io.Copy(dst, src)
-		return nil
-	}
-
+func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, srcAddr string) (err error) {
 	reader := bufio.NewReader(src)
+
 	defer func() {
 		if err != nil {
 			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("ProxyHTTPOrRaw: %s", err.Error()))
@@ -106,7 +98,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 	}()
 
 	if strings.HasSuffix(destAddr, "443") && isTLSClientHello(reader) {
-		r.cache.Add(destAddr, destAddr)
+		r.Cache.Add(destAddr, destAddr)
 		log.LogDebugWithAddr(srcAddr, destAddr, "TLS ClientHello detected")
 		return
 	}
@@ -116,7 +108,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 		return
 	}
 	if !isHTTP {
-		r.cache.Add(destAddr, destAddr)
+		r.Cache.Add(destAddr, destAddr)
 		log.LogDebugWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
 		return
 	}
@@ -135,7 +127,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 			if isWebSocket(h2) {
 				log.LogDebugWithAddr(srcAddr, destAddr, "WebSocket detected, pass-through")
 			} else {
-				r.cache.Add(destAddr, destAddr)
+				r.Cache.Add(destAddr, destAddr)
 				log.LogDebugWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
 			}
 			return
@@ -150,7 +142,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 
 		// No UA header: pass-through after writing this first request
 		if originalUA == "" {
-			r.cache.Add(destAddr, destAddr)
+			r.Cache.Add(destAddr, destAddr)
 			log.LogDebugWithAddr(srcAddr, destAddr, "Not found User-Agent, Add LRU Relay Cache")
 			if err = req.Write(dst); err != nil {
 				err = fmt.Errorf("req.Write: %w", err)
@@ -175,7 +167,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 			}
 			if isWhitelist {
 				log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent Whitelist: %s", originalUA))
-				r.cache.Add(destAddr, destAddr)
+				r.Cache.Add(destAddr, destAddr)
 			}
 			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
 				Host: destAddr,
