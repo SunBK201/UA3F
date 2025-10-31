@@ -57,6 +57,8 @@ ensure_tproxy_route() {
     ip rule add fwmark "$FWMARK" table "$ROUTE_TABLE" 2>/dev/null
     ip route add local 0.0.0.0/0 dev lo table "$ROUTE_TABLE" 2>/dev/null
     echo 1 >"$ROUTE_CREATED_FLAG"
+    sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1
+    sysctl -w net.bridge.bridge-nf-call-ip6tables=0 >/dev/null 2>&1
 }
 cleanup_tproxy_route() {
     ip route del local 0.0.0.0/0 dev lo table "$ROUTE_TABLE" 2>/dev/null
@@ -299,9 +301,9 @@ start_service() {
     procd_set_param limits nproc="unlimited" as="unlimited" memlock="unlimited" nofile="65535 65535"
 
     if id -u shellclash >/dev/null 2>&1; then
-        procd_set_param user shellclash
+        procd_set_param group shellclash
     elif id -u shellcrash >/dev/null 2>&1; then
-        procd_set_param user shellcrash
+        procd_set_param group shellcrash
     fi
     procd_set_param group nogroup
 
