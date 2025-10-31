@@ -148,7 +148,7 @@ fw_setup_ipt_tproxy_tcp() {
     iptables -t mangle -A "$UA3F_CHAIN" -p tcp -m mark --mark "$UA3FMARK" -j RETURN
     iptables -t mangle -A "$UA3F_CHAIN" -m set --match-set "$IPSET_NAME" dst -j RETURN
     iptables -t mangle -A "$UA3F_CHAIN" -m conntrack --ctdir REPLY -j RETURN
-    iptables -t mangle -A "$UA3F_CHAIN" -p tcp -j TPROXY --on-port "$SERVER_PORT" --tproxy-mark "$FWMARK"
+    iptables -t mangle -A "$UA3F_CHAIN" -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port "$SERVER_PORT" --tproxy-mark "$FWMARK"
 
     # OUTPUT
     iptables -t mangle -F "$UA3F_OUT_CHAIN" 2>/dev/null
