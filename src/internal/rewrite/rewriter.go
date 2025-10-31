@@ -105,6 +105,11 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string) (
 		io.Copy(dst, reader)
 	}()
 
+	if strings.HasSuffix(destAddr, "443") && isTLSClientHello(reader) {
+		r.cache.Add(destAddr, destAddr)
+		log.LogDebugWithAddr(srcAddr, destAddr, "TLS ClientHello detected")
+		return
+	}
 	isHTTP, err := r.isHTTP(reader)
 	if err != nil {
 		err = fmt.Errorf("isHTTP: %w", err)
@@ -346,6 +351,28 @@ func isWebSocket(header []byte) bool {
 	payloadLen := b1 & 0x7F
 	if payloadLen > 0 && payloadLen <= 125 {
 		return true
+	}
+
+	return true
+}
+
+func isTLSClientHello(reader *bufio.Reader) bool {
+	header, err := reader.Peek(3)
+	if err != nil {
+		return false
+	}
+	// TLS record type 0x16 = Handshake
+	if header[0] != 0x16 {
+		return false
+	}
+	// TLS version
+	versionMajor := header[1]
+	versionMinor := header[2]
+	if versionMajor != 0x03 {
+		return false
+	}
+	if versionMinor < 0x01 || versionMinor > 0x04 {
+		return false
 	}
 
 	return true
