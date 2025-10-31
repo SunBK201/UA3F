@@ -48,7 +48,7 @@ func TestNewRewriter(t *testing.T) {
 	assert.Equal(t, cfg.UAPattern, rewriter.pattern)
 	assert.Equal(t, cfg.EnablePartialReplace, rewriter.enablePartialReplace)
 	assert.NotNil(t, rewriter.uaRegex)
-	assert.NotNil(t, rewriter.cache)
+	assert.NotNil(t, rewriter.Cache)
 }
 
 func TestIsHTTP(t *testing.T) {
@@ -83,7 +83,7 @@ func TestProxyHTTPOrRaw_HTTPRewrite(t *testing.T) {
 	dstBuf := &bytes.Buffer{}
 	dst := &mockConn{Reader: nil, Writer: dstBuf}
 
-	r.ProxyHTTPOrRaw(dst, src, "example.com:80")
+	r.ProxyHTTPOrRaw(dst, src, "example.com:80", "srcAddr")
 
 	out := dstBuf.String()
 	assert.Contains(t, out, "User-Agent: MockUA/1.0")
