@@ -4,7 +4,7 @@ config 'ua3f' 'enabled'
 config 'ua3f' 'main'
     option server_mode 'SOCKS5'
     option port '1080'
-    option bind '127.0.0.1'
+    option bind '0.0.0.0'
 	option ua 'FFF'
     option ua_regex '(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|Mobile|Dalvik)'
     option partial_replace false

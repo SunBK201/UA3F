@@ -55,5 +55,9 @@ func Parse() (*Config, bool) {
 		UAPattern:            uaPattern,
 		EnablePartialReplace: partial,
 	}
+	if serverMode == ServerModeRedirect {
+		cfg.BindAddr = "0.0.0.0"
+		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
+	}
 	return cfg, showVer
 }
