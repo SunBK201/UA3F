@@ -66,7 +66,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		return nil, err
 	}
 
-	cache := expirable.NewLRU[string, string](300, nil, 10*time.Minute)
+	cache := expirable.NewLRU[string, string](1024, nil, 10*time.Minute)
 
 	whitelist := make(map[string]struct{}, len(defaultWhitelist))
 	for _, s := range defaultWhitelist {
