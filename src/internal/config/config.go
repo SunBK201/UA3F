@@ -41,7 +41,7 @@ func Parse() (*Config, bool) {
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
 	flag.StringVar(&uaPattern, "r", "", "UA-Pattern")
 	flag.BoolVar(&partial, "s", false, "Enable Regex Partial Replace")
-	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
+	flag.StringVar(&loglevel, "l", "error", "Log level (default: error)")
 	flag.BoolVar(&showVer, "v", false, "show version")
 	flag.Parse()
 

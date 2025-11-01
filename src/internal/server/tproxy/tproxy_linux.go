@@ -78,7 +78,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	target, err := utils.ConnectWithMark(addr, utils.SO_MARK)
 	if err != nil {
 		_ = client.Close()
-		logrus.Errorf("Dial target %s failed: %v", addr, err)
+		logrus.Warnf("Dial target %s failed: %v", addr, err)
 		return
 	}
 

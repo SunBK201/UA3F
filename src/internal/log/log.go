@@ -39,7 +39,7 @@ func SetLogConf(level string) {
 	writer2 := os.Stdout
 	writer3 := &lumberjack.Logger{
 		Filename:   log_file,
-		MaxSize:    1, // megabytes
+		MaxSize:    2, // megabytes
 		MaxBackups: 5,
 		MaxAge:     7, //days
 		LocalTime:  true,
@@ -73,8 +73,8 @@ func LogHeader(version string, cfg *config.Config) {
 	logrus.Info("Server Mode: " + cfg.ServerMode)
 	logrus.Infof("Listen on %s", cfg.ListenAddr)
 	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
-	logrus.Infof("User-Agent Regex Pattern: '%s'", cfg.UAPattern)
-	logrus.Infof("Enable Partial Replace: %v", cfg.EnablePartialReplace)
+	logrus.Infof("User-Agent Regex: '%s'", cfg.UAPattern)
+	logrus.Infof("Partial Replace: %v", cfg.EnablePartialReplace)
 	logrus.Infof("Log level: %s", cfg.LogLevel)
 }
 
