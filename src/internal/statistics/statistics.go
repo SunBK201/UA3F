@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"strings"
 	"time"
 )
 
