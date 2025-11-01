@@ -93,7 +93,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	// TCP CONNECT
 	target, err := s.socks5Connect(client, destAddrPort)
 	if err != nil {
-		logrus.Debug("Connect failed: ", err)
+		logrus.Warn("Connect failed: ", err)
 		_ = client.Close()
 		return
 	}
