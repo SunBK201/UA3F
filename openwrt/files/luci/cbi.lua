@@ -50,9 +50,12 @@ log_level:value("warn")
 log_level:value("error")
 log_level:value("fatal")
 log_level:value("panic")
+log_level.description = translate(
+    "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time.")
 
 ua = general:taboption("general", Value, "ua", translate("User-Agent"))
 ua.placeholder = "FFF"
+ua.description = translate("User-Agent to be rewritten")
 
 uaRegexPattern = general:taboption("general", Value, "ua_regex", translate("User-Agent Regex Pattern"))
 uaRegexPattern.description = translate("Regular expression pattern for matching User-Agent")
@@ -62,12 +65,37 @@ partialRepalce.description =
     translate("Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty")
 partialRepalce.default = "0"
 
-log = general:taboption("log", TextValue, "")
+log = general:taboption("log", TextValue, "log")
 log.readonly = true
-log.cfgvalue = function(self, section)
-    return luci.sys.exec("cat /var/log/ua3f/ua3f.log")
-end
 log.rows = 30
+function log.cfgvalue(self, section)
+    local logfile = "/var/log/ua3f/ua3f.log"
+    local fs = require("nixio.fs")
+    if not fs.access(logfile) then
+        return ""
+    end
+    local n = tonumber(luci.model.uci.cursor():get("ua3f", section, "log_lines")) or 1000
+    return luci.sys.exec("tail -n " .. n .. " " .. logfile)
+end
+
+function log.write(self, section, value) end
+
+function log.render(self, section, scope)
+    TextValue.render(self, section, scope)
+    luci.http.write("<script>")
+    luci.http.write([[
+        var textarea = document.getElementById('cbid.ua3f.main.log');
+        if (textarea) {
+            textarea.scrollTop = textarea.scrollHeight;
+        }
+    ]])
+    luci.http.write("</script>")
+end
+
+logLines = general:taboption("log", Value, "log_lines", translate("Display Lines"))
+logLines.default = "1000"
+logLines.datatype = "uinteger"
+logLines.rmempty = false
 
 stats = general:taboption("stats", DummyValue, "")
 stats.template = "ua3f/statistics"
