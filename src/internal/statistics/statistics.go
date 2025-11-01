@@ -29,6 +29,9 @@ func StartRecorder() {
 				}
 			}
 		case record := <-passThroughRecordChan:
+			if strings.HasPrefix(record.UA, "curl/") {
+				record.UA = "curl/*"
+			}
 			if r, exists := passThroughRecords[record.UA]; exists {
 				r.Count++
 				r.Host = record.Host
