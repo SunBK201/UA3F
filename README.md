@@ -9,8 +9,8 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 - 自定义 User-Agent 内容
 - 与其他网络加速代理工具共存
 - LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
-- 支持 LuCI Web 图形页面
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
+- 兼容 Clash Fake-IP & Redir-Host & Tun 多种模式
 - 兼容 OpenWrt 17.01 及以上版本
 
 <table>
@@ -52,15 +52,15 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
-`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作（不保证与 Clash 的兼容性）。
+`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作，同时可与 Clash 等代理工具共存。
 
 > [!NOTE]
 > 设置说明：
 >
 > - Server Mode (服务模式): 支持 `SOCKS5`、`TPROXY`、`REDIRECT` 三种模式，默认 `SOCKS5`
 > - Port (监听端口): 默认 `1080`
-> - Bind Address (绑定地址): 默认 `127.0.0.1`
-> - Log Level (日志等级): 默认 `info`, 如果需要调试排查错误可以设置为 `debug`
+> - Bind Address (绑定地址): 默认 `0.0.0.0`
+> - Log Level (日志等级): 默认 `error`, 如果需要调试排查错误可以设置为 `debug`
 > - User-Agent (自定义重写 User-Agent): 默认 `FFF`
 > - User-Agent Regex (User-Agent 正则表达式): 只重写匹配成功的 User-Agent。如果为空，全部重写
 > - Partial Replace (部分替换): 只替换正则表达式匹配的部分。该选项仅在 User-Agent 正则表达式非空时生效
