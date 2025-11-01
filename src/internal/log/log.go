@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
@@ -24,7 +25,11 @@ func (formatter *uctFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	} else {
 		b = &bytes.Buffer{}
 	}
-	formatTime := entry.Time.Format("2006-01-02 15:04:05")
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		loc = time.FixedZone("CST", 8*3600)
+	}
+	formatTime := entry.Time.In(loc).Format("2006-01-02 15:04:05")
 	b.WriteString(fmt.Sprintf("[%s][%s]: %s\n", formatTime, strings.ToUpper(entry.Level.String()), entry.Message))
 	return b.Bytes(), nil
 }
