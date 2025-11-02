@@ -1,0 +1,251 @@
+---
+#--------------------------------------------------------------------------------------#
+# Written by SunBK201
+# https://github.com/SunBK201/UA3F
+#--------------------------------------------------------------------------------------#
+mixed-port: 7890
+#--------------------------------------------------------------------------------------#
+ipv6: false
+mode: rule
+#--------------------------------------------------------------------------------------#
+dns:
+#--------------------------------------------------------------------------------------#
+proxies:
+#--------------------------------------------------------------------------------------#
+proxy-providers:
+  Global-ISP:
+    type: http
+    url: "" # 👈 Please set your proxy URL here
+    interval: 3600
+    path: "./Proxy-Providers/Global-ISP.yaml"
+    health-check:
+      enable: true
+      interval: 600
+      url: http://1.1.1.1/generate_204
+#--------------------------------------------------------------------------------------#
+proxy-groups:
+  - name: "Switch"
+    type: select
+    proxies:
+      - Fallback
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Fallback"
+    type: fallback
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Global-ISP"
+    type: select
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "CN"
+    type: select
+    proxies:
+      - DIRECT
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
+    interval: 300
+  - name: "Netflix"
+    type: select
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Bahamut"
+    type: select
+    proxies:
+      - HongKong
+      - Taiwan
+      - Singapore
+      - Japan
+      - USA
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "HongKong"
+    type: select
+    filter: "^(?!.*?(Premium)).*(香港|Hong Kong|HK)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Taiwan"
+    type: select
+    filter: "^(?!.*?(Premium)).*(台湾|Taiwan|TW)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Singapore"
+    type: select
+    filter: "^(?!.*?(Premium)).*(新加坡|Singapore|SG)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "Japan"
+    type: select
+    filter: "^(?!.*?(Premium)).*(日本|Japan|JP)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+  - name: "USA"
+    type: select
+    filter: "^(?!.*?(Premium)).*(美国|USA|US)"
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+#--------------------------------------------------------------------------------------#
+rules:
+  # Tencent
+  - DOMAIN-KEYWORD,wx,Switch
+  - DOMAIN-KEYWORD,qq,Switch
+  - DOMAIN-KEYWORD,weixin,Switch
+  - DOMAIN-KEYWORD,wechat,Switch
+  - DOMAIN-KEYWORD,tencent,Switch
+  # Personal Define
+  - DOMAIN,speed.cloudflare.com,CN
+  - DOMAIN-SUFFIX,test-ipv6.com,CN
+  - DOMAIN-SUFFIX,httpbin.org,CN
+  # Apple
+  - RULE-SET,Apple,CN
+  # Microsoft
+  - RULE-SET,Microsoft,CN
+  # Nintendo
+  - RULE-SET,Nintendo,Switch
+  # Notion
+  - DOMAIN,http-inputs-notion.splunkcloud.com,Switch
+  - RULE-SET,Notion,Switch
+  # Steam
+  - DOMAIN-SUFFIX,steamcommunity.com,Switch
+  - DOMAIN,avatars.akamai.steamstatic.com,Switch
+  - DOMAIN,api.steampowered.com,Switch
+  - DOMAIN,store.steampowered.com,Switch
+  - RULE-SET,SteamCN,CN
+  # Telegram
+  - RULE-SET,Telegram,Switch
+  # Spotify
+  - DOMAIN,open.spotify.com,Switch
+  - DOMAIN-SUFFIX,akamaized.net,CN
+  - DOMAIN-SUFFIX,spotify.com,CN
+  - DOMAIN-SUFFIX,spotifycdn.com,CN
+  - DOMAIN-SUFFIX,scdn.co,CN
+  - DOMAIN-SUFFIX,branch.io,CN
+  - RULE-SET,Spotify,CN
+  # Streaming
+  - DOMAIN,anime1.me,Switch
+  - DOMAIN-SUFFIX,anime1.me,CN
+  - RULE-SET,Netflix,Netflix
+  - RULE-SET,Bahamut,Bahamut
+  - RULE-SET,Streaming,Switch
+  # Global Domain
+  - DOMAIN-SUFFIX,imap.gmail.com,Switch # Gmail
+  - DOMAIN-SUFFIX,smtp.gmail.com,Switch # Gmail
+  # China Domain
+  - DOMAIN-SUFFIX,ua.233996.xyz,CN
+  - DOMAIN-SUFFIX,httpbin.org,CN
+  - DOMAIN-SUFFIX,ghproxy.com,CN
+  # Global SET
+  - RULE-SET,Global,Switch
+  # China SET
+  - RULE-SET,China,CN
+  #---!---DNS-Resolve---!--- #
+  #---!---DNS-Resolve---!--- #
+  #---!---DNS-Resolve---!--- #
+  # GeoIP China
+  - GEOIP,CN,CN
+  # Local Area Network
+  - GEOIP,LAN,DIRECT
+  # FINAL
+  - MATCH,Switch
+#--------------------------------------------------------------------------------------#
+rule-providers:
+  Apple:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Apple.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.yaml
+    interval: 86400
+  Microsoft:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Microsoft.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml
+    interval: 86400
+  Nintendo:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Nintendo.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Nintendo/Nintendo.yaml
+    interval: 86400
+  Notion:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Notion.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Notion/Notion.yaml
+    interval: 86400
+  SteamCN:
+    type: http
+    behavior: classical
+    path: ./RuleSet/SteamCN.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN.yaml
+    interval: 86400
+  Telegram:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Telegram.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml
+    interval: 86400
+  Spotify:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Spotify.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Spotify/Spotify.yaml
+    interval: 86400
+  Netflix:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Netflix.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Netflix/Netflix.yaml
+    interval: 86400
+  Bahamut:
+    type: http
+    behavior: classical
+    path: ./RuleSet/Bahamut.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Bahamut/Bahamut.yaml
+    interval: 86400
+  Streaming:
+    type: http
+    behavior: domain
+    path: ./RuleSet/Streaming.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GlobalMedia/GlobalMedia_Domain.yaml
+    interval: 86400
+  Global:
+    type: http
+    behavior: domain
+    path: ./RuleSet/Global.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Global/Global_Domain.yaml
+    interval: 86400
+  China:
+    type: http
+    behavior: domain
+    path: ./RuleSet/China.yaml
+    url: https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/China/China_Domain.yaml
+    interval: 86400
+#--------------------------------------------------------------------------------------#
+parsers:
+#--------------------------------------------------------------------------------------#
