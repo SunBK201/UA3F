@@ -6,12 +6,11 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 
 - 支持多种服务模式：SOCKS5、TPROXY、REDIRECT
 - 支持正则表达式规则匹配重写 User-Agent
-- 自定义 User-Agent 内容
-- 与其他网络加速代理工具共存
-- LRU 高速缓存非 HTTP 域名，加速非 HTTP 流量转发
+- 自定义重写 User-Agent 内容
+- LRU 高速缓存非 HTTP 流量，加速非 HTTP 流量转发
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
-- 兼容 Clash Fake-IP & Redir-Host & Tun 多种模式
-- 兼容 OpenWrt 17.01 及以上版本
+- 支持 OpenWrt 17.01 及以上版本
+- 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 
 <table>
   <tr>
@@ -52,7 +51,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 SOCKS5/TPROXY/REDI
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
-`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作，同时可与 Clash 等代理工具共存。
+`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作，亦可同时可与 Clash 等代理工具伴生运行。
 
 > [!NOTE]
 > 设置说明：
@@ -98,6 +97,8 @@ sudo -u shellcrash /usr/bin/ua3f
 </details>
 
 ## Clash 配置
+
+以下 Clash 配置仅适用于 UA3F SOCKS5 服务模式，TPROXY 与 REDIRECT 模式不需要额外的 Clash 配置。
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
