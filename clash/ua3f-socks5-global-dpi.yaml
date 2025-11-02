@@ -20,7 +20,7 @@ proxies:
 proxy-providers:
   Global-ISP:
     type: http
-    url: ""
+    url: "" # 👈 Please set your proxy URL here
     interval: 3600
     path: "./Proxy-Providers/Global-ISP.yaml"
     health-check:
@@ -116,12 +116,16 @@ proxy-groups:
     interval: 300
 #--------------------------------------------------------------------------------------#
 rules:
+  # Tencent
+  - DOMAIN-KEYWORD,wx,Switch
+  - DOMAIN-KEYWORD,qq,Switch
+  - DOMAIN-KEYWORD,weixin,Switch
+  - DOMAIN-KEYWORD,wechat,Switch
+  - DOMAIN-KEYWORD,tencent,Switch
   # Personal Define
   - DOMAIN,speed.cloudflare.com,CN
   - DOMAIN-SUFFIX,test-ipv6.com,CN
   - DOMAIN-SUFFIX,httpbin.org,CN
-  # Unbreak
-  - RULE-SET,Unbreak,CN
   # Apple
   - RULE-SET,Apple,CN
   # Microsoft
@@ -175,12 +179,6 @@ rules:
   - MATCH,Switch
 #--------------------------------------------------------------------------------------#
 rule-providers:
-  Unbreak:
-    type: http
-    behavior: classical
-    path: ./RuleSet/Unbreak.yaml
-    url: https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/Unbreak.yaml
-    interval: 86400
   Apple:
     type: http
     behavior: classical

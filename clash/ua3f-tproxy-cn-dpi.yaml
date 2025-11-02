@@ -1,0 +1,37 @@
+#--------------------------------------------------------------------------------------#
+# Written by SunBK201
+# https://github.com/SunBK201/UA3F
+#--------------------------------------------------------------------------------------#
+mixed-port: 7890
+ipv6: false
+mode: rule
+proxies:
+#--------------------------------------------------------------------------------------#
+proxy-providers:
+  Global-ISP:
+    type: http
+    url: "" # 👈 Please set your proxy URL here
+    interval: 3600
+    path: "./Proxy-Providers/Global-ISP.yaml"
+    health-check:
+      enable: true
+      interval: 600
+      url: http://1.1.1.1/generate_204
+#--------------------------------------------------------------------------------------#
+proxy-groups:
+  - name: "Proxy"
+    type: select
+    use:
+      - Global-ISP
+    url: http://1.1.1.1/generate_204
+    interval: 300
+#--------------------------------------------------------------------------------------#
+rules:
+  # Tencent
+  - DOMAIN-KEYWORD,wx,Proxy
+  - DOMAIN-KEYWORD,qq,Proxy
+  - DOMAIN-KEYWORD,weixin,Proxy
+  - DOMAIN-KEYWORD,wechat,Proxy
+  - DOMAIN-KEYWORD,tencent,Proxy
+  - NETWORK,udp,DIRECT
+  - MATCH,DIRECT
