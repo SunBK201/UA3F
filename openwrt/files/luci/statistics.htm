@@ -12,7 +12,7 @@ if rewrite_stats_file then
 end
 
 local pass_stats = {}
-local pass_stats_file = io.open("/var/log/ua3f/passthrough_stats", "r")
+local pass_stats_file = io.open("/var/log/ua3f/pass_stats", "r")
 if pass_stats_file then
     for line in pass_stats_file:lines() do
         local host, count, ua = line:match("^(%S+)%s(%d+)%s(.+)$")

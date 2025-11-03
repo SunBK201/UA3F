@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const passthroughStatsFile = "/var/log/ua3f/passthrough_stats"
+const passthroughStatsFile = "/var/log/ua3f/pass_stats"
 
 type PassThroughRecord struct {
 	Host  string
