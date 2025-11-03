@@ -1,8 +1,9 @@
 #!/bin/sh
-# ------------------------------
-#   ./build.sh amd64 arm64
-#   ./build.sh
-# ------------------------------
+# --------------------------------
+# Usage examples:
+#   ./build.sh                 # default: linux all + win/darwin 64/arm64
+#   ./build.sh linux/amd64 windows/arm64
+# --------------------------------
 
 set -e
 
@@ -12,12 +13,20 @@ target=main.go
 dist=./dist
 release_dir=./bin
 
-ALL_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
+# Linux 默认支持的架构
+LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
+
+# 默认构建目标（Linux + Windows + macOS）
+DEFAULT_TARGETS=""
+for a in $LINUX_ARCHS; do
+    DEFAULT_TARGETS="$DEFAULT_TARGETS linux/$a"
+done
+DEFAULT_TARGETS="$DEFAULT_TARGETS windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 android/arm64"
 
 if [ $# -gt 0 ]; then
-    ARCH_LIST="$@"
+    TARGET_LIST="$@"
 else
-    ARCH_LIST="$ALL_ARCHS"
+    TARGET_LIST="$DEFAULT_TARGETS"
 fi
 
 rm -rf "$release_dir"/* "$dist"/*
@@ -27,38 +36,53 @@ cd "$(dirname "$0")"
 gofmt -w ./
 cd "$(dirname "$0")/src"
 
-for goarch in $ARCH_LIST; do
-    obj_name=$project_name-$release_version-$goarch
-    echo ">>> Building for $goarch ..."
+for target_item in $TARGET_LIST; do
+    goos=$(echo "$target_item" | cut -d'/' -f1)
+    goarch=$(echo "$target_item" | cut -d'/' -f2)
+
+    obj_name=$project_name-$release_version-${goos}-${goarch}
+    echo ">>> Building for $goos/$goarch ..."
 
     case "$goarch" in
     mipsle-softfloat)
-        GOOS=linux GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        GOOS=$goos GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     mipsle-hardfloat)
-        GOOS=linux GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        GOOS=$goos GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     armv7)
-        GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        GOOS=$goos GOARCH=arm GOARM=7 go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     armv8)
-        # armv8 alias to arm64
-        if [ ! -f "../dist/bin/$project_name-$release_version-arm64" ]; then
-            echo ">>> Building arm64 (for armv8 alias)"
-            GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$project_name-$release_version-arm64" "$target"
-            cp "$project_name-$release_version-arm64" ../dist/bin/
+        alias_name=$project_name-$release_version-${goos}-arm64
+        if [ ! -f "../dist/bin/$alias_name" ]; then
+            echo ">>> Building $goos/arm64 (for armv8 alias)"
+            GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
+            cp "$alias_name" ../dist/bin/
         fi
-        cp "../dist/bin/$project_name-$release_version-arm64" "$obj_name"
+        cp "../dist/bin/$alias_name" "$obj_name"
         ;;
     *)
-        GOOS=linux GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     esac
 
     cp "$obj_name" ../dist/bin/
-    mv "$obj_name" "$project_name"
-    tar -zcf ../bin/$project_name-$release_version-$goarch.tar.gz "$project_name"
-    rm -f "$project_name"
+
+    echo ">>> Packaging for $goos/$goarch ..."
+    if [ "$goos" = "windows" ]; then
+        mv "$obj_name" "$project_name.exe"
+        zip ../bin/$project_name-$release_version-"${goos}"-"${goarch}".zip "$project_name.exe"
+        rm -f "$project_name.exe"
+    elif [ "$goos" = "darwin" ]; then
+        mv "$obj_name" "$project_name"
+        zip -q ../bin/$project_name-$release_version-"${goos}"-"${goarch}".zip "$project_name"
+        rm -f "$project_name"
+    else
+        mv "$obj_name" "$project_name"
+        tar -zcf ../bin/$project_name-$release_version-"${goos}"-"${goarch}".tar.gz "$project_name"
+        rm -f "$project_name"
+    fi
 done
 
 cd ../bin
@@ -87,13 +111,20 @@ cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
 ./po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 
-for goarch in $ARCH_LIST; do
-    obj_name=$project_name-$release_version-$goarch
+# 仅 Linux 平台生成 ipk 包
+for target_item in $TARGET_LIST; do
+    goos=$(echo "$target_item" | cut -d'/' -f1)
+    goarch=$(echo "$target_item" | cut -d'/' -f2)
+
+    # 只打包 Linux 的
+    [ "$goos" = "linux" ] || continue
+
+    obj_name=$project_name-$release_version-${goos}-${goarch}
     [ -f "$dist/bin/$obj_name" ] || continue
 
     mv "$dist/bin/$obj_name" $opkg_template/usr/bin/ua3f
     sh "$ipkg_build" "$opkg_template"
-    mv "$project_name"_"$release_version"-1_all.ipk "$dist/$project_name"_"$release_version"-1_"$goarch".ipk
+    mv "$project_name"_"$release_version"-1_all.ipk "$dist/$project_name"_"$release_version"-1_"${goos}_${goarch}".ipk
 done
 
-echo "✅ Build complete：$ARCH_LIST"
+echo "✅ Build complete：$TARGET_LIST"
