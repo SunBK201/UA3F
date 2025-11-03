@@ -82,3 +82,6 @@ msgstr "显示行数"
 
 msgid "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time."
 msgstr "设置日志级别，请勿长时间将日志级别设置为 debug / info / warn"
+
+msgid "Download Logs"
+msgstr "下载日志"

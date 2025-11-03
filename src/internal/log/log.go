@@ -39,7 +39,7 @@ func SetLogConf(level string) {
 	writer2 := os.Stdout
 	writer3 := &lumberjack.Logger{
 		Filename:   log_file,
-		MaxSize:    2, // megabytes
+		MaxSize:    5, // megabytes
 		MaxBackups: 5,
 		MaxAge:     7, //days
 		LocalTime:  true,
