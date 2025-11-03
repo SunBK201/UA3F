@@ -74,6 +74,7 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 <summary>手动命令行启动</summary>
 
 ```sh
+opkg install sudo
 sudo -u nobody /usr/bin/ua3f
 ```
 
