@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	ServerModeHTTP     = "HTTP"
 	ServerModeSocks5   = "SOCKS5"
 	ServerModeTProxy   = "TPROXY"
 	ServerModeRedirect = "REDIRECT"
@@ -35,13 +36,13 @@ func Parse() (*Config, bool) {
 		showVer    bool
 	)
 
-	flag.StringVar(&serverMode, "m", ServerModeSocks5, "server mode: SOCKS5, TPROXY, REDIRECT (default: SOCKS5)")
+	flag.StringVar(&serverMode, "m", ServerModeSocks5, "server mode: HTTP, SOCKS5, TPROXY, REDIRECT (default: SOCKS5)")
 	flag.StringVar(&bindAddr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
 	flag.StringVar(&uaPattern, "r", "", "UA-Pattern")
 	flag.BoolVar(&partial, "s", false, "Enable Regex Partial Replace")
-	flag.StringVar(&loglevel, "l", "error", "Log level (default: error)")
+	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.BoolVar(&showVer, "v", false, "show version")
 	flag.Parse()
 
