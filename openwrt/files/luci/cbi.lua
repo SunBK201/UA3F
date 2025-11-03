@@ -97,6 +97,13 @@ logLines.default = "1000"
 logLines.datatype = "uinteger"
 logLines.rmempty = false
 
+download = general:taboption("log", Button, "_download", translate("Download Logs"))
+download.inputtitle = translate("Download Logs")
+download.inputstyle = "apply"
+function download.write(self, section)
+    luci.http.redirect(luci.dispatcher.build_url("admin/services/ua3f/download_log"))
+end
+
 stats = general:taboption("stats", DummyValue, "")
 stats.template = "ua3f/statistics"
 
