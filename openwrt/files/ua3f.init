@@ -455,6 +455,27 @@ start_service() {
         ;;
     esac
 
+    # dump all fw rules for debug
+    if [ "$log_level" = "debug" ]; then
+        if [ "$FW_BACKEND" = "nft" ]; then
+            LOG "nftables rules:"
+            nft --handle list ruleset >>"$LOG_FILE" 2>&1
+        elif [ "$FW_BACKEND" = "ipt" ]; then
+            LOG "iptables rules:"
+            LOG "mangle table:"
+            iptables -t mangle -L -v -n >>"$LOG_FILE" 2>&1
+            LOG "nat table:"
+            iptables -t nat -L -v -n >>"$LOG_FILE" 2>&1
+            LOG "filter table:"
+            iptables -t filter -L -v -n >>"$LOG_FILE" 2>&1
+        fi
+    fi
+    # dump route rules for debug
+    if [ "$log_level" = "debug" ]; then
+        LOG "ip rule list:"
+        ip rule show >>"$LOG_FILE" 2>&1
+    fi
+
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
     procd_append_param command -m "$server_mode"
