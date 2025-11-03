@@ -7,5 +7,5 @@ License: GPL-3.0-only
 Section: net
 SourceDateEpoch: 1711267200
 Architecture: all
-Installed-Size:  4505600
+Installed-Size:  6307840
 Description: Advanced HTTP User-Agent Rewriting Tool.

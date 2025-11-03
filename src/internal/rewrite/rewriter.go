@@ -167,7 +167,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 
 	if strings.HasSuffix(destAddr, "443") && isTLSClientHello(reader) {
 		r.Cache.Add(destAddr, destAddr)
-		log.LogDebugWithAddr(srcAddr, destAddr, "TLS ClientHello detected")
+		log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, pass forward")
 		return
 	}
 	isHTTP, err := r.isHTTP(reader)
@@ -177,7 +177,7 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 	}
 	if !isHTTP {
 		r.Cache.Add(destAddr, destAddr)
-		log.LogDebugWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
+		log.LogInfoWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
 		return
 	}
 
@@ -194,10 +194,10 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 		if !isHTTP {
 			h2, _ := reader.Peek(2) // ensure we have at least 2 bytes
 			if isWebSocket(h2) {
-				log.LogDebugWithAddr(srcAddr, destAddr, "WebSocket detected, pass-through")
+				log.LogInfoWithAddr(srcAddr, destAddr, "WebSocket detected, pass-through")
 			} else {
 				r.Cache.Add(destAddr, destAddr)
-				log.LogDebugWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
+				log.LogInfoWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
 			}
 			return
 		}
