@@ -83,6 +83,74 @@ func New(cfg *config.Config) (*Rewriter, error) {
 	}, nil
 }
 
+// RewriteAndForward rewrites the User-Agent header if needed and forwards the request.
+// Returns pass=true if the request has been forwarded as-is (no rewrite).
+func (r *Rewriter) RewriteAndForward(dst net.Conn, req *http.Request, destAddr string, srcAddr string) (pass bool, err error) {
+
+	originalUA := req.Header.Get("User-Agent")
+
+	// No UA header: pass-through after writing this first request
+	if originalUA == "" {
+		r.Cache.Add(destAddr, destAddr)
+		log.LogDebugWithAddr(srcAddr, destAddr, "Not found User-Agent, Add LRU Relay Cache")
+		if err = req.Write(dst); err != nil {
+			err = fmt.Errorf("req.Write: %w", err)
+		}
+		pass = true
+		return
+	}
+
+	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Original User-Agent: %s", originalUA))
+
+	isWhitelist := r.inWhitelist(originalUA)
+	matches := true
+	if r.pattern != "" {
+		matches, err = r.uaRegex.MatchString(originalUA)
+		if err != nil {
+			log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("User-Agent Regex Pattern Match Error: %s", err.Error()))
+			matches = true
+		}
+	}
+
+	// If UA is whitelisted or does not match target pattern, write once then pass-through.
+	if isWhitelist || !matches {
+		if !matches {
+			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not Hit User-Agent Regex: %s", originalUA))
+		}
+		if isWhitelist {
+			log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent Whitelist: %s", originalUA))
+			r.Cache.Add(destAddr, destAddr)
+		}
+		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+			Host: destAddr,
+			UA:   originalUA,
+		})
+		if err = req.Write(dst); err != nil {
+			err = fmt.Errorf("req.Write: %w", err)
+		}
+		pass = true
+		return
+	}
+
+	// Rewrite UA and forward the request (including body)
+	rewritedUA := r.buildNewUA(originalUA)
+	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite User-Agent from (%s) to (%s)", originalUA, rewritedUA))
+	req.Header.Set("User-Agent", rewritedUA)
+	if err = req.Write(dst); err != nil {
+		err = fmt.Errorf("req.Write: %w", err)
+		pass = true
+		return
+	}
+
+	statistics.AddRewriteRecord(&statistics.RewriteRecord{
+		Host:       destAddr,
+		OriginalUA: originalUA,
+		MockedUA:   rewritedUA,
+	})
+
+	return false, nil
+}
+
 // ProxyHTTPOrRaw reads traffic from src and writes to dst.
 // - If target in LRU cache: pass-through (raw).
 // - Else if HTTP: rewrite UA (unless whitelisted or pattern not matched).
@@ -114,11 +182,12 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 	}
 
 	var req *http.Request
+	var pass bool
 
 	// HTTP request loop (handles keep-alive)
 	for {
-		isHTTP, err = r.isHTTP(reader)
-		if err != nil {
+
+		if isHTTP, err = r.isHTTP(reader); err != nil {
 			err = fmt.Errorf("isHTTP: %w", err)
 			return
 		}
@@ -132,67 +201,13 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 			}
 			return
 		}
-		req, err = http.ReadRequest(reader)
-		if err != nil {
+		if req, err = http.ReadRequest(reader); err != nil {
 			err = fmt.Errorf("http.ReadRequest: %w", err)
 			return
 		}
-
-		originalUA := req.Header.Get("User-Agent")
-
-		// No UA header: pass-through after writing this first request
-		if originalUA == "" {
-			r.Cache.Add(destAddr, destAddr)
-			log.LogDebugWithAddr(srcAddr, destAddr, "Not found User-Agent, Add LRU Relay Cache")
-			if err = req.Write(dst); err != nil {
-				err = fmt.Errorf("req.Write: %w", err)
-			}
+		if pass, err = r.RewriteAndForward(dst, req, destAddr, srcAddr); pass {
 			return
 		}
-
-		isWhitelist := r.inWhitelist(originalUA)
-		matches := true
-		if r.pattern != "" {
-			matches, err = r.uaRegex.MatchString(originalUA)
-			if err != nil {
-				log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("User-Agent Regex Pattern Match Error: %s", err.Error()))
-				matches = true
-			}
-		}
-
-		// If UA is whitelisted or does not match target pattern, write once then pass-through.
-		if isWhitelist || !matches {
-			if !matches {
-				log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not Hit User-Agent Regex: %s", originalUA))
-			}
-			if isWhitelist {
-				log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent Whitelist: %s", originalUA))
-				r.Cache.Add(destAddr, destAddr)
-			}
-			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
-				Host: destAddr,
-				UA:   originalUA,
-			})
-			if err = req.Write(dst); err != nil {
-				err = fmt.Errorf("req.Write: %w", err)
-			}
-			return
-		}
-
-		// Rewrite UA and forward the request (including body)
-		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent: %s", originalUA))
-		mockedUA := r.buildNewUA(originalUA)
-		req.Header.Set("User-Agent", mockedUA)
-		if err = req.Write(dst); err != nil {
-			err = fmt.Errorf("req.Write: %w", err)
-			return
-		}
-
-		statistics.AddRewriteRecord(&statistics.RewriteRecord{
-			Host:       destAddr,
-			OriginalUA: originalUA,
-			MockedUA:   mockedUA,
-		})
 	}
 }
 
