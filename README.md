@@ -19,7 +19,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
   </tr>
 </table>
 
-![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f.png)
+![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-1.2.0.png)
 
 ## 部署
 
