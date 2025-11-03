@@ -85,3 +85,6 @@ msgstr "设置日志级别，请勿长时间将日志级别设置为 debug / inf
 
 msgid "Download Logs"
 msgstr "下载日志"
+
+msgid "Clear Logs"
+msgstr "清除日志"

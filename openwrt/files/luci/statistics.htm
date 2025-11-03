@@ -77,6 +77,7 @@ end
             const doc = parser.parseFromString(text, "text/html");
             const newRewriteTable = doc.querySelector("#rewrite-stats-table");
             const newPassTable = doc.querySelector("#pass-stats-table");
+            const newLog = doc.querySelector("#cbid\\.ua3f\\.main\\.log");
 
             if (newRewriteTable) {
                 document.querySelector("#rewrite-stats-table").innerHTML = newRewriteTable.innerHTML;
@@ -84,6 +85,10 @@ end
             if (newPassTable) {
                 document.querySelector("#pass-stats-table").innerHTML = newPassTable.innerHTML;
             }
+            if (newLog) {
+                document.querySelector("#cbid\\.ua3f\\.main\\.log").value = newLog.value;
+            }
+
         } catch (err) {
             console.error("update stats error:", err);
         }

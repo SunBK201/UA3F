@@ -97,6 +97,30 @@ logLines.default = "1000"
 logLines.datatype = "uinteger"
 logLines.rmempty = false
 
+clearlog = general:taboption("log", Button, "_clearlog", translate("Clear Logs"))
+clearlog.inputtitle = translate("Clear Logs")
+clearlog.inputstyle = "reset"
+function clearlog.write(self, section)
+end
+
+function clearlog.render(self, section, scope)
+    Button.render(self, section, scope)
+    luci.http.write([[
+        <script>
+        document.querySelector("input[name='cbid.ua3f.main._clearlog']").addEventListener("click", function(e) {
+            e.preventDefault();
+            fetch(']] .. luci.dispatcher.build_url("admin/services/ua3f/clear_log") .. [[', {method: 'POST'})
+            .then(resp => {
+                if (resp.ok) {
+                    var textarea = document.getElementById('cbid.ua3f.main.log');
+                    if (textarea) textarea.value = "";
+                }
+            });
+        });
+        </script>
+    ]])
+end
+
 download = general:taboption("log", Button, "_download", translate("Download Logs"))
 download.inputtitle = translate("Download Logs")
 download.inputstyle = "apply"
