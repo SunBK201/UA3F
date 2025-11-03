@@ -7,7 +7,7 @@
 set -e
 
 project_name="ua3f"
-release_version="1.1.0"
+release_version="1.2.0"
 target=main.go
 dist=./dist
 release_dir=./bin
