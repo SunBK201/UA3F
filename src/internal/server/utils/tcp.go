@@ -10,6 +10,8 @@ import (
 	"github.com/sunbk201/ua3f/internal/rewrite"
 )
 
+var one = make([]byte, 1)
+
 // Connect dials the target address and returns the connection.
 func Connect(addr string) (target net.Conn, err error) {
 	logrus.Debugf("Connecting %s", addr)
@@ -36,7 +38,7 @@ func CopyHalf(dst, src net.Conn) {
 		}
 		log.LogDebugWithAddr(src.RemoteAddr().String(), dst.RemoteAddr().String(), "Connections half-closed")
 	}()
-	_, _ = io.Copy(dst, src)
+	io.CopyBuffer(dst, src, one)
 }
 
 // ProxyHalf runs the rewriter proxy on src->dst and then half-closes both sides.
@@ -59,7 +61,7 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
 	srcAddr := src.RemoteAddr().String()
 	if rw.Cache.Contains(destAddr) {
 		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("destination (%s) in cache, passing through", destAddr))
-		io.Copy(dst, src)
+		io.CopyBuffer(dst, src, one)
 		return
 	}
 	_ = rw.Process(dst, src, destAddr, srcAddr)

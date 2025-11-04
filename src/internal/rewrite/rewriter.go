@@ -19,6 +19,8 @@ import (
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
+var one = make([]byte, 1)
+
 // Rewriter encapsulates HTTP UA rewrite behavior and pass-through cache.
 type Rewriter struct {
 	payloadUA      string
@@ -143,13 +145,13 @@ func (r *Rewriter) Forward(dst net.Conn, req *http.Request) error {
 
 // Process handles the proxying with UA rewriting logic.
 func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr string) (err error) {
-	reader := bufio.NewReader(src)
+	reader := bufio.NewReaderSize(src, 64*1024)
 
 	defer func() {
 		if err != nil {
 			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Process: %s", err.Error()))
 		}
-		if _, err = io.Copy(dst, reader); err != nil {
+		if _, err = io.CopyBuffer(dst, reader, one); err != nil {
 			log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.Copy: %s", err.Error()))
 		}
 	}()
