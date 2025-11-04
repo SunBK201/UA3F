@@ -48,6 +48,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		whitelist: []string{
 			"MicroMessenger Client",
 			"Bilibili Freedoooooom/MarkII",
+			"Valve/Steam HTTP Client 1.0",
 			"Go-http-client/1.1",
 			"ByteDancePcdn",
 		},
@@ -78,25 +79,33 @@ func (r *Rewriter) buildUserAgent(originUA string) string {
 
 func (r *Rewriter) ShouldRewrite(req *http.Request, srcAddr, destAddr string) bool {
 	originalUA := req.Header.Get("User-Agent")
-	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Original User-Agent: (%s)", originalUA))
+	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("original User-Agent: (%s)", originalUA))
+	if originalUA == "" {
+		req.Header.Set("User-Agent", "")
+	}
 
 	var err error
-	matches := true
+	matches := false
 	isWhitelist := r.inWhitelist(originalUA)
 
-	if !isWhitelist && r.pattern != "" {
-		matches, err = r.uaRegex.MatchString(originalUA)
-		if err != nil {
-			log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("User-Agent Regex Match Error: %s", err.Error()))
+	if !isWhitelist {
+		if r.pattern == "" {
 			matches = true
+		} else {
+			matches, err = r.uaRegex.MatchString(originalUA)
+			if err != nil {
+				log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("User-Agent regex match error: %s", err.Error()))
+				matches = true
+			}
 		}
 	}
+
 	if isWhitelist {
-		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent Whitelist: %s", originalUA))
+		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("hit User-Agent whitelist: %s, add to cache", originalUA))
 		r.Cache.Add(destAddr, struct{}{})
 	}
 	if !matches {
-		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not Hit User-Agent Regex: %s", originalUA))
+		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("not hit User-Agent regex: %s", originalUA))
 	}
 
 	hit := !isWhitelist && matches
@@ -140,12 +149,14 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 		if err != nil {
 			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Process: %s", err.Error()))
 		}
-		io.Copy(dst, reader)
+		if _, err = io.Copy(dst, reader); err != nil {
+			log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.Copy: %s", err.Error()))
+		}
 	}()
 
 	if strings.HasSuffix(destAddr, "443") && sniff.SniffTLSClientHello(reader) {
 		r.Cache.Add(destAddr, struct{}{})
-		log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, pass forward")
+		log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, added to cache")
 		return
 	}
 
@@ -157,7 +168,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 	}
 	if !isHTTP {
 		r.Cache.Add(destAddr, struct{}{})
-		log.LogInfoWithAddr(srcAddr, destAddr, "Not HTTP, added to cache")
+		log.LogInfoWithAddr(srcAddr, destAddr, "sniff first request is not http, added to cache, switching to raw proxy")
 		return
 	}
 
@@ -165,12 +176,11 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
-			err = fmt.Errorf("isHTTP: %w", err)
+			err = fmt.Errorf("sniff.SniffHTTPFast: %w", err)
 			return
 		}
 		if !isHTTP {
-			r.Cache.Add(destAddr, struct{}{})
-			log.LogInfoWithAddr(srcAddr, destAddr, "Not HTTP, added to LRU Relay Cache")
+			log.LogWarnWithAddr(srcAddr, destAddr, "sniff subsequent request is not http, switching to raw proxy")
 			return
 		}
 		if req, err = http.ReadRequest(reader); err != nil {
@@ -185,7 +195,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			return
 		}
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
-			log.LogInfoWithAddr(srcAddr, destAddr, "WebSocket Upgrade detected, switching to raw proxy")
+			log.LogInfoWithAddr(srcAddr, destAddr, "websocket upgrade detected, switching to raw proxy")
 			return
 		}
 	}

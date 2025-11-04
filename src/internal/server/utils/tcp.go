@@ -34,6 +34,7 @@ func CopyHalf(dst, src net.Conn) {
 		} else {
 			_ = src.Close()
 		}
+		log.LogDebugWithAddr(src.RemoteAddr().String(), dst.RemoteAddr().String(), "Connections half-closed")
 	}()
 	_, _ = io.Copy(dst, src)
 }
@@ -51,12 +52,13 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
 		} else {
 			_ = src.Close()
 		}
+		log.LogDebugWithAddr(src.RemoteAddr().String(), destAddr, "Connections half-closed")
 	}()
 
 	// Fast path: known pass-through
 	srcAddr := src.RemoteAddr().String()
 	if rw.Cache.Contains(destAddr) {
-		log.LogDebugWithAddr(srcAddr, destAddr, "LRU Relay Cache Hit, pass-through")
+		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("destination (%s) in cache, passing through", destAddr))
 		io.Copy(dst, src)
 		return
 	}
