@@ -60,7 +60,7 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
 		io.Copy(dst, src)
 		return
 	}
-	_ = rw.ProxyHTTPOrRaw(dst, src, destAddr, srcAddr)
+	_ = rw.Process(dst, src, destAddr, srcAddr)
 }
 
 func GetConnFD(conn net.Conn) (fd int, err error) {
