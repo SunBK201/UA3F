@@ -58,7 +58,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer target.Close()
 
-	_, err = s.rw.RewriteAndForward(target, req, req.Host, req.RemoteAddr)
+	err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -99,6 +99,18 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 	}
 	client.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
 	s.ForwardTCP(client, dest, destAddr)
+}
+
+func (s *Server) rewriteAndForward(target net.Conn, req *http.Request, dstAddr, srcAddr string) (err error) {
+	rw := s.rw
+	if rw.ShouldRewrite(req, srcAddr, dstAddr) {
+		req = rw.Rewrite(req, srcAddr, dstAddr)
+	}
+	if err = rw.Forward(target, req); err != nil {
+		err = fmt.Errorf("r.forward: %w", err)
+		return
+	}
+	return nil
 }
 
 func (s *Server) HandleClient(client net.Conn) {

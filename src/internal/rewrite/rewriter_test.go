@@ -1,7 +1,6 @@
 package rewrite
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"net"
@@ -46,33 +45,9 @@ func TestNewRewriter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, cfg.PayloadUA, rewriter.payloadUA)
 	assert.Equal(t, cfg.UAPattern, rewriter.pattern)
-	assert.Equal(t, cfg.EnablePartialReplace, rewriter.enablePartialReplace)
+	assert.Equal(t, cfg.EnablePartialReplace, rewriter.partialReplace)
 	assert.NotNil(t, rewriter.uaRegex)
 	assert.NotNil(t, rewriter.Cache)
-}
-
-func TestIsHTTP(t *testing.T) {
-	r := newTestRewriter(t)
-
-	tests := []struct {
-		name     string
-		input    string
-		expected bool
-	}{
-		{"HTTP Get", "GET / HTTP/1.1\r\n", true},
-		{"HTTP Post", "POST /test HTTP/1.1\r\n", true},
-		{"HTTP Connect", "CONNECT example.com:443 HTTP/1.1\r\n", true},
-		{"Not HTTP", "HELLO WORLD\r\n", false},
-		{"Not HTTP", "SSH-2.0-OpenSSH_8.4\r\n", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			reader := bufio.NewReader(strings.NewReader(tt.input))
-			isHTTP, _ := r.isHTTP(reader)
-			assert.Equal(t, tt.expected, isHTTP)
-		})
-	}
 }
 
 func TestProxyHTTPOrRaw_HTTPRewrite(t *testing.T) {
@@ -83,7 +58,7 @@ func TestProxyHTTPOrRaw_HTTPRewrite(t *testing.T) {
 	dstBuf := &bytes.Buffer{}
 	dst := &mockConn{Reader: nil, Writer: dstBuf}
 
-	r.ProxyHTTPOrRaw(dst, src, "example.com:80", "srcAddr")
+	r.Process(dst, src, "example.com:80", "srcAddr")
 
 	out := dstBuf.String()
 	assert.Contains(t, out, "User-Agent: MockUA/1.0")
