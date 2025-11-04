@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"time"
 )
 
 var ErrPeekTimeout = errors.New("peek timeout")
@@ -47,29 +46,4 @@ func peekLineString(br *bufio.Reader, maxSize int) (string, error) {
 		return "", err
 	}
 	return string(lineBytes), nil
-}
-
-// PeekWithTimeout peeks n bytes from bufio.Reader with a timeout.
-func PeekWithTimeout(r *bufio.Reader, n int, timeout time.Duration) ([]byte, error) {
-	if buffered := r.Buffered(); buffered >= n {
-		data, err := r.Peek(n)
-		return data, err
-	}
-	type result struct {
-		data []byte
-		err  error
-	}
-	ch := make(chan result, 1)
-
-	go func() {
-		data, err := r.Peek(n)
-		ch <- result{data, err}
-	}()
-
-	select {
-	case res := <-ch:
-		return res.data, res.err
-	case <-time.After(timeout):
-		return nil, ErrPeekTimeout
-	}
 }

@@ -24,6 +24,7 @@ UA3F_GROUP="nogroup"
 SKIP_GIDS=""
 SIDECAR="OC"
 FAKEIP_RANGE="198.18.0.0/16, 198.18.0.1/15, 28.0.0.1/8"
+SKIP_PORTS="22,51080,51090"
 
 LOG_FILE="/var/log/ua3f/ua3f.log"
 
@@ -195,6 +196,7 @@ fw_setup_nft_tproxy_tcp() {
     nft add rule ip $NFT_TABLE prerouting mark {0x1ed4} counter return comment '"sc tproxy mark 7892"'
     nft add rule ip $NFT_TABLE prerouting ip daddr {$FAKEIP_RANGE} counter return comment '"fakeip range"'
     nft add rule ip $NFT_TABLE prerouting ip daddr @$UA3F_LANSET counter return
+    nft add rule ip $NFT_TABLE prerouting tcp dport {$SKIP_PORTS} return
     nft add rule ip $NFT_TABLE prerouting meta l4proto tcp mark $UA3F_FWMARK tproxy to 127.0.0.1:$SERVER_PORT counter accept comment '"cap oc"'
     nft add rule ip $NFT_TABLE prerouting meta l4proto tcp mark set $UA3F_FWMARK tproxy to 127.0.0.1:$SERVER_PORT counter accept comment '"default less hit. sc"'
 
@@ -205,6 +207,7 @@ fw_setup_nft_tproxy_tcp() {
     nft add rule ip $NFT_TABLE output ip daddr {$FAKEIP_RANGE} counter return
     nft add rule ip $NFT_TABLE output meta skgid {$SKIP_GIDS} counter return
     nft add rule ip $NFT_TABLE output ip daddr @$UA3F_LANSET counter return
+    nft add rule ip $NFT_TABLE output tcp dport {$SKIP_PORTS} return
     nft add rule ip $NFT_TABLE output meta l4proto tcp meta skgid $UA3F_GID mark set $UA3F_FWMARK counter accept comment '"ghost oc"'
     nft add rule ip $NFT_TABLE output meta l4proto tcp mark set $UA3F_FWMARK counter accept comment '"default tproxy mark. bypass sc pre pollution"'
 }
@@ -220,6 +223,7 @@ fw_setup_nft_redirect_tcp() {
     nft add rule ip $NFT_TABLE prerouting mark {0x162} counter return comment '"354"'
     nft add rule ip $NFT_TABLE prerouting mark {0x1ed4} counter return comment '"sc tproxy mark 7892"'
     nft add rule ip $NFT_TABLE prerouting ip daddr {$FAKEIP_RANGE} counter return comment '"fakeip range"'
+    nft add rule ip $NFT_TABLE prerouting tcp dport {$SKIP_PORTS} return
     nft add rule ip $NFT_TABLE prerouting ip daddr @$UA3F_LANSET counter return
     nft add rule ip $NFT_TABLE prerouting tcp dport != {22} counter redirect to :$SERVER_PORT
 
@@ -230,6 +234,7 @@ fw_setup_nft_redirect_tcp() {
     nft add rule ip $NFT_TABLE output ip daddr {$FAKEIP_RANGE} counter return
     nft add rule ip $NFT_TABLE output ip daddr @$UA3F_LANSET counter return
     nft add rule ip $NFT_TABLE output meta skgid {$SKIP_GIDS} counter return
+    nft add rule ip $NFT_TABLE output tcp dport {$SKIP_PORTS} return
     nft add rule ip $NFT_TABLE output meta l4proto tcp mark {0x1ed6} counter redirect to :$SERVER_PORT comment '"cap sc meta"'
     nft add rule ip $NFT_TABLE output meta skgid $UA3F_GID tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap oc"'
     nft add rule ip $NFT_TABLE output tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap scc"'
@@ -280,6 +285,7 @@ fw_setup_ipt_tproxy_tcp() {
     iptables -t mangle -A $UA3F_CHAIN -d 198.18.0.0/16 -j RETURN
     iptables -t mangle -A $UA3F_CHAIN -d 28.0.0.1/8 -j RETURN
     iptables -t mangle -A $UA3F_CHAIN -d 198.18.0.1/15 -j RETURN
+    iptables -t mangle -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
     iptables -t mangle -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
     iptables -t mangle -A $UA3F_CHAIN -p tcp -m mark --mark $UA3F_FWMARK -j TPROXY --on-ip 127.0.0.1 --on-port $SERVER_PORT
     iptables -t mangle -A $UA3F_CHAIN -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port $SERVER_PORT --tproxy-mark $UA3F_FWMARK
@@ -294,6 +300,7 @@ fw_setup_ipt_tproxy_tcp() {
     iptables -t mangle -A $UA3F_OUT_CHAIN -d 198.18.0.0/16 -j RETURN
     iptables -t mangle -A $UA3F_OUT_CHAIN -d 28.0.0.1/8 -j RETURN
     iptables -t mangle -A $UA3F_OUT_CHAIN -d 198.18.0.1/15 -j RETURN
+    iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
     iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m owner --gid-owner 453 -j RETURN
     iptables -t mangle -A $UA3F_OUT_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
     iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m owner --gid-owner $UA3F_GID -j MARK --set-mark $UA3F_FWMARK
@@ -316,6 +323,7 @@ fw_setup_ipt_redirect_tcp() {
     iptables -t nat -A $UA3F_CHAIN -d 198.18.0.0/16 -j RETURN
     iptables -t nat -A $UA3F_CHAIN -d 28.0.0.1/8 -j RETURN
     iptables -t nat -A $UA3F_CHAIN -d 198.18.0.1/15 -j RETURN
+    iptables -t nat -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
     iptables -t nat -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
     iptables -t nat -A $UA3F_CHAIN -p tcp -j REDIRECT --to-ports $SERVER_PORT
 
@@ -329,6 +337,7 @@ fw_setup_ipt_redirect_tcp() {
     iptables -t nat -A $UA3F_OUT_CHAIN -d 198.18.0.0/16 -j RETURN
     iptables -t nat -A $UA3F_OUT_CHAIN -d 28.0.0.1/8 -j RETURN
     iptables -t nat -A $UA3F_OUT_CHAIN -d 198.18.0.1/15 -j RETURN
+    iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
     iptables -t nat -A $UA3F_OUT_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
     iptables -t nat -A $UA3F_OUT_CHAIN -m owner --gid-owner 453 -j RETURN
     iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -m mark --mark 0x1ed6 -j REDIRECT --to-ports $SERVER_PORT

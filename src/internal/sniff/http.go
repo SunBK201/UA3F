@@ -3,7 +3,6 @@ package sniff
 import (
 	"bufio"
 	"strings"
-	"time"
 )
 
 // HTTP methods used to detect HTTP by request line.
@@ -22,17 +21,9 @@ func parseRequestLine(line string) (method, requestURI, proto string, ok bool) {
 // beginWithHTTPMethod peeks the first few bytes to check for known HTTP method prefixes.
 func beginWithHTTPMethod(reader *bufio.Reader) (bool, error) {
 	const maxMethodLen = 7
-	const minMethodLen = 3
 	var hint []byte
-	hint, err := PeekWithTimeout(reader, maxMethodLen, 3*time.Second)
+	hint, err := reader.Peek(maxMethodLen)
 	if err != nil {
-		if err != ErrPeekTimeout {
-			return false, err
-		}
-		hint, err = PeekWithTimeout(reader, minMethodLen+1, time.Second)
-		if err != nil {
-			return false, err
-		}
 	}
 	method, _, _ := strings.Cut(string(hint), " ")
 	for _, m := range methods {
