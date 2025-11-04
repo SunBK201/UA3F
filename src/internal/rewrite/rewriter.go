@@ -186,7 +186,6 @@ func (r *Rewriter) ProxyHTTPOrRaw(dst net.Conn, src net.Conn, destAddr string, s
 
 	// HTTP request loop (handles keep-alive)
 	for {
-
 		if isHTTP, err = r.isHTTP(reader); err != nil {
 			err = fmt.Errorf("isHTTP: %w", err)
 			return
@@ -221,26 +220,8 @@ func (r *Rewriter) isHTTP(reader *bufio.Reader) (bool, error) {
 	}
 	hint := string(hintSlice)
 	method, _, _ := strings.Cut(hint, " ")
-	if _, exists := httpMethods[method]; !exists {
-		return false, nil
-	}
-
-	// Detailed check: parse request line
-	line, err := peekLineString(reader)
-	if err != nil {
-		return false, err
-	}
-	method, _, proto, ok := parseRequestLine(line)
-	if !ok {
-		return false, nil
-	}
-	if proto != "HTTP/1.1" && proto != "HTTP/1.0" {
-		return false, nil
-	}
-	if _, exists := httpMethods[method]; exists {
-		return true, nil
-	}
-	return false, nil
+	_, exists := httpMethods[method]
+	return exists, nil
 }
 
 // buildNewUA returns either a partial replacement (regex) or full overwrite.
