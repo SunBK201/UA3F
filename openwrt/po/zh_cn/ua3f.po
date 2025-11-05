@@ -41,6 +41,9 @@ msgstr "日志级别"
 msgid "User-Agent"
 msgstr "User-Agent"
 
+msgid "User-Agent after rewrite"
+msgstr "重写后的 User-Agent"
+
 msgid "User-Agent Regex Pattern"
 msgstr "User-Agent 正则表达式"
 
@@ -88,3 +91,12 @@ msgstr "下载日志"
 
 msgid "Clear Logs"
 msgstr "清除日志"
+
+msgid "Others"
+msgstr "其他"
+
+msgid "Set TTL"
+msgstr "固定 TTL"
+
+msgid "Set the TTL 64 for packets"
+msgstr "固定数据包的 TTL"
