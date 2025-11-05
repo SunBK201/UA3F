@@ -152,7 +152,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Process: %s", err.Error()))
 		}
 		if _, err = io.CopyBuffer(dst, reader, one); err != nil {
-			log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.Copy: %s", err.Error()))
+			log.LogWarnWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.Copy: %s", err.Error()))
 		}
 	}()
 
