@@ -51,6 +51,8 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
 
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
+具体使用教程详见：[猴子也能看懂的 UA3F 使用教程](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
+
 `TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作，亦可同时可与 Clash 等代理工具伴生运行。
 
 > [!NOTE]
