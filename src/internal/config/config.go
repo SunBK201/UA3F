@@ -20,7 +20,7 @@ type Config struct {
 	ListenAddr           string
 	LogLevel             string
 	PayloadUA            string
-	UAPattern            string
+	UARegex              string
 	EnablePartialReplace bool
 }
 
@@ -31,7 +31,7 @@ func Parse() (*Config, bool) {
 		port       int
 		loglevel   string
 		payloadUA  string
-		uaPattern  string
+		uaRegx     string
 		partial    bool
 		showVer    bool
 	)
@@ -40,7 +40,7 @@ func Parse() (*Config, bool) {
 	flag.StringVar(&bindAddr, "b", "127.0.0.1", "bind address (default: 127.0.0.1)")
 	flag.IntVar(&port, "p", 1080, "port")
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
-	flag.StringVar(&uaPattern, "r", "", "UA-Pattern")
+	flag.StringVar(&uaRegx, "r", "", "UA-Pattern")
 	flag.BoolVar(&partial, "s", false, "Enable Regex Partial Replace")
 	flag.StringVar(&loglevel, "l", "info", "Log level (default: info)")
 	flag.BoolVar(&showVer, "v", false, "show version")
@@ -53,7 +53,7 @@ func Parse() (*Config, bool) {
 		ListenAddr:           fmt.Sprintf("%s:%d", bindAddr, port),
 		LogLevel:             loglevel,
 		PayloadUA:            payloadUA,
-		UAPattern:            uaPattern,
+		UARegex:              uaRegx,
 		EnablePartialReplace: partial,
 	}
 	if serverMode == ServerModeRedirect {

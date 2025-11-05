@@ -35,7 +35,7 @@ type Rewriter struct {
 // New constructs a Rewriter from config. Compiles regex and allocates cache.
 func New(cfg *config.Config) (*Rewriter, error) {
 	// UA pattern is compiled with case-insensitive prefix (?i)
-	pattern := "(?i)" + cfg.UAPattern
+	pattern := "(?i)" + cfg.UARegex
 	uaRegex, err := regexp2.Compile(pattern, regexp2.None)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 
 	return &Rewriter{
 		payloadUA:      cfg.PayloadUA,
-		pattern:        cfg.UAPattern,
+		pattern:        cfg.UARegex,
 		partialReplace: cfg.EnablePartialReplace,
 		uaRegex:        uaRegex,
 		Cache:          expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
