@@ -13,6 +13,7 @@ SERVER_PORT="1080"
 
 FW_BACKEND=""
 NFT_TABLE="UA3F"
+UA3F_TTL_TABLE="UA3F_TTL"
 UA3F_CHAIN="UA3F"
 UA3F_OUT_CHAIN="UA3F_OUTPUT"
 UA3F_LANSET="ua3f_localnetwork"
@@ -25,6 +26,7 @@ SKIP_GIDS=""
 SIDECAR="OC"
 FAKEIP_RANGE="198.18.0.0/16, 198.18.0.1/15, 28.0.0.1/8"
 SKIP_PORTS="22,51080,51090"
+SET_TTL="0"
 
 LOG_FILE="/var/log/ua3f/ua3f.log"
 
@@ -162,7 +164,10 @@ cleanup_tproxy_route() {
     ip rule del fwmark 0x1c9 table "$ROUTE_TABLE" >/dev/null 2>&1
 }
 
-nft_drop_table() { nft delete table ip "$NFT_TABLE" 2>/dev/null; }
+nft_drop_table() {
+    nft delete table ip "$NFT_TABLE" 2>/dev/null
+    nft delete table inet "$UA3F_TTL_TABLE" 2>/dev/null
+}
 
 nft_reinit_table() {
     nft_drop_table
@@ -238,11 +243,6 @@ fw_setup_nft_redirect_tcp() {
     nft add rule ip $NFT_TABLE output meta l4proto tcp mark {0x1ed6} counter redirect to :$SERVER_PORT comment '"cap sc meta"'
     nft add rule ip $NFT_TABLE output meta skgid $UA3F_GID tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap oc"'
     nft add rule ip $NFT_TABLE output tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap scc"'
-}
-
-fw_revert_nft() {
-    nft_drop_table
-    cleanup_tproxy_route
 }
 
 setup_ipset_ipt() {
@@ -349,6 +349,31 @@ cleanup_ipset_ipt() {
     ipset destroy $UA3F_LANSET 2>/dev/null
 }
 
+set_ttl_nft() {
+    nft drop table inet $UA3F_TTL_TABLE 2>/dev/null
+    nft add table inet $UA3F_TTL_TABLE || return 1
+    nft add chain inet $UA3F_TTL_TABLE postrouting '{ type filter hook postrouting priority -150; policy accept; }' || return 1
+    nft add rule inet $UA3F_TTL_TABLE postrouting ip ttl set 64 || return 1
+}
+
+unset_ttl_nft() {
+    nft delete table inet $UA3F_TTL_TABLE 2>/dev/null
+}
+
+set_ttl_ipt() {
+    iptables -t mangle -A POSTROUTING -j TTL --ttl-set 64 || return 1
+}
+
+unset_ttl_ipt() {
+    iptables -t mangle -D POSTROUTING -j TTL --ttl-set 64 2>/dev/null
+}
+
+fw_revert_nft() {
+    nft_drop_table
+    cleanup_tproxy_route
+    unset_ttl_nft
+}
+
 fw_revert_ipt() {
     # sidecar
     iptables -t mangle -F SIDECAR 2>/dev/null
@@ -371,6 +396,8 @@ fw_revert_ipt() {
     # ipset
     cleanup_ipset_ipt
     cleanup_tproxy_route
+    # ttl
+    unset_ttl_ipt
 }
 
 start_service() {
@@ -388,7 +415,7 @@ start_service() {
 
     LOG "Starting $NAME service..."
 
-    local server_mode port bind ua log_level ua_regex partial_replace
+    local server_mode port bind ua log_level ua_regex partial_replace set_ttl
     config_get server_mode "main" "server_mode" "SOCKS5"
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
@@ -396,9 +423,12 @@ start_service() {
     config_get ua_regex "main" "ua_regex" ""
     config_get_bool partial_replace "main" "partial_replace" 0
     config_get log_level "main" "log_level" "info"
+    config_get_bool set_ttl "main" "set_ttl" 0
 
     SERVER_MODE="$(echo "$server_mode" | tr '[:lower:]' '[:upper:]')"
     SERVER_MODE="$server_mode"
+
+    SET_TTL="$set_ttl"
 
     LOG "Server Mode: $SERVER_MODE"
     LOG "Port: $port"
@@ -407,6 +437,7 @@ start_service() {
     LOG "User-Agent Regex: $ua_regex"
     LOG "Log level: $log_level"
     LOG "Partial Replace: $partial_replace"
+    LOG "Set TTL: $SET_TTL"
 
     set_ua3f_group
     LOG "Run as GID: $UA3F_GID, Group: $UA3F_GROUP"
@@ -463,6 +494,20 @@ start_service() {
         return 1
         ;;
     esac
+
+    if [ "$SET_TTL" = "1" ]; then
+        if [ "$FW_BACKEND" = "nft" ]; then
+            set_ttl_nft || {
+                LOG "set_ttl_nft setup failed"
+            }
+            LOG "Set TTL 64 via nftables"
+        else
+            set_ttl_ipt || {
+                LOG "set_ttl_ipt setup failed"
+            }
+            LOG "Set TTL 64 via iptables"
+        fi
+    fi
 
     # dump all fw rules for debug
     if [ "$log_level" = "debug" ]; then

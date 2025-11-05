@@ -30,6 +30,7 @@ end
 general:tab("general", translate("Settings"))
 general:tab("stats", translate("Statistics"))
 general:tab("log", translate("Log"))
+general:tab("others", translate("Others"))
 
 server_mode = general:taboption("general", ListValue, "server_mode", translate("Server Mode"))
 server_mode:value("SOCKS5", "SOCKS5")
@@ -55,7 +56,7 @@ log_level.description = translate(
 
 ua = general:taboption("general", Value, "ua", translate("User-Agent"))
 ua.placeholder = "FFF"
-ua.description = translate("User-Agent to be rewritten")
+ua.description = translate("User-Agent after rewrite")
 
 uaRegexPattern = general:taboption("general", Value, "ua_regex", translate("User-Agent Regex Pattern"))
 uaRegexPattern.description = translate("Regular expression pattern for matching User-Agent")
@@ -130,5 +131,8 @@ end
 
 stats = general:taboption("stats", DummyValue, "")
 stats.template = "ua3f/statistics"
+
+ttl = general:taboption("others", Flag, "set_ttl", translate("Set TTL"))
+ttl.description = translate("Set the TTL 64 for packets")
 
 return ua3f
