@@ -35,12 +35,14 @@ func StartRecorder() {
 			}
 			if r, exists := passThroughRecords[record.UA]; exists {
 				r.Count++
-				r.Host = record.Host
+				r.DestAddr = record.DestAddr
+				r.SrcAddr = record.SrcAddr
 			} else {
 				passThroughRecords[record.UA] = &PassThroughRecord{
-					Host:  record.Host,
-					UA:    record.UA,
-					Count: 1,
+					SrcAddr:  record.SrcAddr,
+					DestAddr: record.DestAddr,
+					UA:       record.UA,
+					Count:    1,
 				}
 			}
 		case <-ticker.C:
