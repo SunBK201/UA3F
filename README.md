@@ -103,7 +103,8 @@ sudo -u shellcrash /usr/bin/ua3f
 
 ## Clash 配置
 
-以下 Clash 配置仅适用于 UA3F SOCKS5 服务模式，TPROXY 与 REDIRECT 模式不需要额外的 Clash 配置。
+> [!IMPORTANT]
+> 以下 Clash 配置仅适用于 UA3F SOCKS5 服务模式，TPROXY 与 REDIRECT 模式不需要额外的 Clash 配置。
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
@@ -131,21 +132,3 @@ rules:
 1. 国内版，无需进行任何修改，可直接使用 [ua3f-socks5-cn.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-cn.yaml) (Clash 需要选用 Meta 内核。)
 2. 国际版，针对有特定需求的特殊用户进行适配，[ua3f-socks5-global.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
 3. 国际版(增强)，针对流量特征检测 (DPI) 进行规则补充，注意该配置会对 QQ、微信等平台的流量进行分流代理，因此需要根据自己的需求谨慎选择该配置，[ua3f-socks5-global-dpi.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global-dpi.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 18 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
-
-## Extra
-
-> [!TIP]
-> 使用 nftables 固定 TTL 为 64：
->
-> ```sh
-> nft add table inet ttl64
-> nft add chain inet ttl64 postrouting { type filter hook postrouting priority -150\; policy accept\; }
-> nft add rule inet ttl64 postrouting counter ip ttl set 64
-> ```
-
-> [!TIP]
-> 使用 iptables 固定 TTL 为 64：
->
-> ```sh
-> iptables -t mangle -A POSTROUTING -j TTL --ttl-set 64
-> ```
