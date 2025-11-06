@@ -70,8 +70,8 @@ func dumpConnectionRecords() {
 
 	for _, record := range statList {
 		duration := time.Since(record.StartTime)
-		line := fmt.Sprintf("%s %s %s %s\n",
-			record.Protocol, record.SrcAddr, record.DestAddr, duration.Round(time.Second))
+		line := fmt.Sprintf("%s %s %s %d\n",
+			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
 		f.WriteString(line)
 	}
 }
