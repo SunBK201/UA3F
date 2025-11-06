@@ -25,3 +25,4 @@ bin/
 dist/
 ipkg/etc/
 ipkg/usr/
+test/

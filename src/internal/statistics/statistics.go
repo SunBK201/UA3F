@@ -8,6 +8,15 @@ import (
 var (
 	rewriteRecordChan     = make(chan RewriteRecord, 2000)
 	passThroughRecordChan = make(chan PassThroughRecord, 2000)
+	connectionActionChan  = make(chan ConnectionAction, 2000)
+)
+
+// Actions for recording connection statistics
+type Action int
+
+const (
+	Add Action = iota
+	Remove
 )
 
 func StartRecorder() {
@@ -45,9 +54,26 @@ func StartRecorder() {
 					Count:    1,
 				}
 			}
+		case action := <-connectionActionChan:
+			switch action.Action {
+			case Add:
+				if r, exists := connectionRecords[action.Key]; exists {
+					r.Protocol = action.Record.Protocol
+				} else {
+					connectionRecords[action.Key] = &ConnectionRecord{
+						Protocol:  action.Record.Protocol,
+						SrcAddr:   action.Record.SrcAddr,
+						DestAddr:  action.Record.DestAddr,
+						StartTime: action.Record.StartTime,
+					}
+				}
+			case Remove:
+				delete(connectionRecords, action.Key)
+			}
 		case <-ticker.C:
 			dumpRewriteRecords()
 			dumpPassThroughRecords()
+			dumpConnectionRecords()
 		}
 	}
 }

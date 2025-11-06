@@ -160,6 +160,11 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 	if strings.HasSuffix(destAddr, "443") && sniff.SniffTLSClientHello(reader) {
 		r.Cache.Add(destAddr, struct{}{})
 		log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, added to cache")
+		statistics.AddConnection(&statistics.ConnectionRecord{
+			Protocol: sniff.HTTPS,
+			SrcAddr:  srcAddr,
+			DestAddr: destAddr,
+		})
 		return
 	}
 
@@ -172,14 +177,34 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 	if !isHTTP {
 		r.Cache.Add(destAddr, struct{}{})
 		log.LogInfoWithAddr(srcAddr, destAddr, "sniff first request is not http, added to cache, switching to raw proxy")
+		if sniff.SniffTLSClientHello(reader) {
+			statistics.AddConnection(&statistics.ConnectionRecord{
+				Protocol: sniff.TLS,
+				SrcAddr:  srcAddr,
+				DestAddr: destAddr,
+			})
+		}
 		return
 	}
+
+	statistics.AddConnection(&statistics.ConnectionRecord{
+		Protocol: sniff.HTTP,
+		SrcAddr:  srcAddr,
+		DestAddr: destAddr,
+	})
 
 	var req *http.Request
 
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
 			err = fmt.Errorf("sniff.SniffHTTPFast: %w", err)
+			statistics.AddConnection(
+				&statistics.ConnectionRecord{
+					Protocol: sniff.TCP,
+					SrcAddr:  srcAddr,
+					DestAddr: destAddr,
+				},
+			)
 			return
 		}
 		if !isHTTP {
@@ -199,6 +224,11 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 		}
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
 			log.LogInfoWithAddr(srcAddr, destAddr, "websocket upgrade detected, switching to raw proxy")
+			statistics.AddConnection(&statistics.ConnectionRecord{
+				Protocol: sniff.WebSocket,
+				SrcAddr:  srcAddr,
+				DestAddr: destAddr,
+			})
 			return
 		}
 	}

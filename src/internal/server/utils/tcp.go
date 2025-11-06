@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
+	"github.com/sunbk201/ua3f/internal/sniff"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 var one = make([]byte, 1)
@@ -43,6 +46,8 @@ func CopyHalf(dst, src net.Conn) {
 
 // ProxyHalf runs the rewriter proxy on src->dst and then half-closes both sides.
 func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
+	srcAddr := src.RemoteAddr().String()
+
 	defer func() {
 		if tc, ok := dst.(*net.TCPConn); ok {
 			_ = tc.CloseWrite()
@@ -55,11 +60,18 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
 			_ = src.Close()
 		}
 		log.LogDebugWithAddr(src.RemoteAddr().String(), destAddr, "Connections half-closed")
+		defer statistics.RemoveConnection(srcAddr, destAddr)
 	}()
 
-	// Fast path: known pass-through
-	srcAddr := src.RemoteAddr().String()
+	statistics.AddConnection(&statistics.ConnectionRecord{
+		Protocol:  sniff.TCP,
+		SrcAddr:   srcAddr,
+		DestAddr:  destAddr,
+		StartTime: time.Now(),
+	})
+
 	if rw.Cache.Contains(destAddr) {
+		// Fast path: known pass-through
 		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("destination (%s) in cache, passing through", destAddr))
 		io.CopyBuffer(dst, src, one)
 		return
