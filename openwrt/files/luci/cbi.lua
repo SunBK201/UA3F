@@ -33,6 +33,7 @@ general:tab("log", translate("Log"))
 general:tab("others", translate("Others"))
 
 server_mode = general:taboption("general", ListValue, "server_mode", translate("Server Mode"))
+server_mode:value("HTTP", "HTTP")
 server_mode:value("SOCKS5", "SOCKS5")
 server_mode:value("TPROXY", "TPROXY")
 server_mode:value("REDIRECT", "REDIRECT")
