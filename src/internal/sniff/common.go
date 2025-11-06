@@ -7,6 +7,17 @@ import (
 	"io"
 )
 
+// Protocol sniffed protocol types
+type Protocol string
+
+const (
+	TCP       Protocol = "TCP"
+	HTTP      Protocol = "HTTP"
+	HTTPS     Protocol = "HTTPS"
+	TLS       Protocol = "TLS"
+	WebSocket Protocol = "WebSocket"
+)
+
 var ErrPeekTimeout = errors.New("peek timeout")
 
 // peekLineSlice reads a line from bufio.Reader without consuming it.

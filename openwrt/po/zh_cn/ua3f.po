@@ -109,3 +109,21 @@ msgstr "固定 TTL"
 
 msgid "Set the TTL 64 for packets"
 msgstr "固定数据包的 TTL"
+
+msgid "Connection Statistics"
+msgstr "连接实时统计"
+
+msgid "Protocol"
+msgstr "嗅探协议"
+
+msgid "Source Address"
+msgstr "源地址"
+
+msgid "Destination Address"
+msgstr "目标地址"
+
+msgid "Duration"
+msgstr "持续时间"
+
+msgid "Total Connections"
+msgstr "连接总数"
