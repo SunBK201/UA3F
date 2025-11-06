@@ -58,10 +58,18 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer target.Close()
 
-	err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
+	if s.cfg.DirectForward {
+		err = req.Write(target)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+	} else {
+		err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
 	}
 	resp, err := http.ReadResponse(bufio.NewReader(target), req)
 	if err != nil {
@@ -123,6 +131,11 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
+	if s.cfg.DirectForward {
+		// Client -> Server (raw)
+		go utils.CopyHalf(target, client)
+		return
+	}
 	// Client -> Server (rewriter)
 	go utils.ProxyHalf(target, client, s.rw, destAddr)
 }

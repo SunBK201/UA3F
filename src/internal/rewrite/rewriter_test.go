@@ -26,9 +26,9 @@ func (m *mockConn) SetWriteDeadline(t time.Time) error { return nil }
 
 func newTestRewriter(t *testing.T) *Rewriter {
 	cfg := &config.Config{
-		UARegex:              "TestUA",
-		PayloadUA:            "MockUA/1.0",
-		EnablePartialReplace: false,
+		UARegex:        "TestUA",
+		PayloadUA:      "MockUA/1.0",
+		PartialReplace: false,
 	}
 	rewriter, err := New(cfg)
 	assert.NoError(t, err)
@@ -37,15 +37,15 @@ func newTestRewriter(t *testing.T) *Rewriter {
 
 func TestNewRewriter(t *testing.T) {
 	cfg := &config.Config{
-		UARegex:              "TestUA",
-		PayloadUA:            "FFF0",
-		EnablePartialReplace: false,
+		UARegex:        "TestUA",
+		PayloadUA:      "FFF0",
+		PartialReplace: false,
 	}
 	rewriter, err := New(cfg)
 	assert.NoError(t, err)
 	assert.Equal(t, cfg.PayloadUA, rewriter.payloadUA)
 	assert.Equal(t, cfg.UARegex, rewriter.pattern)
-	assert.Equal(t, cfg.EnablePartialReplace, rewriter.partialReplace)
+	assert.Equal(t, cfg.PartialReplace, rewriter.partialReplace)
 	assert.NotNil(t, rewriter.uaRegex)
 	assert.NotNil(t, rewriter.Cache)
 }
