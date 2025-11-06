@@ -15,9 +15,9 @@ local pass_stats = {}
 local pass_stats_file = io.open("/var/log/ua3f/pass_stats", "r")
 if pass_stats_file then
     for line in pass_stats_file:lines() do
-        local host, count, ua = line:match("^(%S+)%s(%d+)%s(.+)$")
+        local srcAddr, destAddr, count, ua = line:match("^(%S+)%s(%S+)%s(%d+)%s(.+)$")
         if ua and count then
-            table.insert(pass_stats, {ua = ua, count = count, host = host})
+            table.insert(pass_stats, {ua = ua, count = count, srcAddr = srcAddr, destAddr = destAddr})
         end
     end
     pass_stats_file:close()
@@ -54,14 +54,16 @@ end
     <tr class="tr table-titles">
         <th class="th"><%:User-Agent%></th>
         <th class="th"><%:Pass-Through Count%></th>
-        <th class="th"><%:Last Host%></th>
+        <th class="th"><%:Last Source Address%></th>
+        <th class="th"><%:Last Destination Address%></th>
     </tr>
 
     <% for i, item in ipairs(pass_stats) do %>
         <tr class="tr <%= rowstyle(i) %>">
             <td class="td" data-title="<%:User-Agent%>"><span><%= item.ua %></span></td>
             <td class="td" data-title="<%:Pass-Through Count%>"><%= item.count %></td>
-            <td class="td" data-title="<%:Last Host%>"><span><%= item.host %></span></td>
+            <td class="td" data-title="<%:Last Source Address%>"><span><%= item.srcAddr %></span></td>
+            <td class="td" data-title="<%:Last Destination Address%>"><span><%= item.destAddr %></span></td>
         </tr>
     <% end %>
 </table>
@@ -120,17 +122,22 @@ end
 
 #pass-stats-table th:nth-child(1),
 #pass-stats-table td:nth-child(1) {
-  width: 50%;
+  width: 30%;
 }
 
 #pass-stats-table th:nth-child(2),
 #pass-stats-table td:nth-child(2) {
-    width: 20%;
+    width: 10%;
     text-align: center;
 }
 
 #pass-stats-table th:nth-child(3),
 #pass-stats-table td:nth-child(3) {
+    width: 30%;
+}
+
+#pass-stats-table th:nth-child(4),
+#pass-stats-table td:nth-child(4) {
     width: 30%;
 }
 </style>

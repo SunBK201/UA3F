@@ -113,8 +113,9 @@ func (r *Rewriter) ShouldRewrite(req *http.Request, srcAddr, destAddr string) bo
 	hit := !isWhitelist && matches
 	if !hit {
 		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
-			Host: destAddr,
-			UA:   originalUA,
+			SrcAddr:  srcAddr,
+			DestAddr: destAddr,
+			UA:       originalUA,
 		})
 	}
 	return hit

@@ -83,8 +83,11 @@ msgstr "User-Agent 放行次数实时统计"
 msgid "Pass-Through Count"
 msgstr "放行次数"
 
-msgid "Last Host"
-msgstr "最后访问地址"
+msgid "Last Source Address"
+msgstr "最近访问源地址"
+
+msgid "Last Destination Address"
+msgstr "最近访问目标地址"
 
 msgid "Display Lines"
 msgstr "显示行数"

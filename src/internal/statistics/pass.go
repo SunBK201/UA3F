@@ -11,9 +11,10 @@ import (
 const passthroughStatsFile = "/var/log/ua3f/pass_stats"
 
 type PassThroughRecord struct {
-	Host  string
-	UA    string
-	Count int
+	SrcAddr  string
+	DestAddr string
+	UA       string
+	Count    int
 }
 
 var passThroughRecords = make(map[string]*PassThroughRecord)
@@ -42,7 +43,7 @@ func dumpPassThroughRecords() {
 	})
 
 	for _, record := range statList {
-		line := fmt.Sprintf("%s %d %s\n", record.Host, record.Count, record.UA)
+		line := fmt.Sprintf("%s %s %d %s\n", record.SrcAddr, record.DestAddr, record.Count, record.UA)
 		f.WriteString(line)
 	}
 }
