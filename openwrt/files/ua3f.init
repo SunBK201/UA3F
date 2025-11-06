@@ -500,6 +500,9 @@ start_service() {
     fi
 
     case "$SERVER_MODE" in
+    HTTP)
+        # No firewall interception
+        ;;
     SOCKS5)
         # No firewall interception
         ;;
