@@ -71,6 +71,11 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
+	if s.cfg.DirectForward {
+		// Client -> Server (raw)
+		go utils.CopyHalf(target, client)
+		return
+	}
 	// Client -> Server (rewriter)
 	go utils.ProxyHalf(target, client, s.rw, destAddr)
 }

@@ -74,7 +74,8 @@ func LogHeader(version string, cfg *config.Config) {
 	logrus.Infof("Listen on %s", cfg.ListenAddr)
 	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
 	logrus.Infof("User-Agent Regex: '%s'", cfg.UARegex)
-	logrus.Infof("Partial Replace: %v", cfg.EnablePartialReplace)
+	logrus.Infof("Partial Replace: %v", cfg.PartialReplace)
+	logrus.Infof("Direct Forward: %v", cfg.DirectForward)
 	logrus.Infof("Log level: %s", cfg.LogLevel)
 }
 

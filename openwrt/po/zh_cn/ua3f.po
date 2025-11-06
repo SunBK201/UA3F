@@ -56,6 +56,12 @@ msgstr "部分替换"
 msgid "Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
 msgstr "仅替换 User-Agent 正则匹配的部分，仅在 User-Agent 正则表达式非空时有效"
 
+msgid "Direct Forward"
+msgstr "直接转发"
+
+msgid "Directly forward packets without rewriting"
+msgstr "不进行重写直接转发数据包"
+
 msgid "User-Agent Rewrite Statistics"
 msgstr "User-Agent 重写次数实时统计"
 

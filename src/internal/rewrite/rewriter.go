@@ -44,7 +44,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 	return &Rewriter{
 		payloadUA:      cfg.PayloadUA,
 		pattern:        cfg.UARegex,
-		partialReplace: cfg.EnablePartialReplace,
+		partialReplace: cfg.PartialReplace,
 		uaRegex:        uaRegex,
 		Cache:          expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		whitelist: []string{

@@ -66,6 +66,11 @@ partialRepalce.description =
     translate("Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty")
 partialRepalce.default = "0"
 
+directForward = general:taboption("general", Flag, "direct_forward", translate("Direct Forward"))
+directForward.description =
+    translate("Directly forward packets without rewriting")
+directForward.default = "0"
+
 log = general:taboption("log", TextValue, "log")
 log.readonly = true
 log.rows = 30
