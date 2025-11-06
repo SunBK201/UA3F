@@ -65,6 +65,7 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > - User-Agent (自定义重写 User-Agent): 默认 `FFF`
 > - User-Agent Regex (User-Agent 正则表达式): 只重写匹配成功的 User-Agent。如果为空，全部重写
 > - Partial Replace (部分替换): 只替换正则表达式匹配的部分。该选项仅在 User-Agent 正则表达式非空时生效
+> - Direct Forward (直接转发): 不进行 User-Agent 重写，直接转发数据包
 
 设备与系统信息正则表达式参考：
 
@@ -97,6 +98,7 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认为空, 表示所有 User-Agent 都会被重写
 - `-s`: 部分替换，仅替换正则匹配到的部分
+- `-d`: 直接转发，不进行重写直接转发数据包
 </details>
 
 ## Clash 配置
