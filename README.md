@@ -1,10 +1,10 @@
 # UA3F
 
-UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT 代理服务对 HTTP 进行 User-Agent 透明重写。
+UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 进行 User-Agent 透明重写。
 
 ## 特性
 
-- 支持多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT
+- 支持多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE
 - 支持正则表达式规则匹配重写 User-Agent
 - 自定义重写 User-Agent 内容
 - LRU 高速缓存非 HTTP 流量，加速非 HTTP 流量转发
@@ -58,7 +58,7 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > [!NOTE]
 > 设置说明：
 >
-> - Server Mode (服务模式): 支持 `HTTP`、`SOCKS5`、`TPROXY`、`REDIRECT`，默认 `SOCKS5`
+> - Server Mode (服务模式): 支持 `HTTP`、`SOCKS5`、`TPROXY`、`REDIRECT`、`NFQUEUE`，默认 `SOCKS5`
 > - Port (监听端口): 默认 `1080`
 > - Bind Address (绑定地址): 默认 `0.0.0.0`
 > - Log Level (日志等级): 默认 `error`, 如果需要调试排查错误可以设置为 `debug`
