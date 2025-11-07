@@ -37,6 +37,7 @@ server_mode:value("HTTP", "HTTP")
 server_mode:value("SOCKS5", "SOCKS5")
 server_mode:value("TPROXY", "TPROXY")
 server_mode:value("REDIRECT", "REDIRECT")
+server_mode:value("NFQUEUE", "NFQUEUE")
 
 port = general:taboption("general", Value, "port", translate("Port"))
 port.placeholder = "1080"

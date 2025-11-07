@@ -2,11 +2,11 @@ package server
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/http"
+	"github.com/sunbk201/ua3f/internal/server/nfqueue"
 	"github.com/sunbk201/ua3f/internal/server/redirect"
 	"github.com/sunbk201/ua3f/internal/server/socks5"
 	"github.com/sunbk201/ua3f/internal/server/tproxy"
@@ -14,8 +14,6 @@ import (
 
 type Server interface {
 	Start() error
-	HandleClient(net.Conn)
-	ForwardTCP(client, target net.Conn, destAddr string)
 }
 
 func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {
@@ -28,6 +26,8 @@ func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {
 		return tproxy.New(cfg, rw), nil
 	case config.ServerModeRedirect:
 		return redirect.New(cfg, rw), nil
+	case config.ServerModeNFQueue:
+		return nfqueue.New(cfg, rw), nil
 	default:
 		return nil, fmt.Errorf("unknown server mode: %s", cfg.ServerMode)
 	}

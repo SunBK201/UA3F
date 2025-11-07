@@ -82,6 +82,10 @@ set_ua3f_group() {
         UA3F_GID="0"
         UA3F_GROUP="root"
         return
+    elif [ $server_mode = "NFQUEUE" ]; then
+        UA3F_GID="0"
+        UA3F_GROUP="root"
+        return
     fi
     add_skip_gids "453"
     if openclash_running; then
@@ -130,12 +134,22 @@ add_skip_gids() {
 
 detect_backend() {
     if opkg_available; then
-        if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
-            FW_BACKEND="nft"
-            return 0
-        else
-            FW_BACKEND="ipt"
-            return 0
+        if [ "$SERVER_MODE" = "TPROXY" ]; then
+            if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
+                FW_BACKEND="nft"
+                return 0
+            else
+                FW_BACKEND="ipt"
+                return 0
+            fi
+        elif [ "$SERVER_MODE" = "NFQUEUE" ]; then
+            if opkg list-installed kmod-nft-queue | grep -q 'kmod-nft-queue'; then
+                FW_BACKEND="nft"
+                return 0
+            else
+                FW_BACKEND="ipt"
+                return 0
+            fi
         fi
     fi
     if nft_available; then
@@ -174,7 +188,7 @@ cleanup_tproxy_route() {
 nft_drop_table() {
     nft delete table ip "$NFT_TABLE" 2>/dev/null
     nft delete table inet "$UA3F_TTL_TABLE" 2>/dev/null
-    # nft delete table inet "$NFT_TABLE" 2>/dev/null
+    nft delete table inet "$NFT_TABLE" 2>/dev/null
     # nft delete chain inet fw4 "$NFT_TABLE" 2>/dev/null
 }
 
@@ -389,6 +403,37 @@ cleanup_ipset_ipt() {
     ipset destroy $UA3F_LANSET 2>/dev/null
 }
 
+fw_setup_nft_nfqueue() {
+    nft_reinit_table || {
+        LOG "Failed to reinitialize nft table"
+        return 1
+    }
+
+    nft add chain ip $NFT_TABLE postrouting '{ type filter hook postrouting priority mangle - 20; }'
+    nft add rule ip $NFT_TABLE postrouting meta l4proto != tcp counter return
+    nft add rule ip $NFT_TABLE postrouting ct direction reply counter return
+    nft add rule ip $NFT_TABLE postrouting ip daddr @$UA3F_LANSET counter return
+    nft add rule ip $NFT_TABLE postrouting tcp dport {$SKIP_PORTS} return
+    nft add rule ip $NFT_TABLE postrouting ct mark 201 counter return
+    nft add rule ip $NFT_TABLE postrouting ct direction original ct state established ip length \> 40 counter queue num 10201 bypass
+}
+
+fw_setup_ipt_nfqueue() {
+    setup_ipset_ipt || return 1
+
+    # POSTROUTING
+    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
+    iptables -t mangle -D POSTROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
+    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
+    iptables -t mangle -N $UA3F_CHAIN
+    iptables -t mangle -A POSTROUTING -p tcp -j $UA3F_CHAIN
+    iptables -t mangle -A $UA3F_CHAIN -m conntrack --ctdir REPLY -j RETURN
+    iptables -t mangle -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
+    iptables -t mangle -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
+    iptables -t mangle -A $UA3F_CHAIN -m connmark --mark 201 -j RETURN
+    iptables -t mangle -A $UA3F_CHAIN -m conntrack --ctdir ORIGINAL --ctstate ESTABLISHED -m length --length 41:0xffff -j NFQUEUE --queue-num 10201 --queue-bypass
+}
+
 set_ttl_nft() {
     nft drop table inet $UA3F_TTL_TABLE 2>/dev/null
     nft add table inet $UA3F_TTL_TABLE || return 1
@@ -433,6 +478,10 @@ fw_revert_ipt() {
     iptables -t nat -D OUTPUT -p tcp -j $UA3F_OUT_CHAIN 2>/dev/null
     iptables -t nat -F $UA3F_OUT_CHAIN 2>/dev/null
     iptables -t nat -X $UA3F_OUT_CHAIN 2>/dev/null
+    # NFQUEUE
+    iptables -t mangle -D POSTROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
+    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
+    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
     # ipset
     cleanup_ipset_ipt
     cleanup_tproxy_route
@@ -530,6 +579,19 @@ start_service() {
         else
             fw_setup_ipt_redirect_tcp || {
                 LOG "fw_setup_ipt_redirect_tcp setup failed"
+                return 1
+            }
+        fi
+        ;;
+    NFQUEUE)
+        if [ "$FW_BACKEND" = "nft" ]; then
+            fw_setup_nft_nfqueue || {
+                LOG "fw_setup_nft_nfqueue setup failed"
+                return 1
+            }
+        else
+            fw_setup_ipt_nfqueue || {
+                LOG "fw_setup_ipt_nfqueue setup failed"
                 return 1
             }
         fi
