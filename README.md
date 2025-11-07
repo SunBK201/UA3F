@@ -4,7 +4,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
 
 ## 特性
 
-- 支持多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE
+- 支持多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
 - 支持正则表达式规则匹配重写 User-Agent
 - 自定义重写 User-Agent 内容
 - LRU 高速缓存非 HTTP 流量，加速非 HTTP 流量转发
