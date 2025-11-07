@@ -11,6 +11,7 @@ const (
 	ServerModeSocks5   = "SOCKS5"
 	ServerModeTProxy   = "TPROXY"
 	ServerModeRedirect = "REDIRECT"
+	ServerModeNFQueue  = "NFQUEUE"
 )
 
 type Config struct {
@@ -38,7 +39,7 @@ func Parse() (*Config, bool) {
 		showVer       bool
 	)
 
-	flag.StringVar(&serverMode, "m", ServerModeSocks5, "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT")
+	flag.StringVar(&serverMode, "m", ServerModeSocks5, "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
 	flag.StringVar(&bindAddr, "b", "127.0.0.1", "Bind address")
 	flag.IntVar(&port, "p", 1080, "Port")
 	flag.StringVar(&loglevel, "l", "info", "Log level")
