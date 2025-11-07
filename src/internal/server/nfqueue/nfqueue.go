@@ -106,6 +106,7 @@ func (s *Server) SendVerdict(packet *IPPacket, result *rewrite.RewriteResult) {
 		}
 	}
 
+	log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("Sending verdict: Modified=%v, SetMark=%v, NextMark=%d", result.Modified, setMark, nextMark))
 	if !result.Modified {
 		if setMark {
 			nf.SetVerdictWithOption(id, nfq.NfAccept, nfq.WithConnMark(nextMark))
@@ -151,11 +152,11 @@ func (s *Server) handlePacket(a *nfq.Attribute) {
 }
 
 func (s *Server) getNextMark(packet *IPPacket, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
-	if packet.a.Mark == nil {
+	mark, found := getConnMark(packet.a)
+	if !found {
 		return true, s.SniffMarkRangeLower
 	}
-
-	mark = *packet.a.Mark
+	log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("Current connmark: %d", mark))
 
 	// should not happen
 	if mark == s.NotHTTPMark {

@@ -166,3 +166,23 @@ func serializeIPPacket(networkLayer gopacket.NetworkLayer, tcp *layers.TCP, newP
 	}
 	return buffer.Bytes(), nil
 }
+
+func getConnMark(a *nfq.Attribute) (uint32, bool) {
+	if a.Ct == nil || len(*a.Ct) == 0 {
+		return 0, false
+	}
+
+	attrs, err := netlink.UnmarshalAttributes(*a.Ct)
+	if err != nil {
+		fmt.Println("failed to parse Ct attributes:", err)
+		return 0, false
+	}
+
+	for _, at := range attrs {
+		if at.Type == 8 && len(at.Data) >= 4 {
+			return binary.BigEndian.Uint32(at.Data[:4]), true
+		}
+	}
+
+	return 0, false
+}
