@@ -101,8 +101,8 @@ msgstr "下载日志"
 msgid "Clear Logs"
 msgstr "清除日志"
 
-msgid "Others"
-msgstr "其他"
+msgid "Others Settings"
+msgstr "其他设置"
 
 msgid "Set TTL"
 msgstr "固定 TTL"

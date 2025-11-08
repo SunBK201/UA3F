@@ -30,7 +30,7 @@ end
 general:tab("general", translate("Settings"))
 general:tab("stats", translate("Statistics"))
 general:tab("log", translate("Log"))
-general:tab("others", translate("Others"))
+general:tab("others", translate("Others Settings"))
 
 server_mode = general:taboption("general", ListValue, "server_mode", translate("Server Mode"))
 server_mode:value("HTTP", "HTTP")
