@@ -54,15 +54,9 @@ define Package/ua3f/install
 	$(INSTALL_BIN) ./files/ua3f.init $(1)/etc/init.d/ua3f
 	$(INSTALL_DIR) $(1)/etc/config/
 	$(INSTALL_CONF) ./files/ua3f.uci $(1)/etc/config/ua3f
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi/
-	$(INSTALL_CONF) ./files/luci/cbi.lua $(1)/usr/lib/lua/luci/model/cbi/ua3f.lua
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller/
-	$(INSTALL_CONF) ./files/luci/controller.lua $(1)/usr/lib/lua/luci/controller/ua3f.lua
-	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view/ua3f/
-	$(INSTALL_CONF) ./files/luci/statistics.htm $(1)/usr/lib/lua/luci/view/ua3f/statistics.htm
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
-	
+	$(CP) $(PKG_BUILD_DIR)/files/luci/* $(1)/usr/lib/lua/luci/
 endef
 
 $(eval $(call GoBinPackage,ua3f))

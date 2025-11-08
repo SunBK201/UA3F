@@ -44,7 +44,7 @@ msgstr "User-Agent"
 msgid "User-Agent after rewrite"
 msgstr "重写后的 User-Agent"
 
-msgid "User-Agent Regex Pattern"
+msgid "User-Agent Regex"
 msgstr "User-Agent 正则表达式"
 
 msgid "Regular expression pattern for matching User-Agent"
@@ -53,7 +53,7 @@ msgstr "用于匹配 User-Agent，只有匹配成功的 User-Agent 才会被修�
 msgid "Partial Replace"
 msgstr "部分替换"
 
-msgid "Replace only the matched part of the User-Agent, only works when User-Agent Regex Pattern is not empty"
+msgid "Replace only the matched part of the User-Agent, only works when User-Agent Regex is not empty"
 msgstr "仅替换 User-Agent 正则匹配的部分，仅在 User-Agent 正则表达式非空时有效"
 
 msgid "Direct Forward"

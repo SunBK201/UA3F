@@ -98,17 +98,15 @@ ipkg_build=ipkg-build.sh
 mkdir -p \
     $opkg_template/usr/bin \
     $opkg_template/usr/lib/lua/luci/controller \
-    $opkg_template/usr/lib/lua/luci/model/cbi \
+    $opkg_template/usr/lib/lua/luci/model/cbi/ua3f \
     $opkg_template/usr/lib/lua/luci/view/ua3f \
     $opkg_template/usr/lib/lua/luci/i18n \
     $opkg_template/etc/init.d \
     $opkg_template/etc/config
 
-cp openwrt/files/luci/controller.lua $opkg_template/usr/lib/lua/luci/controller/ua3f.lua
-cp openwrt/files/luci/cbi.lua $opkg_template/usr/lib/lua/luci/model/cbi/ua3f.lua
-cp openwrt/files/luci/statistics.htm $opkg_template/usr/lib/lua/luci/view/ua3f/statistics.htm
 cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
+cp -r openwrt/files/luci/* $opkg_template/usr/lib/lua/luci/
 ./po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 
 # 仅 Linux 平台生成 ipk 包

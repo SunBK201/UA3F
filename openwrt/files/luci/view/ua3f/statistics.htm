@@ -1,0 +1,410 @@
+<%
+local data = require("luci.model.cbi.ua3f.statistics")
+
+local rewrite_stats = data.read_rewrite_stats()
+local pass_stats = data.read_pass_stats()
+local conn_stats = data.read_conn_stats()
+local rowstyle = data.rowstyle
+%>
+
+<h3><%:Statistics%></h3>
+
+<!-- Rewrite Statistics Table -->
+<div class="cbi-section-descr" style="font-weight:bold;"><%:User-Agent Rewrite Statistics%></div>
+<table id="rewrite-stats-table" class="table cbi-section-table">
+    <tr class="tr table-titles">
+        <th class="th" data-sortable-row="true"><%:Host%></th>
+        <th class="th" data-sortable-row="true"><%:Rewrite Count%></th>
+        <th class="th" data-sortable-row="true"><%:Original User-Agent%></th>
+        <th class="th" data-sortable-row="true"><%:Modified User-Agent%></th>
+    </tr>
+
+    <% for i, item in ipairs(rewrite_stats) do %>
+        <tr class="tr <%= rowstyle(i) %>">
+            <td class="td" data-title="<%:Host%>"><span><%= item.host %></span></td>
+            <td class="td" data-title="<%:Rewrite Count%>"><%= item.count %></td>
+            <td class="td" data-title="<%:Original User-Agent%>"><span><%= item.origin_ua %></span></td>
+            <td class="td" data-title="<%:Modified User-Agent%>"><span><%= item.mocked_ua %></span></td>
+        </tr>
+    <% end %>
+</table>
+
+<!-- Pass-Through Statistics Table -->
+<div class="cbi-section-descr" style="font-weight:bold;"><%:User-Agent Pass-Through Statistics%></div>
+<table id="pass-stats-table" class="table cbi-section-table">
+    <tr class="tr table-titles">
+        <th class="th" data-sortable-row="true"><%:User-Agent%></th>
+        <th class="th" data-sortable-row="true"><%:Pass-Through Count%></th>
+        <th class="th" data-sortable-row="true"><%:Last Source Address%></th>
+        <th class="th" data-sortable-row="true"><%:Last Destination Address%></th>
+    </tr>
+
+    <% for i, item in ipairs(pass_stats) do %>
+        <tr class="tr <%= rowstyle(i) %>">
+            <td class="td" data-title="<%:User-Agent%>"><span><%= item.ua %></span></td>
+            <td class="td" data-title="<%:Pass-Through Count%>"><%= item.count %></td>
+            <td class="td" data-title="<%:Last Source Address%>"><span><%= item.srcAddr %></span></td>
+            <td class="td" data-title="<%:Last Destination Address%>"><span><%= item.destAddr %></span></td>
+        </tr>
+    <% end %>
+</table>
+
+<!-- Connection Statistics Table -->
+<div class="cbi-section-descr" style="font-weight:bold;"><%:Connection Statistics%></div>
+<table id="conn-stats-table" class="table cbi-section-table">
+    <tr>
+        <td colspan="4" style="padding:5px 0;">
+            <%:Total Connections%>: <%= #conn_stats %>
+        </td>
+    </tr>
+    <tr class="tr table-titles">
+        <th class="th" data-sortable-row="true"><%:Protocol%></th>
+        <th class="th" data-sortable-row="true"><%:Source Address%></th>
+        <th class="th" data-sortable-row="true"><%:Destination Address%></th>
+        <th class="th" data-sortable-row="true"><%:Duration%></th>
+    </tr>
+
+    <% for i, item in ipairs(conn_stats) do %>
+        <tr class="tr <%= rowstyle(i) %>">
+            <td class="td" data-title="<%:Protocol%>"><span><%= item.protocol %></span></td>
+            <td class="td" data-title="<%:Source Address%>"><span><%= item.srcAddr %></span></td>
+            <td class="td" data-title="<%:Destination Address%>"><span><%= item.destAddr %></span></td>
+            <td class="td" data-title="<%:Duration%>" data-seconds="<%= item.duration %>"><span class="duration-text"><%= item.duration %></span></td>
+        </tr>
+    <% end %>
+</table>
+
+<script type="text/javascript">
+// Format duration in seconds to human-readable format
+function formatDuration(seconds) {
+    seconds = parseInt(seconds);
+    if (isNaN(seconds) || seconds < 0) return '0s';
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    const parts = [];
+    if (days > 0) parts.push(days + 'd');
+    if (hours > 0) parts.push(hours + 'h');
+    if (minutes > 0) parts.push(minutes + 'm');
+    if (secs > 0 || parts.length === 0) parts.push(secs + 's');
+    
+    return parts.join(' ');
+}
+
+// Format all duration cells in the connection statistics table
+function formatAllDurations() {
+    const durationCells = document.querySelectorAll('#conn-stats-table td[data-seconds]');
+    durationCells.forEach(cell => {
+        const seconds = cell.getAttribute('data-seconds');
+        const textSpan = cell.querySelector('.duration-text');
+        if (textSpan && seconds) {
+            textSpan.textContent = formatDuration(seconds);
+        }
+    });
+}
+
+// Sort table by column
+function sortTable(tableId, columnIndex, isNumeric) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody') || table;
+    const rows = Array.from(tbody.querySelectorAll('tr.tr')).filter(row => !row.classList.contains('table-titles'));
+    
+    const sortKey = `${tableId}-sort`;
+    let sortState = sessionStorage.getItem(sortKey);
+    let currentSort = sortState ? JSON.parse(sortState) : {column: -1, order: 'asc'};
+    
+    let order = 'asc';
+    if (currentSort.column === columnIndex) {
+        order = currentSort.order === 'asc' ? 'desc' : 'asc';
+    }
+    
+    rows.sort((a, b) => {
+        let aVal, bVal;
+        
+        if (tableId === 'conn-stats-table' && columnIndex === 3) {
+            aVal = parseFloat(a.children[columnIndex].getAttribute('data-seconds')) || 0;
+            bVal = parseFloat(b.children[columnIndex].getAttribute('data-seconds')) || 0;
+        } else {
+            aVal = a.children[columnIndex].textContent.trim();
+            bVal = b.children[columnIndex].textContent.trim();
+            
+            if (isNumeric) {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+            }
+        }
+        
+        if (aVal < bVal) return order === 'asc' ? -1 : 1;
+        if (aVal > bVal) return order === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    rows.forEach((row, index) => {
+        row.className = row.className.replace(/cbi-rowstyle-[12]/, (index % 2 === 0) ? 'cbi-rowstyle-2' : 'cbi-rowstyle-1');
+        tbody.appendChild(row);
+    });
+    
+    sessionStorage.setItem(sortKey, JSON.stringify({column: columnIndex, order: order}));
+    
+    updateSortIndicators(tableId, columnIndex, order);
+}
+
+// Update sort indicators on table headers
+function updateSortIndicators(tableId, activeColumn, order) {
+    const table = document.getElementById(tableId);
+    const headers = table.querySelectorAll('th[data-sortable-row="true"]');
+    
+    headers.forEach((th, index) => {
+        th.style.position = 'relative';
+        th.style.cursor = 'pointer';
+        let indicator = th.querySelector('.sort-indicator');
+        
+        if (!indicator) {
+            indicator = document.createElement('span');
+            indicator.className = 'sort-indicator';
+            indicator.style.fontSize = '0.8em';
+            indicator.style.marginLeft = '4px';
+            indicator.style.display = 'inline-block';
+            indicator.style.width = '12px';
+            indicator.style.textAlign = 'center';
+            th.appendChild(indicator);
+        }
+        
+        if (index === activeColumn) {
+            indicator.textContent = order === 'asc' ? '▲' : '▼';
+            indicator.style.visibility = 'visible';
+        } else {
+            indicator.textContent = '';
+            indicator.style.visibility = 'hidden';
+        }
+    });
+}
+
+// Restore table sort from session storage
+function restoreTableSort(tableId, numericColumns) {
+    const sortKey = `${tableId}-sort`;
+    const sortState = sessionStorage.getItem(sortKey);
+    
+    if (sortState) {
+        const {column, order} = JSON.parse(sortState);
+        const table = document.getElementById(tableId);
+        const tbody = table.querySelector('tbody') || table;
+        const rows = Array.from(tbody.querySelectorAll('tr.tr')).filter(row => !row.classList.contains('table-titles'));
+        
+        if (rows.length > 0) {
+            const isNumeric = numericColumns.includes(column);
+            
+            rows.sort((a, b) => {
+                let aVal, bVal;
+                
+                if (tableId === 'conn-stats-table' && column === 3) {
+                    aVal = parseFloat(a.children[column].getAttribute('data-seconds')) || 0;
+                    bVal = parseFloat(b.children[column].getAttribute('data-seconds')) || 0;
+                } else {
+                    aVal = a.children[column].textContent.trim();
+                    bVal = b.children[column].textContent.trim();
+                    
+                    if (isNumeric) {
+                        aVal = parseFloat(aVal) || 0;
+                        bVal = parseFloat(bVal) || 0;
+                    }
+                }
+                
+                if (aVal < bVal) return order === 'asc' ? -1 : 1;
+                if (aVal > bVal) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            rows.forEach((row, index) => {
+                row.className = row.className.replace(/cbi-rowstyle-[12]/, (index % 2 === 0) ? 'cbi-rowstyle-2' : 'cbi-rowstyle-1');
+                tbody.appendChild(row);
+            });
+        }
+        updateSortIndicators(tableId, column, order);
+    }
+}
+
+// Bind click events to table headers
+function bindTableEvents(tableId, numericColumns) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th[data-sortable-row="true"]');
+    headers.forEach((th, index) => {
+        th.style.cursor = 'pointer';
+        th.style.userSelect = 'none';
+        
+        const newTh = th.cloneNode(true);
+        th.parentNode.replaceChild(newTh, th);
+        
+        if (!newTh.querySelector('.sort-indicator')) {
+            const indicator = document.createElement('span');
+            indicator.className = 'sort-indicator';
+            indicator.style.fontSize = '0.8em';
+            indicator.style.marginLeft = '4px';
+            indicator.style.display = 'inline-block';
+            indicator.style.width = '12px';
+            indicator.style.textAlign = 'center';
+            indicator.style.visibility = 'hidden';
+            indicator.textContent = '';
+            newTh.appendChild(indicator);
+        }
+        
+        newTh.addEventListener('click', () => {
+            const isNumeric = numericColumns.includes(index);
+            sortTable(tableId, index, isNumeric);
+        });
+    });
+}
+
+// Initialize table sorting functionality
+function initTableSort() {
+    const tables = [
+        {id: 'rewrite-stats-table', numericColumns: [1]},
+        {id: 'pass-stats-table', numericColumns: [1]},
+        {id: 'conn-stats-table', numericColumns: [3]}
+    ];
+    
+    formatAllDurations();
+    
+    tables.forEach(tableInfo => {
+        bindTableEvents(tableInfo.id, tableInfo.numericColumns);
+        restoreTableSort(tableInfo.id, tableInfo.numericColumns);
+    });
+}
+
+// Update statistics via AJAX
+async function updateStats() {
+    try {
+        const response = await fetch(window.location.href, {cache: "no-store"});
+        const text = await response.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, "text/html");
+        const newRewriteTable = doc.querySelector("#rewrite-stats-table");
+        const newPassTable = doc.querySelector("#pass-stats-table");
+        const newConnTable = doc.querySelector("#conn-stats-table");
+        const newLog = doc.querySelector("#cbid\\.ua3f\\.main\\.log");
+
+        if (newRewriteTable) {
+            document.querySelector("#rewrite-stats-table").innerHTML = newRewriteTable.innerHTML;
+            bindTableEvents('rewrite-stats-table', [1]);
+            restoreTableSort('rewrite-stats-table', [1]);
+        }
+        if (newPassTable) {
+            document.querySelector("#pass-stats-table").innerHTML = newPassTable.innerHTML;
+            bindTableEvents('pass-stats-table', [1]);
+            restoreTableSort('pass-stats-table', [1]);
+        }
+        if (newConnTable) {
+            document.querySelector("#conn-stats-table").innerHTML = newConnTable.innerHTML;
+            formatAllDurations();
+            bindTableEvents('conn-stats-table', [3]);
+            restoreTableSort('conn-stats-table', [3]);
+        }
+        if (newLog) {
+            document.querySelector("#cbid\\.ua3f\\.main\\.log").value = newLog.value;
+        }
+
+    } catch (err) {
+        console.error("update stats error:", err);
+    }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTableSort);
+} else {
+    initTableSort();
+}
+
+// Auto-refresh every 5 seconds
+setInterval(updateStats, 5000);
+</script>
+
+<style>
+/* Sortable table headers */
+th[data-sortable-row="true"] {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+th[data-sortable-row="true"]:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sort-indicator {
+    color: #0066cc;
+    font-weight: bold;
+}
+
+/* Rewrite Statistics Table */
+#rewrite-stats-table th:nth-child(1),
+#rewrite-stats-table td:nth-child(1) {
+    width: 20%;
+}
+
+#rewrite-stats-table th:nth-child(2),
+#rewrite-stats-table td:nth-child(2) {
+    width: 10%;
+    text-align: center;
+}
+
+#rewrite-stats-table th:nth-child(3),
+#rewrite-stats-table td:nth-child(3) {
+    width: 35%;
+}
+
+#rewrite-stats-table th:nth-child(4),
+#rewrite-stats-table td:nth-child(4) {
+    width: 35%;
+}
+
+/* Pass Statistics Table */
+#pass-stats-table th:nth-child(1),
+#pass-stats-table td:nth-child(1) {
+    width: 30%;
+}
+
+#pass-stats-table th:nth-child(2),
+#pass-stats-table td:nth-child(2) {
+    width: 10%;
+    text-align: center;
+}
+
+#pass-stats-table th:nth-child(3),
+#pass-stats-table td:nth-child(3) {
+    width: 30%;
+}
+
+#pass-stats-table th:nth-child(4),
+#pass-stats-table td:nth-child(4) {
+    width: 30%;
+}
+
+/* Connection Statistics Table */
+#conn-stats-table th:nth-child(1),
+#conn-stats-table td:nth-child(1) {
+    width: 15%;
+}
+
+#conn-stats-table th:nth-child(2),
+#conn-stats-table td:nth-child(2) {
+    width: 30%;
+}
+
+#conn-stats-table th:nth-child(3),
+#conn-stats-table td:nth-child(3) {
+    width: 40%;
+}
+
+#conn-stats-table th:nth-child(4),
+#conn-stats-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+}
+</style>
