@@ -16,9 +16,23 @@ const (
 	HTTPS     Protocol = "HTTPS"
 	TLS       Protocol = "TLS"
 	WebSocket Protocol = "WebSocket"
+	SSH       Protocol = "SSH"
 )
 
 var ErrPeekTimeout = errors.New("peek timeout")
+
+func SniffProtocol(reader *bufio.Reader) (Protocol, error) {
+	if isTLS, _ := SniffTLS(reader); isTLS {
+		return TLS, nil
+	}
+	if isHTTP, _ := SniffHTTP(reader); isHTTP {
+		return HTTP, nil
+	}
+	if isSSH, _ := SniffSSH(reader); isSSH {
+		return SSH, nil
+	}
+	return TCP, nil
+}
 
 // peekLineSlice reads a line from bufio.Reader without consuming it.
 // returns the line bytes (without CRLF) or error.

@@ -157,15 +157,17 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 		}
 	}()
 
-	if strings.HasSuffix(destAddr, "443") && sniff.SniffTLSClientHello(reader) {
-		r.Cache.Add(destAddr, struct{}{})
-		log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, added to cache")
-		statistics.AddConnection(&statistics.ConnectionRecord{
-			Protocol: sniff.HTTPS,
-			SrcAddr:  srcAddr,
-			DestAddr: destAddr,
-		})
-		return
+	if strings.HasSuffix(destAddr, "443") {
+		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
+			r.Cache.Add(destAddr, struct{}{})
+			log.LogInfoWithAddr(srcAddr, destAddr, "tls client hello detected, added to cache")
+			statistics.AddConnection(&statistics.ConnectionRecord{
+				Protocol: sniff.HTTPS,
+				SrcAddr:  srcAddr,
+				DestAddr: destAddr,
+			})
+			return
+		}
 	}
 
 	var isHTTP bool
@@ -177,7 +179,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 	if !isHTTP {
 		r.Cache.Add(destAddr, struct{}{})
 		log.LogInfoWithAddr(srcAddr, destAddr, "sniff first request is not http, added to cache, switching to raw proxy")
-		if sniff.SniffTLSClientHello(reader) {
+		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
 			statistics.AddConnection(&statistics.ConnectionRecord{
 				Protocol: sniff.TLS,
 				SrcAddr:  srcAddr,
