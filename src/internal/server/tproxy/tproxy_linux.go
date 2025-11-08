@@ -4,9 +4,11 @@ package tproxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"syscall"
+	"time"
 
 	"golang.org/x/sys/unix"
 
@@ -58,7 +60,10 @@ func (s *Server) Start() error {
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {
-			logrus.Errorf("s.listener.Accept: %s", err.Error())
+			if errors.Is(err, syscall.EMFILE) {
+				time.Sleep(time.Second)
+			}
+			logrus.Error("s.listener.Accept:", err)
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())

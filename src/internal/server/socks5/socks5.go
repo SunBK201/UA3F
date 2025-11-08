@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -60,7 +61,10 @@ func (s *Server) Start() (err error) {
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {
-			logrus.Errorf("s.listener.Accept: %s", err.Error())
+			if errors.Is(err, syscall.EMFILE) {
+				time.Sleep(time.Second)
+			}
+			logrus.Error("s.listener.Accept:", err)
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())

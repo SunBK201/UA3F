@@ -3,8 +3,11 @@
 package redirect
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
@@ -37,7 +40,10 @@ func (s *Server) Start() (err error) {
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {
-			logrus.Error("s.listener.Accept: ", err)
+			if errors.Is(err, syscall.EMFILE) {
+				time.Sleep(time.Second)
+			}
+			logrus.Error("s.listener.Accept:", err)
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
