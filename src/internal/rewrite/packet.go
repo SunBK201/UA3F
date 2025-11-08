@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/gopacket/layers"
 	"github.com/sunbk201/ua3f/internal/log"
-	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -72,7 +71,7 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 // Returns the rewritten payload and metadata about the operation
 func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (newPayload []byte, hasUA, modified, inWhitelist bool) {
 	// Find all User-Agent positions
-	positions, unterm := sniff.FindUserAgentInPayload(payload)
+	positions, unterm := findUserAgentInPayload(payload)
 
 	if unterm {
 		log.LogInfoWithAddr(srcAddr, dstAddr, "Unterminated User-Agent found, not rewriting")

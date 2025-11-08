@@ -1,4 +1,4 @@
-package sniff
+package rewrite
 
 import (
 	"bytes"
@@ -17,9 +17,9 @@ func toLowerASCII(b byte) byte {
 	return b
 }
 
-// IndexFoldASCII performs case-insensitive search for needle in haystack (ASCII only)
+// indexFoldASCII performs case-insensitive search for needle in haystack (ASCII only)
 // Returns the first occurrence index or -1 if not found
-func IndexFoldASCII(haystack, needle []byte) int {
+func indexFoldASCII(haystack, needle []byte) int {
 	if len(needle) == 0 {
 		return 0
 	}
@@ -46,10 +46,10 @@ func IndexFoldASCII(haystack, needle []byte) int {
 	return -1
 }
 
-// FindUserAgentInPayload searches for User-Agent header(s) in raw HTTP payload
+// findUserAgentInPayload searches for User-Agent header(s) in raw HTTP payload
 // Returns slice of (startPos, endPos) pairs for each User-Agent value found
 // Returns empty slice if no User-Agent found, or if any UA is unterminated (missing \r)
-func FindUserAgentInPayload(payload []byte) (positions [][2]int, unterminated bool) {
+func findUserAgentInPayload(payload []byte) (positions [][2]int, unterminated bool) {
 	if len(payload) < len(uaTag) {
 		return nil, false
 	}
@@ -60,7 +60,7 @@ func FindUserAgentInPayload(payload []byte) (positions [][2]int, unterminated bo
 			break
 		}
 
-		idx := IndexFoldASCII(payload[searchStart:], uaTag)
+		idx := indexFoldASCII(payload[searchStart:], uaTag)
 		if idx < 0 {
 			break
 		}
