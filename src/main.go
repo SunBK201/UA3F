@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -15,11 +13,13 @@ const version = "1.5.0"
 
 func main() {
 	cfg, showVer := config.Parse()
+
+	log.SetLogConf(cfg.LogLevel)
+
 	if showVer {
-		fmt.Println("UA3F v" + version)
+		logrus.Infof("UA3F version: %s", version)
 		return
 	}
-	log.SetLogConf(cfg.LogLevel)
 
 	rw, err := rewrite.New(cfg)
 	if err != nil {

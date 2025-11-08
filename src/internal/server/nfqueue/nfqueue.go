@@ -101,7 +101,7 @@ func (s *Server) SendVerdict(packet *IPPacket, result *rewrite.RewriteResult) {
 		newPacket, err = serializeIPPacket(packet.NetworkLayer, packet.TCP, result.NewPayload, packet.IsIPv6)
 		if err != nil {
 			_ = nf.SetVerdict(id, nfq.NfAccept)
-			log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("serializeIPPacket failed: %v", err))
+			log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("serializeIPPacket: %v", err))
 			return
 		}
 	}
@@ -117,12 +117,12 @@ func (s *Server) SendVerdict(packet *IPPacket, result *rewrite.RewriteResult) {
 		if setMark {
 			if err := nf.SetVerdictWithOption(id, nfq.NfAccept, nfq.WithAlteredPacket(newPacket), nfq.WithConnMark(nextMark)); err != nil {
 				_ = nf.SetVerdict(id, nfq.NfAccept)
-				log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("SetVerdictWithOption failed: %v", err))
+				log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("nf.SetVerdictWithOption: %v", err))
 			}
 		} else {
 			if err := nf.SetVerdictWithOption(id, nfq.NfAccept, nfq.WithAlteredPacket(newPacket)); err != nil {
 				_ = nf.SetVerdict(id, nfq.NfAccept)
-				log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("SetVerdictWithOption failed: %v", err))
+				log.LogErrorWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("nf.SetVerdictWithOption: %v", err))
 			}
 		}
 	}
@@ -208,14 +208,14 @@ func (s *Server) Start() (err error) {
 
 	nf, err := nfq.Open(&config)
 	if err != nil {
-		return fmt.Errorf("could not open nfqueue socket: %w", err)
+		return fmt.Errorf("nfq.Open: %w", err)
 	}
 	defer nf.Close()
 	s.nf = nf
 
 	// Ignore ENOBUFS to prevent queue drop logs
 	if err := nf.SetOption(netlink.NoENOBUFS, true); err != nil {
-		return fmt.Errorf("failed to set netlink option: %w", err)
+		return fmt.Errorf("nf.SetOption: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

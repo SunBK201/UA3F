@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/mdlayher/netlink"
+	"github.com/sirupsen/logrus"
 )
 
 type IPPacket struct {
@@ -174,7 +175,7 @@ func getConnMark(a *nfq.Attribute) (uint32, bool) {
 
 	attrs, err := netlink.UnmarshalAttributes(*a.Ct)
 	if err != nil {
-		fmt.Println("failed to parse Ct attributes:", err)
+		logrus.Errorf("netlink.UnmarshalAttributes: %s", err.Error())
 		return 0, false
 	}
 

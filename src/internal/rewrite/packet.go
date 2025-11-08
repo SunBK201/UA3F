@@ -28,7 +28,7 @@ func (r *Rewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
 	// Check regex match
 	matches, err := r.uaRegex.MatchString(ua)
 	if err != nil {
-		log.LogErrorWithAddr(srcAddr, dstAddr, fmt.Sprintf("Error matching User-Agent regex: %v", err))
+		log.LogErrorWithAddr(srcAddr, dstAddr, fmt.Sprintf("r.uaRegex.MatchString Error matching User-Agent regex: %v", err))
 		return true
 	}
 

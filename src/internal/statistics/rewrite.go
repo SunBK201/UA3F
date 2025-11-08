@@ -29,7 +29,7 @@ func AddRewriteRecord(record *RewriteRecord) {
 func dumpRewriteRecords() {
 	f, err := os.Create(rewriteStatsFile)
 	if err != nil {
-		logrus.Errorf("create stats file error: %v", err)
+		logrus.Errorf("os.Create: %v", err)
 		return
 	}
 	defer f.Close()

@@ -41,7 +41,7 @@ func SetLogConf(level string) {
 		Filename:   log_file,
 		MaxSize:    5, // megabytes
 		MaxBackups: 5,
-		MaxAge:     7, //days
+		MaxAge:     7, // days
 		LocalTime:  true,
 		Compress:   true,
 	}

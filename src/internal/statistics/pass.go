@@ -29,7 +29,7 @@ func AddPassThroughRecord(record *PassThroughRecord) {
 func dumpPassThroughRecords() {
 	f, err := os.Create(passthroughStatsFile)
 	if err != nil {
-		logrus.Errorf("create stats file error: %v", err)
+		logrus.Errorf("os.Create: %v", err)
 		return
 	}
 	defer f.Close()

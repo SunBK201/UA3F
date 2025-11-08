@@ -53,7 +53,7 @@ func RemoveConnection(srcAddr, destAddr string) {
 func dumpConnectionRecords() {
 	f, err := os.Create(connStatsFile)
 	if err != nil {
-		logrus.Errorf("create conn stats file error: %v", err)
+		logrus.Errorf("os.Create: %v", err)
 		return
 	}
 	defer f.Close()

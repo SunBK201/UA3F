@@ -51,7 +51,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 // Start begins listening for SOCKS5 clients.
 func (s *Server) Start() (err error) {
 	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {
-		return fmt.Errorf("listen failed: %w", err)
+		return fmt.Errorf("net.Listen: %w", err)
 	}
 
 	// Start statistics worker
@@ -60,7 +60,7 @@ func (s *Server) Start() (err error) {
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {
-			logrus.Error("Accept failed: ", err)
+			logrus.Errorf("s.listener.Accept: %s", err.Error())
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
@@ -93,7 +93,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	// TCP CONNECT
 	target, err := s.socks5Connect(client, destAddrPort)
 	if err != nil {
-		logrus.Warn("Connect failed: ", err)
+		logrus.Warnf("s.socks5Connect %s: %v", destAddrPort, err)
 		_ = client.Close()
 		return
 	}
@@ -112,7 +112,7 @@ func (s *Server) socks5Auth(client net.Conn) error {
 		} else {
 			logrus.Errorf("[%s][Auth] read header: %v", client.RemoteAddr().String(), err)
 		}
-		return fmt.Errorf("reading header: %w", err)
+		return fmt.Errorf("io.ReadFull reading header: %w", err)
 	}
 	ver, nMethods := int(buf[0]), int(buf[1])
 	if ver != socksVer5 {
@@ -124,14 +124,14 @@ func (s *Server) socks5Auth(client net.Conn) error {
 	n, err = io.ReadFull(client, buf[:nMethods])
 	if n != nMethods {
 		logrus.Errorf("[%s][Auth] read methods: %v", client.RemoteAddr().String(), err)
-		return fmt.Errorf("read methods: %w", err)
+		return fmt.Errorf("io.ReadFull read methods: %w", err)
 	}
 
 	// Reply: no-auth
 	n, err = client.Write([]byte{socksVer5, socksNoAuth})
 	if n != 2 || err != nil {
 		logrus.Errorf("[%s][Auth] write rsp: %v", client.RemoteAddr().String(), err)
-		return fmt.Errorf("write rsp: %w", err)
+		return fmt.Errorf("client.Write rsp: %w", err)
 	}
 	return nil
 }
@@ -227,13 +227,13 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 func (s *Server) handleUDPAssociate(client net.Conn) {
 	udpServer, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
-		logrus.Errorf("[%s][UDP] ListenUDP failed: %v", client.RemoteAddr().String(), err)
+		logrus.Errorf("[%s][UDP] net.ListenUDP failed: %v", client.RemoteAddr().String(), err)
 		return
 	}
 	defer udpServer.Close()
 
 	_, portStr, _ := net.SplitHostPort(udpServer.LocalAddr().String())
-	logrus.Debugf("[%s][UDP] ListenUDP on %s", client.RemoteAddr().String(), portStr)
+	logrus.Debugf("[%s][UDP] net.SplitHostPort %s", client.RemoteAddr().String(), portStr)
 
 	portInt, _ := net.LookupPort("udp", portStr)
 	portBytes := make([]byte, 2)
@@ -241,7 +241,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 
 	// Reply with chosen UDP port (bind addr set to 0.0.0.0)
 	if _, err = client.Write([]byte{socksVer5, 0x00, 0x00, socksATYPv4, 0, 0, 0, 0, portBytes[0], portBytes[1]}); err != nil {
-		logrus.Errorf("[%s][UDP] Write rsp failed: %v", client.RemoteAddr().String(), err)
+		logrus.Errorf("[%s][UDP] client.Write rsp: %v", client.RemoteAddr().String(), err)
 		return
 	}
 
@@ -261,7 +261,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 					break
 				}
 			} else {
-				logrus.Errorf("[%s][UDP] ReadFromUDP failed: %v", client.RemoteAddr().String(), err)
+				logrus.Errorf("[%s][UDP] udpServer.ReadFromUDP failed: %v", client.RemoteAddr().String(), err)
 			}
 			continue
 		}
@@ -295,7 +295,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 				targetAddr = string(buf[5 : 5+addrLen])
 				targetIPAddr, err := net.ResolveIPAddr("ip", targetAddr)
 				if err != nil {
-					logrus.Errorf("[%s][UDP] ResolveIPAddr failed: %v", client.RemoteAddr().String(), err)
+					logrus.Errorf("[%s][UDP] net.ResolveIPAddr: %v", client.RemoteAddr().String(), err)
 					break
 				}
 				targetIP = targetIPAddr.IP

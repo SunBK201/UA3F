@@ -71,7 +71,7 @@ func (r *Rewriter) buildUserAgent(originUA string) string {
 	if r.partialReplace && r.uaRegex != nil && r.pattern != "" {
 		newUA, err := r.uaRegex.Replace(originUA, r.payloadUA, -1, -1)
 		if err != nil {
-			logrus.Errorf("User-Agent Replace Error: %s, use full overwrite", err.Error())
+			logrus.Errorf("r.uaRegex.Replace: %s, use full overwrite", err.Error())
 			return r.payloadUA
 		}
 		return newUA
@@ -96,18 +96,18 @@ func (r *Rewriter) ShouldRewrite(req *http.Request, srcAddr, destAddr string) bo
 		} else {
 			matches, err = r.uaRegex.MatchString(originalUA)
 			if err != nil {
-				log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("User-Agent regex match error: %s", err.Error()))
+				log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("r.uaRegex.MatchString: %s", err.Error()))
 				matches = true
 			}
 		}
 	}
 
 	if isWhitelist {
-		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("hit User-Agent whitelist: %s, add to cache", originalUA))
+		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", originalUA))
 		r.Cache.Add(destAddr, struct{}{})
 	}
 	if !matches {
-		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("not hit User-Agent regex: %s", originalUA))
+		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not hit User-Agent regex: %s", originalUA))
 	}
 
 	hit := !isWhitelist && matches
@@ -153,7 +153,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Process: %s", err.Error()))
 		}
 		if _, err = io.CopyBuffer(dst, reader, one); err != nil {
-			log.LogWarnWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.Copy: %s", err.Error()))
+			log.LogWarnWithAddr(srcAddr, destAddr, fmt.Sprintf("Process io.CopyBuffer: %s", err.Error()))
 		}
 	}()
 
@@ -178,7 +178,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 	}
 	if !isHTTP {
 		r.Cache.Add(destAddr, struct{}{})
-		log.LogInfoWithAddr(srcAddr, destAddr, "sniff first request is not http, added to cache, switching to raw proxy")
+		log.LogInfoWithAddr(srcAddr, destAddr, "sniff first request is not http, added to cache, switch to direct forward")
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
 			statistics.AddConnection(&statistics.ConnectionRecord{
 				Protocol: sniff.TLS,
@@ -210,7 +210,7 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			return
 		}
 		if !isHTTP {
-			log.LogWarnWithAddr(srcAddr, destAddr, "sniff subsequent request is not http, switching to raw proxy")
+			log.LogWarnWithAddr(srcAddr, destAddr, "sniff subsequent request is not http, switch to direct forward")
 			return
 		}
 		if req, err = http.ReadRequest(reader); err != nil {
@@ -221,11 +221,11 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			req = r.Rewrite(req, srcAddr, destAddr)
 		}
 		if err = r.Forward(dst, req); err != nil {
-			err = fmt.Errorf("r.forward: %w", err)
+			err = fmt.Errorf("r.Forward: %w", err)
 			return
 		}
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
-			log.LogInfoWithAddr(srcAddr, destAddr, "websocket upgrade detected, switching to raw proxy")
+			log.LogInfoWithAddr(srcAddr, destAddr, "websocket upgrade detected, switch to direct proxy")
 			statistics.AddConnection(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  srcAddr,

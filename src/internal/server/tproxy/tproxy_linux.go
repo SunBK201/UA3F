@@ -36,11 +36,11 @@ func (s *Server) Start() error {
 			var err error
 			c.Control(func(fd uintptr) {
 				if e := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1); e != nil {
-					err = fmt.Errorf("set SO_REUSEADDR: %v", e)
+					err = fmt.Errorf("unix.SetsockoptInt SO_REUSEADDR: %v", e)
 					return
 				}
 				if e := unix.SetsockoptInt(int(fd), unix.SOL_IP, unix.IP_TRANSPARENT, 1); e != nil {
-					err = fmt.Errorf("set IP_TRANSPARENT: %v", e)
+					err = fmt.Errorf("unix.SetsockoptInt IP_TRANSPARENT: %v", e)
 					return
 				}
 			})
@@ -50,7 +50,7 @@ func (s *Server) Start() error {
 
 	var err error
 	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.cfg.ListenAddr); err != nil {
-		return fmt.Errorf("listen failed: %w", err)
+		return fmt.Errorf("net.Listen: %w", err)
 	}
 
 	go statistics.StartRecorder()
@@ -58,7 +58,7 @@ func (s *Server) Start() error {
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {
-			logrus.Error("Accept failed: ", err)
+			logrus.Errorf("s.listener.Accept: %s", err.Error())
 			continue
 		}
 		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
@@ -70,7 +70,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	addr, err := getOriginalDstAddr(client)
 	if err != nil {
 		_ = client.Close()
-		logrus.Errorf("Get original dst addr failed: %v", err)
+		logrus.Errorf("getOriginalDstAddr: %v", err)
 		return
 	}
 	logrus.Debugf("Original destination address: %s", addr)
@@ -78,7 +78,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	target, err := utils.ConnectWithMark(addr, utils.SO_MARK)
 	if err != nil {
 		_ = client.Close()
-		logrus.Warnf("Dial target %s failed: %v", addr, err)
+		logrus.Warnf("utils.ConnectWithMark %s: %v", addr, err)
 		return
 	}
 
@@ -105,11 +105,11 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 func getOriginalDstAddr(conn net.Conn) (addr string, err error) {
 	fd, err := utils.GetConnFD(conn)
 	if err != nil {
-		return "", fmt.Errorf("failed to get file descriptor: %v", err)
+		return "", fmt.Errorf("utils.GetConnFD: %v", err)
 	}
 	raw, err := unix.GetsockoptIPv6Mreq(fd, unix.SOL_IP, unix.SO_ORIGINAL_DST)
 	if err != nil {
-		return "", fmt.Errorf("getsockopt SO_ORIGINAL_DST failed: %v", err)
+		return "", fmt.Errorf("unix.GetsockoptIPv6Mreq SO_ORIGINAL_DST: %v", err)
 	}
 
 	ip := net.IPv4(raw.Multiaddr[4], raw.Multiaddr[5], raw.Multiaddr[6], raw.Multiaddr[7])

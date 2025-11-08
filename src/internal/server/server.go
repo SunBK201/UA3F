@@ -29,6 +29,6 @@ func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {
 	case config.ServerModeNFQueue:
 		return nfqueue.New(cfg, rw), nil
 	default:
-		return nil, fmt.Errorf("unknown server mode: %s", cfg.ServerMode)
+		return nil, fmt.Errorf("NewServer unknown server mode: %s", cfg.ServerMode)
 	}
 }
