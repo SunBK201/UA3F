@@ -4,9 +4,8 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
 
 ## 特性
 
-- 支持多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
-- 支持正则表达式规则匹配重写 User-Agent
-- 自定义重写 User-Agent 内容
+- 多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
+- 高度灵活的重写规则系统，支持多种规则类型与重写策略
 - LRU 高速缓存非 HTTP 流量，加速非 HTTP 流量转发
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 支持 OpenWrt 17.01 及以上版本
@@ -62,6 +61,7 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > - Port (监听端口): 默认 `1080`
 > - Bind Address (绑定地址): 默认 `0.0.0.0`
 > - Log Level (日志等级): 默认 `error`, 如果需要调试排查错误可以设置为 `debug`
+> - Rewrite Mode (重写策略): 默认 `GLOBAL`, 支持 `GLOBAL`、`DIRECT`、`RULES`
 > - User-Agent (自定义重写 User-Agent): 默认 `FFF`
 > - User-Agent Regex (User-Agent 正则表达式): 只重写匹配成功的 User-Agent。如果为空，全部重写
 > - Partial Replace (部分替换): 只替换正则表达式匹配的部分。该选项仅在 User-Agent 正则表达式非空时生效
@@ -95,10 +95,11 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
 - `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
+- `-x`: 重写策略，支持 GLOBAL、DIRECT、RULES，默认 GLOBAL
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认为空, 表示所有 User-Agent 都会被重写
 - `-s`: 部分替换，仅替换正则匹配到的部分
-- `-d`: 直接转发，不进行重写直接转发数据包
+- `-z`: 重写规则，json string 格式，仅在 RULES 重写策略模式下生效
 </details>
 
 ## Clash 配置
