@@ -18,7 +18,7 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
   </tr>
 </table>
 
-![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-1.2.0.png)
+![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-160.png)
 
 ## 部署
 
@@ -51,8 +51,6 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
 UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
 具体使用教程详见：[猴子也能看懂的 UA3F 使用教程](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
-
-`TPROXY` 与 `REDIRECT` 模式不依赖 Clash 等 SOCKS5 客户端，UA3F 可以独立工作，亦可同时可与 Clash 等代理工具伴生运行。
 
 > [!NOTE]
 > 设置说明：
@@ -101,10 +99,19 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-z`: 重写规则，json string 格式，仅在 RULES 重写策略模式下生效
 </details>
 
-## Clash 配置
+### 服务模式说明
 
-> [!IMPORTANT]
-> 以下 Clash 配置仅适用于 UA3F SOCKS5 服务模式，TPROXY 与 REDIRECT 模式不需要额外的 Clash 配置。
+UA3F 支持 5 种不同的服务模式，各模式的特点和使用场景如下：
+
+| 服务模式     | 工作原理           | 是否依赖 Clash 等 | 兼容性 | 性能 | 能否与 Clash 等伴生运行 |
+| ------------ | ------------------ | ----------------- | ------ | ---- | ----------------------- |
+| **HTTP**     | HTTP 代理          | 是                | 高     | 低   | 能                      |
+| **SOCKS5**   | SOCKS5 代理        | 是                | 高     | 低   | 能                      |
+| **TPROXY**   | netfilter TPROXY   | 否                | 中     | 中   | 能                      |
+| **REDIRECT** | netfilter REDIRECT | 否                | 中     | 中   | 能                      |
+| **NFQUEUE**  | netfilter NFQUEUE  | 否                | 中     | 高   | 能                      |
+
+## Clash 配置
 
 Clash 与 UA3F 的配置部署教程详见：[UA3F 与 Clash 从零开始的部署教程](https://sunbk201public.notion.site/UA3F-Clash-16d60a7b5f0e457a9ee97a3be7cbf557?pvs=4)
 
@@ -127,11 +134,44 @@ rules:
 
 ### Clash 参考配置
 
-提供 3 个参考配置：
-
-1. 国内版，无需进行任何修改，可直接使用 [ua3f-socks5-cn.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-cn.yaml) (Clash 需要选用 Meta 内核。)
-2. 国际版，针对有特定需求的特殊用户进行适配，[ua3f-socks5-global.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
-3. 国际版(增强)，针对流量特征检测 (DPI) 进行规则补充，注意该配置会对 QQ、微信等平台的流量进行分流代理，因此需要根据自己的需求谨慎选择该配置，[ua3f-socks5-global-dpi.yaml](https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global-dpi.yaml)，注意需要在 proxy-providers > Global-ISP > url 中（第 18 行）加入你的代理节点订阅链接。(Clash 需要选用 Meta 内核。)
+<table>
+  <tr>
+    <th>版本</th>
+    <th>配置文件</th>
+    <th>UA3F 运行模式</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td>国内版</td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-cn.yaml">ua3f-socks5-cn.yaml</a></td>
+    <td>SOCKS5</td>
+    <td>无需进行任何修改，可直接使用</td>
+  </tr>
+  <tr>
+    <td>代理支持</td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global.yaml">ua3f-socks5-global.yaml</a></td>
+    <td>SOCKS5</td>
+    <td>注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理订阅链接</td>
+  </tr>
+  <tr>
+    <td>抗 DPI + 代理支持</td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global-dpi.yaml">ua3f-socks5-global-dpi.yaml</a></td>
+    <td>SOCKS5</td>
+    <td>注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理订阅链接</td>
+  </tr>
+  <tr>
+    <td>代理支持</td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-tproxy-cn-dpi.yaml">ua3f-tproxy-cn-dpi.yaml</a></td>
+    <td>TPROXY/REDIRECT/NFQUEUE</td>
+    <td>注意需要在 proxy-providers > Global-ISP > url 中（第 13 行）加入你的代理订阅链接</td>
+  </tr>
+  <tr>
+    <td>抗 DPI + 代理支持</td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-tproxy-global-dpi.yaml">ua3f-tproxy-global-dpi.yaml</a></td>
+    <td>TPROXY/REDIRECT/NFQUEUE</td>
+    <td>注意需要在 proxy-providers > Global-ISP > url 中（第 18 行）加入你的代理订阅链接</td>
+  </tr>
+</table>
 
 ## References & Thanks
 
