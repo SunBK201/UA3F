@@ -67,7 +67,7 @@ func (s *Server) worker(ctx context.Context, workerID int, aChan <-chan *nfq.Att
 				logrus.Debugf("Worker %d channel closed", workerID)
 				return
 			}
-			if s.cfg.DirectForward {
+			if s.cfg.RewriteMode == config.RewriteModeDirect {
 				_ = s.nf.SetVerdict(*a.PacketID, nfq.NfAccept)
 				continue
 			} else {

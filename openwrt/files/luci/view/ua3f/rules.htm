@@ -1,0 +1,653 @@
+<%
+local uci = require("luci.model.uci").cursor()
+local json = require("luci.jsonc")
+
+local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
+%>
+
+<style>
+    .rule-actions button { margin: 0 2px; }
+    .empty-message { text-align: center; padding: 20px; font-style: italic; }
+    
+    .cbi-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .cbi-modal-dialog {
+        background: var(--background-color-high, #fff);
+        color: var(--text-color-primary, #000);
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90%;
+        overflow-y: auto;
+    }
+    
+    .cbi-modal-dialog-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color-medium, #ddd);
+    }
+    
+    .cbi-modal-dialog-header h3 {
+        margin: 0;
+    }
+    
+    .cbi-modal-dialog-body {
+        padding: 20px;
+    }
+</style>
+
+<!-- Rewrite Rules Section -->
+<div class="cbi-section-descr" style="font-weight:bold; margin-bottom: 10px;"><%:Rewrite Rules%></div>
+<div class="cbi-section-descr" style="color: #999; font-size: 90%; margin-bottom: 10px;">
+    <%:Note: Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
+</div>
+
+<table id="rewrite-rules-table" class="table cbi-section-table">
+    <tr class="tr table-titles">
+        <th class="th" style="width: 80px; text-align: center"><%:Enabled%></th>
+        <th class="th" style="width: 50px"><%:Index%></th>
+        <th class="th" style="width: 120px"><%:Rule Type%></th>
+        <th class="th"><%:Match Value%></th>
+        <th class="th" style="width: 120px"><%:Rewrite Action%></th>
+        <th class="th"><%:Rewrite Value%></th>
+        <th class="th" style="width: 280px"><%:Actions%></th>
+    </tr>
+    <tbody id="rulesTableBody"></tbody>
+</table>
+
+<div style="margin: 10px 0; padding: 5px 0;">
+    <input type="button" class="cbi-button cbi-button-add" onclick="rewriteRules.openAddDialog()" value="<%:Add Rule%>" />
+</div>
+
+<script type="text/javascript">
+(function() {
+    window.rewriteRules = {
+        rules: <%=rules_data%>,
+        
+        init: function() {
+            this.ensureFinalRule();
+            this.renderTable();
+        },
+        
+        ensureFinalRule: function() {
+            // Check if FINAL rule exists
+            var hasFinalRule = this.rules.some(function(rule) {
+                return rule.type === 'FINAL';
+            });
+            
+            // If no FINAL rule exists, add it
+            if (!hasFinalRule) {
+                this.rules.push({
+                    type: 'FINAL',
+                    match_value: '',
+                    action: 'DIRECT',
+                    rewrite_value: '',
+                    description: 'Default fallback rule',
+                    enabled: true
+                });
+            } else {
+                // Ensure FINAL rule is at the bottom
+                var finalRuleIndex = -1;
+                for (var i = 0; i < this.rules.length; i++) {
+                    if (this.rules[i].type === 'FINAL') {
+                        finalRuleIndex = i;
+                        break;
+                    }
+                }
+                if (finalRuleIndex !== -1 && finalRuleIndex !== this.rules.length - 1) {
+                    var finalRule = this.rules.splice(finalRuleIndex, 1)[0];
+                    this.rules.push(finalRule);
+                }
+            }
+        },
+        
+        isFinalRule: function(index) {
+            return this.rules[index] && this.rules[index].type === 'FINAL';
+        },
+        
+        renderTable: function() {
+            var tbody = document.getElementById('rulesTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (this.rules.length === 0) {
+                var tr = document.createElement('tr');
+                tr.className = 'tr';
+                var td = document.createElement('td');
+                td.className = 'td empty-message';
+                td.colSpan = 7;
+                td.textContent = '<%:No rules configured. Click「Add Rule」to create one%>';
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+                return;
+            }
+            
+            for (var i = 0; i < this.rules.length; i++) {
+                tbody.appendChild(this.createRuleRow(this.rules[i], i));
+            }
+        },
+        
+        createRuleRow: function(rule, index) {
+            var tr = document.createElement('tr');
+            tr.className = 'tr cbi-section-table-row';
+            var isFinal = this.isFinalRule(index);
+            
+            // Enabled column
+            var td1 = document.createElement('td');
+            td1.className = 'td';
+            td1.style.textAlign = 'center';
+            var enabledCheckbox = document.createElement('input');
+            enabledCheckbox.type = 'checkbox';
+            enabledCheckbox.className = 'cbi-input-checkbox';
+            enabledCheckbox.checked = rule.enabled;
+            // FINAL rule must always be enabled
+            if (isFinal) {
+                enabledCheckbox.disabled = true;
+                enabledCheckbox.checked = true;
+            } else {
+                enabledCheckbox.onchange = function() { rewriteRules.toggleRuleEnabled(index, this.checked); };
+            }
+            td1.appendChild(enabledCheckbox);
+            tr.appendChild(td1);
+            
+            // Index column
+            var td2 = document.createElement('td');
+            td2.className = 'td';
+            td2.textContent = index + 1;
+            tr.appendChild(td2);
+            
+            // Rule Type column
+            var td3 = document.createElement('td');
+            td3.className = 'td';
+            td3.textContent = this.getRuleTypeLabel(rule.type);
+            tr.appendChild(td3);
+            
+            // Match Value column
+            var td4 = document.createElement('td');
+            td4.className = 'td';
+            td4.style.maxWidth = '200px';
+            td4.style.overflow = 'hidden';
+            td4.style.textOverflow = 'ellipsis';
+            td4.style.whiteSpace = 'nowrap';
+            var span4 = document.createElement('span');
+            span4.textContent = isFinal ? '-' : (rule.match_value || '');
+            span4.title = isFinal ? '' : (rule.match_value || '');
+            td4.appendChild(span4);
+            tr.appendChild(td4);
+            
+            // Rewrite Action column
+            var td5 = document.createElement('td');
+            td5.className = 'td';
+            td5.textContent = this.getActionLabel(rule.action);
+            tr.appendChild(td5);
+            
+            // Rewrite Value column
+            var td6 = document.createElement('td');
+            td6.className = 'td';
+            td6.style.maxWidth = '200px';
+            td6.style.overflow = 'hidden';
+            td6.style.textOverflow = 'ellipsis';
+            td6.style.whiteSpace = 'nowrap';
+            var span6 = document.createElement('span');
+            span6.textContent = rule.rewrite_value || '-';
+            span6.title = rule.rewrite_value || '';
+            td6.appendChild(span6);
+            tr.appendChild(td6);
+            
+            // Actions column
+            var td7 = document.createElement('td');
+            td7.className = 'td rule-actions';
+            
+            var editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'cbi-button cbi-button-edit';
+            editBtn.textContent = '<%:Edit%>';
+            editBtn.onclick = function() { rewriteRules.editRule(index); };
+            td7.appendChild(editBtn);
+            
+            // Only show move and delete buttons for non-FINAL rules
+            if (!isFinal) {
+                td7.appendChild(document.createTextNode(' '));
+                
+                var upBtn = document.createElement('button');
+                upBtn.type = 'button';
+                upBtn.className = 'cbi-button cbi-button-neutral';
+                upBtn.textContent = '<%:Move Up%>';
+                upBtn.disabled = index === 0;
+                upBtn.onclick = function() { rewriteRules.moveRuleUp(index); };
+                td7.appendChild(upBtn);
+                
+                td7.appendChild(document.createTextNode(' '));
+                
+                var downBtn = document.createElement('button');
+                downBtn.type = 'button';
+                downBtn.className = 'cbi-button cbi-button-neutral';
+                downBtn.textContent = '<%:Move Down%>';
+                // Can't move down if it's the second-to-last (because last is FINAL)
+                downBtn.disabled = index >= this.rules.length - 2;
+                downBtn.onclick = function() { rewriteRules.moveRuleDown(index); };
+                td7.appendChild(downBtn);
+                
+                td7.appendChild(document.createTextNode(' '));
+                
+                var delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'cbi-button cbi-button-remove';
+                delBtn.textContent = '<%:Delete%>';
+                delBtn.onclick = function() { rewriteRules.deleteRule(index); };
+                td7.appendChild(delBtn);
+            }
+            
+            tr.appendChild(td7);
+            
+            return tr;
+        },
+        
+        getRuleTypeLabel: function(type) {
+            var labels = {
+                'KEYWORD': '<%:KEYWORD%>',
+                'REGEX': '<%:REGEX%>',
+                'IP-CIDR': '<%:IP-CIDR%>',
+                'SRC-IP': '<%:SRC-IP%>',
+                'DEST-PORT': '<%:DEST-PORT%>',
+                'FINAL': '<%:FINAL%>'
+            };
+            return labels[type] || type;
+        },
+        
+        getActionLabel: function(action) {
+            var labels = {
+                'REPLACE': '<%:REPLACE%>',
+                'REPLACE-PART': '<%:REPLACE-PART%>',
+                'DELETE': '<%:DELETE%>',
+                'DIRECT': '<%:DIRECT%>',
+                'DROP': '<%:DROP%>'
+            };
+            return labels[action] || action;
+        },
+        
+        openAddDialog: function() {
+            this.showRuleDialog(null, -1);
+        },
+        
+        editRule: function(index) {
+            this.showRuleDialog(this.rules[index], index);
+        },
+        
+        showRuleDialog: function(rule, index) {
+            var self = this;
+            var isEdit = rule !== null;
+            var isFinal = isEdit && rule.type === 'FINAL';
+            
+            // Create modal structure
+            var modal = document.createElement('div');
+            modal.className = 'cbi-modal';
+            
+            var dialog = document.createElement('div');
+            dialog.className = 'cbi-modal-dialog';
+            
+            // Header
+            var header = document.createElement('div');
+            header.className = 'cbi-modal-dialog-header';
+            var h3 = document.createElement('h3');
+            h3.textContent = isFinal ? '<%:Edit FINAL Rule%>' : (isEdit ? '<%:Edit Rewrite Rule%>' : '<%:Add Rewrite Rule%>');
+            header.appendChild(h3);
+            dialog.appendChild(header);
+            
+            // Body
+            var body = document.createElement('div');
+            body.className = 'cbi-modal-dialog-body';
+            
+            var section = document.createElement('div');
+            section.className = 'cbi-section';
+            
+            // Rule Type (hidden for FINAL rule)
+            if (!isFinal) {
+                var typeValue = document.createElement('div');
+                typeValue.className = 'cbi-value';
+                var typeLabel = document.createElement('label');
+                typeLabel.className = 'cbi-value-title';
+                typeLabel.textContent = '<%:Rule Type%>';
+                typeValue.appendChild(typeLabel);
+                var typeField = document.createElement('div');
+                typeField.className = 'cbi-value-field';
+                var typeSelect = document.createElement('select');
+                typeSelect.className = 'cbi-input-select';
+                typeSelect.id = 'modal_rule_type';
+                var types = [
+                    ['KEYWORD', '<%:KEYWORD%>'],
+                    ['REGEX', '<%:REGEX%>'],
+                    ['IP-CIDR', '<%:IP-CIDR%>'],
+                    ['SRC-IP', '<%:SRC-IP%>'],
+                    ['DEST-PORT', '<%:DEST-PORT%>']
+                ];
+                types.forEach(function(t) {
+                    var option = document.createElement('option');
+                    option.value = t[0];
+                    option.textContent = t[1];
+                    if (rule && rule.type === t[0]) option.selected = true;
+                    typeSelect.appendChild(option);
+                });
+                typeSelect.onchange = function() { rewriteRules.updateMatchValuePlaceholder(); };
+                typeField.appendChild(typeSelect);
+                typeValue.appendChild(typeField);
+                section.appendChild(typeValue);
+            }
+            
+            // Match Value (hidden for FINAL rule)
+            if (!isFinal) {
+                var matchValue = document.createElement('div');
+                matchValue.className = 'cbi-value';
+                var matchLabel = document.createElement('label');
+                matchLabel.className = 'cbi-value-title';
+                matchLabel.textContent = '<%:Match Value%>';
+                matchValue.appendChild(matchLabel);
+                var matchField = document.createElement('div');
+                matchField.className = 'cbi-value-field';
+                var matchInput = document.createElement('input');
+                matchInput.type = 'text';
+                matchInput.className = 'cbi-input-text';
+                matchInput.id = 'modal_match_value';
+                matchInput.placeholder = '<%:Enter match value%>';
+                if (rule) matchInput.value = rule.match_value || '';
+                matchField.appendChild(matchInput);
+                matchValue.appendChild(matchField);
+                section.appendChild(matchValue);
+            }
+            
+            // Rewrite Action
+            var actionValue = document.createElement('div');
+            actionValue.className = 'cbi-value';
+            var actionLabel = document.createElement('label');
+            actionLabel.className = 'cbi-value-title';
+            actionLabel.textContent = '<%:Rewrite Action%>';
+            actionValue.appendChild(actionLabel);
+            var actionField = document.createElement('div');
+            actionField.className = 'cbi-value-field';
+            var actionSelect = document.createElement('select');
+            actionSelect.className = 'cbi-input-select';
+            actionSelect.id = 'modal_action';
+            var actions = isFinal ? [
+                ['DELETE', '<%:DELETE%>'],
+                ['REPLACE', '<%:REPLACE%>'],
+                ['DIRECT', '<%:DIRECT%>']
+            ] : [
+                ['DELETE', '<%:DELETE%>'],
+                ['REPLACE', '<%:REPLACE%>'],
+                ['REPLACE-PART', '<%:REPLACE-PART%>'],
+                ['DIRECT', '<%:DIRECT%>'],
+                ['DROP', '<%:DROP%>']
+            ];
+            actions.forEach(function(s) {
+                var option = document.createElement('option');
+                option.value = s[0];
+                option.textContent = s[1];
+                if (rule && rule.action === s[0]) option.selected = true;
+                actionSelect.appendChild(option);
+            });
+            actionSelect.onchange = function() { rewriteRules.updateRewriteValueVisibility(); };
+            actionField.appendChild(actionSelect);
+            actionValue.appendChild(actionField);
+            section.appendChild(actionValue);
+            
+            // Rewrite Value
+            var rewriteValue = document.createElement('div');
+            rewriteValue.className = 'cbi-value';
+            rewriteValue.id = 'rewrite_value_container';
+            var rewriteLabel = document.createElement('label');
+            rewriteLabel.className = 'cbi-value-title';
+            rewriteLabel.textContent = '<%:Rewrite Value%>';
+            rewriteValue.appendChild(rewriteLabel);
+            var rewriteField = document.createElement('div');
+            rewriteField.className = 'cbi-value-field';
+            var rewriteInput = document.createElement('input');
+            rewriteInput.type = 'text';
+            rewriteInput.className = 'cbi-input-text';
+            rewriteInput.id = 'modal_rewrite_value';
+            rewriteInput.placeholder = '<%:Enter rewrite value%>';
+            if (rule) rewriteInput.value = rule.rewrite_value || '';
+            rewriteField.appendChild(rewriteInput);
+            rewriteValue.appendChild(rewriteField);
+            section.appendChild(rewriteValue);
+            
+            // Description
+            var descValue = document.createElement('div');
+            descValue.className = 'cbi-value';
+            var descLabel = document.createElement('label');
+            descLabel.className = 'cbi-value-title';
+            descLabel.textContent = '<%:Description%> (<%:Optional%>)';
+            descValue.appendChild(descLabel);
+            var descField = document.createElement('div');
+            descField.className = 'cbi-value-field';
+            var descInput = document.createElement('input');
+            descInput.type = 'text';
+            descInput.className = 'cbi-input-text';
+            descInput.id = 'modal_rule_description';
+            descInput.placeholder = '<%:Enter rule description%>';
+            if (rule && rule.description) descInput.value = rule.description;
+            descField.appendChild(descInput);
+            descValue.appendChild(descField);
+            section.appendChild(descValue);
+            
+            body.appendChild(section);
+            
+            // Buttons
+            var btnDiv = document.createElement('div');
+            btnDiv.className = 'right';
+            var cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'cbi-button cbi-button-neutral';
+            cancelBtn.textContent = '<%:Cancel%>';
+            cancelBtn.onclick = function() { self.closeDialog(); };
+            btnDiv.appendChild(cancelBtn);
+            btnDiv.appendChild(document.createTextNode(' '));
+            var saveBtn = document.createElement('button');
+            saveBtn.type = 'button';
+            saveBtn.className = 'cbi-button cbi-button-positive';
+            saveBtn.textContent = '<%:Save%>';
+            saveBtn.onclick = function() { self.saveFromDialog(index); };
+            btnDiv.appendChild(saveBtn);
+            body.appendChild(btnDiv);
+            
+            dialog.appendChild(body);
+            modal.appendChild(dialog);
+            
+            modal.onclick = function(e) {
+                if (e.target === modal) self.closeDialog();
+            };
+            
+            document.body.appendChild(modal);
+            this.currentModal = modal;
+            
+            // Initialize visibility
+            this.updateRewriteValueVisibility();
+            this.updateMatchValuePlaceholder();
+        },
+        
+        updateMatchValuePlaceholder: function() {
+            var typeSelect = document.getElementById('modal_rule_type');
+            var matchInput = document.getElementById('modal_match_value');
+            if (!typeSelect || !matchInput) return;
+            
+            var placeholders = {
+                'KEYWORD': '<%:Mac%>',
+                'REGEX': '<%:Mac.*Chrome%>',
+                'IP-CIDR': '<%:10.0.0.0/8%>',
+                'SRC-IP': '<%:192.168.1.100%>',
+                'DEST-PORT': '<%:443%>'
+            };
+            matchInput.placeholder = placeholders[typeSelect.value] || '<%:Enter match value%>';
+        },
+        
+        updateRewriteValueVisibility: function() {
+            var actionSelect = document.getElementById('modal_action');
+            var rewriteValueContainer = document.getElementById('rewrite_value_container');
+            if (!actionSelect || !rewriteValueContainer) return;
+            
+            var action = actionSelect.value;
+            // Show rewrite value only for REPLACE and REPLACE-PART actions
+            if (action === 'REPLACE' || action === 'REPLACE-PART') {
+                rewriteValueContainer.style.display = '';
+            } else {
+                rewriteValueContainer.style.display = 'none';
+            }
+        },
+        
+        closeDialog: function() {
+            if (this.currentModal) {
+                document.body.removeChild(this.currentModal);
+                this.currentModal = null;
+            }
+        },
+        
+        saveFromDialog: function(index) {
+            var isFinal = index >= 0 && this.rules[index].type === 'FINAL';
+            
+            var newRule;
+            if (isFinal) {
+                // For FINAL rule, only allow changing action and rewrite_value
+                newRule = {
+                    type: 'FINAL',
+                    match_value: '',
+                    action: document.getElementById('modal_action').value,
+                    rewrite_value: document.getElementById('modal_rewrite_value').value,
+                    description: document.getElementById('modal_rule_description').value,
+                    enabled: this.rules[index].enabled
+                };
+            } else {
+                newRule = {
+                    type: document.getElementById('modal_rule_type').value,
+                    match_value: document.getElementById('modal_match_value').value,
+                    action: document.getElementById('modal_action').value,
+                    rewrite_value: document.getElementById('modal_rewrite_value').value,
+                    description: document.getElementById('modal_rule_description').value,
+                    enabled: index >= 0 ? this.rules[index].enabled : true
+                };
+                
+                // Validate required fields
+                if (!newRule.match_value) {
+                    alert('<%:Match value is required%>');
+                    return;
+                }
+            }
+            
+            // Validate rewrite value for REPLACE and REPLACE-PART actions
+            if ((newRule.action === 'REPLACE' || newRule.action === 'REPLACE-PART') && !newRule.rewrite_value) {
+                alert('<%:Rewrite value is required for REPLACE and REPLACE-PART actions%>');
+                return;
+            }
+            
+            if (index >= 0) {
+                this.rules[index] = newRule;
+            } else {
+                // Insert before FINAL rule
+                this.rules.splice(this.rules.length - 1, 0, newRule);
+            }
+            
+            this.closeDialog();
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    rewriteRules.renderTable();
+                } else {
+                    alert('<%:Failed to save rule%>');
+                }
+            };
+            xhr.send(JSON.stringify({ rules: this.rules }));
+        },
+        
+        deleteRule: function(index) {
+            // Prevent deleting FINAL rule
+            if (this.isFinalRule(index)) {
+                alert('<%:FINAL rule cannot be deleted%>');
+                return;
+            }
+            
+            if (!confirm('<%:Are you sure you want to delete this rule?%>')) {
+                return;
+            }
+            
+            this.rules.splice(index, 1);
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    rewriteRules.renderTable();
+                } else {
+                    alert('<%:Failed to delete rule%>');
+                }
+            };
+            xhr.send(JSON.stringify({ rules: this.rules }));
+        },
+        
+        moveRuleUp: function(index) {
+            if (index > 0 && !this.isFinalRule(index)) {
+                var temp = this.rules[index];
+                this.rules[index] = this.rules[index - 1];
+                this.rules[index - 1] = temp;
+                this.saveAndRender();
+            }
+        },
+        
+        moveRuleDown: function(index) {
+            // Can't move down if it's FINAL or if next is FINAL
+            if (index < this.rules.length - 2 && !this.isFinalRule(index)) {
+                var temp = this.rules[index];
+                this.rules[index] = this.rules[index + 1];
+                this.rules[index + 1] = temp;
+                this.saveAndRender();
+            }
+        },
+        
+        saveAndRender: function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    rewriteRules.renderTable();
+                } else {
+                    alert('<%:Failed to save rule%>');
+                }
+            };
+            xhr.send(JSON.stringify({ rules: this.rules }));
+        },
+        
+        toggleRuleEnabled: function(index, enabled) {
+            this.rules[index].enabled = enabled;
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status !== 200) {
+                    alert('<%:Failed to save rule%>');
+                    // Revert checkbox state on failure
+                    rewriteRules.rules[index].enabled = !enabled;
+                    rewriteRules.renderTable();
+                }
+            };
+            xhr.send(JSON.stringify({ rules: this.rules }));
+        }
+    };
+    
+    rewriteRules.init();
+})();
+</script>

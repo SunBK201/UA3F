@@ -217,7 +217,7 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
-	if s.cfg.DirectForward {
+	if s.cfg.RewriteMode == config.RewriteModeDirect {
 		// Client -> Server (raw)
 		go utils.CopyHalf(target, client)
 		return

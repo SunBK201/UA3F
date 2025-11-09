@@ -9,7 +9,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
+	"github.com/sunbk201/ua3f/internal/rule"
 	"github.com/sunbk201/ua3f/internal/server/utils"
 )
 
@@ -58,18 +60,10 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer target.Close()
 
-	if s.cfg.DirectForward {
-		err = req.Write(target)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
-			return
-		}
-	} else {
-		err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
-			return
-		}
+	err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
 	resp, err := http.ReadResponse(bufio.NewReader(target), req)
 	if err != nil {
@@ -111,9 +105,21 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) rewriteAndForward(target net.Conn, req *http.Request, dstAddr, srcAddr string) (err error) {
 	rw := s.rw
-	if rw.ShouldRewrite(req, srcAddr, dstAddr) {
-		req = rw.Rewrite(req, srcAddr, dstAddr)
+
+	// 获取重写决策（只匹配一次规则）
+	decision := rw.EvaluateRewriteDecision(req, srcAddr, dstAddr)
+
+	// Handle DROP action
+	if decision.Action == rule.ActionDrop {
+		log.LogInfoWithAddr(srcAddr, dstAddr, "Request dropped by rule")
+		return fmt.Errorf("request dropped by rule")
 	}
+
+	// 如果需要重写，执行重写操作
+	if decision.ShouldRewrite() {
+		req = rw.Rewrite(req, srcAddr, dstAddr, decision)
+	}
+
 	if err = rw.Forward(target, req); err != nil {
 		err = fmt.Errorf("r.forward: %w", err)
 		return
@@ -131,7 +137,7 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
-	if s.cfg.DirectForward {
+	if s.cfg.RewriteMode == "direct" {
 		// Client -> Server (raw)
 		go utils.CopyHalf(target, client)
 		return

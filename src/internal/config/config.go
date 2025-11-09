@@ -3,65 +3,78 @@ package config
 import (
 	"flag"
 	"fmt"
-	"strings"
 )
 
+type ServerMode string
+
 const (
-	ServerModeHTTP     = "HTTP"
-	ServerModeSocks5   = "SOCKS5"
-	ServerModeTProxy   = "TPROXY"
-	ServerModeRedirect = "REDIRECT"
-	ServerModeNFQueue  = "NFQUEUE"
+	ServerModeHTTP     ServerMode = "HTTP"
+	ServerModeSocks5   ServerMode = "SOCKS5"
+	ServerModeTProxy   ServerMode = "TPROXY"
+	ServerModeRedirect ServerMode = "REDIRECT"
+	ServerModeNFQueue  ServerMode = "NFQUEUE"
+)
+
+type RewriteMode string
+
+const (
+	RewriteModeGlobal RewriteMode = "GLOBAL"
+	RewriteModeDirect RewriteMode = "DIRECT"
+	RewriteModeRules  RewriteMode = "RULES"
 )
 
 type Config struct {
-	ServerMode     string
+	ServerMode     ServerMode
 	BindAddr       string
 	Port           int
 	ListenAddr     string
 	LogLevel       string
+	RewriteMode    RewriteMode
+	Rules          string
 	PayloadUA      string
 	UARegex        string
 	PartialReplace bool
-	DirectForward  bool
 }
 
 func Parse() (*Config, bool) {
 	var (
-		serverMode    string
-		bindAddr      string
-		port          int
-		loglevel      string
-		payloadUA     string
-		uaRegx        string
-		partial       bool
-		directForward bool
-		showVer       bool
+		serverMode  string
+		bindAddr    string
+		port        int
+		loglevel    string
+		payloadUA   string
+		uaRegx      string
+		partial     bool
+		rewriteMode string
+		rules       string
+		showVer     bool
 	)
 
-	flag.StringVar(&serverMode, "m", ServerModeSocks5, "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
+	flag.StringVar(&serverMode, "m", string(ServerModeSocks5), "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
 	flag.StringVar(&bindAddr, "b", "127.0.0.1", "Bind address")
 	flag.IntVar(&port, "p", 1080, "Port")
 	flag.StringVar(&loglevel, "l", "info", "Log level")
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
 	flag.StringVar(&uaRegx, "r", "", "User-Agent regex")
 	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
-	flag.BoolVar(&directForward, "d", false, "Pure Forwarding (no User-Agent rewriting)")
+	flag.StringVar(&rewriteMode, "x", string(RewriteModeGlobal), "Rewrite mode: GLOBAL, DIRECT, RULES")
+	flag.StringVar(&rules, "z", "", "Rules JSON string")
 	flag.BoolVar(&showVer, "v", false, "Show version")
 	flag.Parse()
 
 	cfg := &Config{
-		ServerMode:     strings.ToUpper(serverMode),
+		ServerMode:     ServerMode(serverMode),
 		BindAddr:       bindAddr,
 		Port:           port,
 		ListenAddr:     fmt.Sprintf("%s:%d", bindAddr, port),
 		LogLevel:       loglevel,
 		PayloadUA:      payloadUA,
 		UARegex:        uaRegx,
-		DirectForward:  directForward,
 		PartialReplace: partial,
+		RewriteMode:    RewriteMode(rewriteMode),
+		Rules:          rules,
 	}
-	if serverMode == ServerModeRedirect {
+	if cfg.ServerMode == ServerModeRedirect || cfg.ServerMode == ServerModeTProxy {
 		cfg.BindAddr = "0.0.0.0"
 		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
 	}

@@ -15,6 +15,7 @@ import (
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
+	"github.com/sunbk201/ua3f/internal/rule"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
@@ -26,10 +27,25 @@ type Rewriter struct {
 	payloadUA      string
 	pattern        string
 	partialReplace bool
+	rewriteMode    config.RewriteMode
 
-	uaRegex   *regexp2.Regexp
-	whitelist []string
-	Cache     *expirable.LRU[string, struct{}]
+	uaRegex    *regexp2.Regexp
+	ruleEngine *rule.Engine
+	whitelist  []string
+	Cache      *expirable.LRU[string, struct{}]
+}
+
+// RewriteDecision 重写决策结果
+type RewriteDecision struct {
+	Action      rule.Action
+	MatchedRule *rule.Rule
+}
+
+// ShouldRewrite 判断是否需要重写
+func (d *RewriteDecision) ShouldRewrite() bool {
+	return d.Action == rule.ActionReplace ||
+		d.Action == rule.ActionReplacePart ||
+		d.Action == rule.ActionDelete
 }
 
 // New constructs a Rewriter from config. Compiles regex and allocates cache.
@@ -41,11 +57,23 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		return nil, err
 	}
 
+	// 创建规则引擎
+	var ruleEngine *rule.Engine
+	if cfg.RewriteMode == config.RewriteModeRules {
+		ruleEngine, err = rule.NewEngine(cfg.Rules)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create rule engine: %w", err)
+		}
+		logrus.Info("Rule engine initialized")
+	}
+
 	return &Rewriter{
 		payloadUA:      cfg.PayloadUA,
 		pattern:        cfg.UARegex,
 		partialReplace: cfg.PartialReplace,
+		rewriteMode:    cfg.RewriteMode,
 		uaRegex:        uaRegex,
+		ruleEngine:     ruleEngine,
 		Cache:          expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		whitelist: []string{
 			"MicroMessenger Client",
@@ -66,6 +94,11 @@ func (r *Rewriter) inWhitelist(ua string) bool {
 	return false
 }
 
+// GetRuleEngine 获取规则引擎
+func (r *Rewriter) GetRuleEngine() *rule.Engine {
+	return r.ruleEngine
+}
+
 // buildUserAgent returns either a partial replacement (regex) or full overwrite.
 func (r *Rewriter) buildUserAgent(originUA string) string {
 	if r.partialReplace && r.uaRegex != nil && r.pattern != "" {
@@ -79,13 +112,74 @@ func (r *Rewriter) buildUserAgent(originUA string) string {
 	return r.payloadUA
 }
 
-func (r *Rewriter) ShouldRewrite(req *http.Request, srcAddr, destAddr string) bool {
+func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr string) *RewriteDecision {
 	originalUA := req.Header.Get("User-Agent")
 	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("original User-Agent: (%s)", originalUA))
 	if originalUA == "" {
 		req.Header.Set("User-Agent", "")
 	}
 
+	// 「直接转发」模式：不进行任何重写
+	if r.rewriteMode == config.RewriteModeDirect {
+		log.LogDebugWithAddr(srcAddr, destAddr, "Direct forward mode, skip rewriting")
+		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+			SrcAddr:  srcAddr,
+			DestAddr: destAddr,
+			UA:       originalUA,
+		})
+		return &RewriteDecision{
+			Action: rule.ActionDirect,
+		}
+	}
+
+	// 「规则判定」模式：使用规则引擎（只匹配一次）
+	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
+		matchedRule := r.ruleEngine.MatchWithRule(req, srcAddr, destAddr)
+
+		// 没有匹配到任何规则，默认直接转发
+		if matchedRule == nil {
+			log.LogDebugWithAddr(srcAddr, destAddr, "No rule matched, direct forward")
+			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+				SrcAddr:  srcAddr,
+				DestAddr: destAddr,
+				UA:       originalUA,
+			})
+			return &RewriteDecision{
+				Action: rule.ActionDirect,
+			}
+		}
+
+		// DROP 动作：丢弃请求
+		if matchedRule.Action == rule.ActionDrop {
+			log.LogInfoWithAddr(srcAddr, destAddr, "Rule matched: DROP action, request will be dropped")
+			return &RewriteDecision{
+				Action:      matchedRule.Action,
+				MatchedRule: matchedRule,
+			}
+		}
+
+		// DIRECT 动作：直接转发
+		if matchedRule.Action == rule.ActionDirect {
+			log.LogDebugWithAddr(srcAddr, destAddr, "Rule matched: DIRECT action, skip rewriting")
+			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+				SrcAddr:  srcAddr,
+				DestAddr: destAddr,
+				UA:       originalUA,
+			})
+			return &RewriteDecision{
+				Action:      matchedRule.Action,
+				MatchedRule: matchedRule,
+			}
+		}
+
+		// REPLACE、REPLACE-PART、DELETE 动作：需要重写
+		return &RewriteDecision{
+			Action:      matchedRule.Action,
+			MatchedRule: matchedRule,
+		}
+	}
+
+	// 「全局重写」模式：使用原有逻辑
 	var err error
 	matches := false
 	isWhitelist := r.inWhitelist(originalUA)
@@ -117,13 +211,29 @@ func (r *Rewriter) ShouldRewrite(req *http.Request, srcAddr, destAddr string) bo
 			DestAddr: destAddr,
 			UA:       originalUA,
 		})
+		return &RewriteDecision{
+			Action: rule.ActionDirect,
+		}
 	}
-	return hit
+	return &RewriteDecision{
+		Action: rule.ActionReplace,
+	}
 }
 
-func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string) *http.Request {
+func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, decision *RewriteDecision) *http.Request {
 	originalUA := req.Header.Get("User-Agent")
-	rewritedUA := r.buildUserAgent(originalUA)
+	rewriteValue := decision.MatchedRule.RewriteValue
+	action := decision.Action
+	var rewritedUA string
+
+	// 「规则判定」模式：根据规则动作决定如何重写
+	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
+		rewritedUA = r.ruleEngine.ApplyAction(action, rewriteValue, originalUA, decision.MatchedRule)
+	} else {
+		// 「全局重写」模式：使用原有逻辑
+		rewritedUA = r.buildUserAgent(originalUA)
+	}
+
 	req.Header.Set("User-Agent", rewritedUA)
 
 	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite User-Agent from (%s) to (%s)", originalUA, rewritedUA))
@@ -217,9 +327,19 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			err = fmt.Errorf("http.ReadRequest: %w", err)
 			return
 		}
-		if r.ShouldRewrite(req, srcAddr, destAddr) {
-			req = r.Rewrite(req, srcAddr, destAddr)
+
+		// 获取重写决策（只匹配一次规则）
+		decision := r.EvaluateRewriteDecision(req, srcAddr, destAddr)
+		// 处理 DROP 动作
+		if decision.Action == rule.ActionDrop {
+			log.LogInfoWithAddr(srcAddr, destAddr, "Request dropped by rule")
+			continue
 		}
+		// 如果需要重写，执行重写操作
+		if decision.ShouldRewrite() {
+			req = r.Rewrite(req, srcAddr, destAddr, decision)
+		}
+
 		if err = r.Forward(dst, req); err != nil {
 			err = fmt.Errorf("r.Forward: %w", err)
 			return

@@ -72,10 +72,11 @@ func LogHeader(version string, cfg *config.Config) {
 	logrus.Info("UA3F v" + version)
 	logrus.Info("Server Mode: " + cfg.ServerMode)
 	logrus.Infof("Listen on %s", cfg.ListenAddr)
+	logrus.Infof("Rewrite Mode: %s", cfg.RewriteMode)
+	logrus.Infof("Rewrite Rules: %s", cfg.Rules)
 	logrus.Infof("User-Agent: %s", cfg.PayloadUA)
 	logrus.Infof("User-Agent Regex: '%s'", cfg.UARegex)
 	logrus.Infof("Partial Replace: %v", cfg.PartialReplace)
-	logrus.Infof("Direct Forward: %v", cfg.DirectForward)
 	logrus.Infof("Log level: %s", cfg.LogLevel)
 }
 

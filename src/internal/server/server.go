@@ -12,6 +12,16 @@ import (
 	"github.com/sunbk201/ua3f/internal/server/tproxy"
 )
 
+type ServerMode string
+
+const (
+	ServerModeHTTP     ServerMode = "HTTP"
+	ServerModeSocks5   ServerMode = "SOCKS5"
+	ServerModeTProxy   ServerMode = "TPROXY"
+	ServerModeRedirect ServerMode = "REDIRECT"
+	ServerModeNFQueue  ServerMode = "NFQUEUE"
+)
+
 type Server interface {
 	Start() error
 }

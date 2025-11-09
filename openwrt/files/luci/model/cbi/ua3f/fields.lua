@@ -41,15 +41,22 @@ function M.add_general_fields(section)
     server_mode:value("TPROXY", "TPROXY")
     server_mode:value("REDIRECT", "REDIRECT")
     server_mode:value("NFQUEUE", "NFQUEUE")
-
-    -- Port
-    local port = section:taboption("general", Value, "port", translate("Port"))
-    port.placeholder = "1080"
+    server_mode.default = "SOCKS5"
 
     -- Bind Address
     local bind = section:taboption("general", Value, "bind", translate("Bind Address"))
     bind:value("127.0.0.1")
     bind:value("0.0.0.0")
+    bind:depends("server_mode", "HTTP")
+    bind:depends("server_mode", "SOCKS5")
+
+    -- Port
+    local port = section:taboption("general", Value, "port", translate("Port"))
+    port.placeholder = "1080"
+    port:depends("server_mode", "HTTP")
+    port:depends("server_mode", "SOCKS5")
+    port:depends("server_mode", "TPROXY")
+    port:depends("server_mode", "REDIRECT")
 
     -- Log Level
     local log_level = section:taboption("general", ListValue, "log_level", translate("Log Level"))
@@ -62,14 +69,27 @@ function M.add_general_fields(section)
     log_level.description = translate(
         "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time.")
 
-    -- User-Agent
+    -- Rewrite Mode
+    local rewrite_mode = section:taboption("general", ListValue, "rewrite_mode", translate("Rewrite Mode"))
+    rewrite_mode:value("DIRECT", translate("Direct Forward"))
+    rewrite_mode:value("GLOBAL", translate("Global Rewrite"))
+    rewrite_mode:value("RULES", translate("Rule Based"))
+    rewrite_mode.default = "GLOBAL"
+    rewrite_mode.description = translate(
+        "Direct Forward: No rewriting. Global Rewrite: Rewrite all User-Agents to the specified value. Rule Based: Use rewrite rules to determine behavior.")
+
+    -- User-Agent (for Global Rewrite)
     local ua = section:taboption("general", Value, "ua", translate("User-Agent"))
     ua.placeholder = "FFF"
     ua.description = translate("User-Agent after rewrite")
+    ua:depends("rewrite_mode", "GLOBAL")
+    ua:depends("server_mode", "NFQUEUE")
 
     -- User-Agent Regex
-    local uaRegexPattern = section:taboption("general", Value, "ua_regex", translate("User-Agent Regex"))
-    uaRegexPattern.description = translate("Regular expression pattern for matching User-Agent")
+    local regex = section:taboption("general", Value, "ua_regex", translate("User-Agent Regex"))
+    regex.description = translate("Regular expression pattern for matching User-Agent")
+    regex:depends("rewrite_mode", "GLOBAL")
+    regex:depends("server_mode", "NFQUEUE")
 
     -- Partial Replace
     local partialReplace = section:taboption("general", Flag, "partial_replace", translate("Partial Replace"))
@@ -77,12 +97,14 @@ function M.add_general_fields(section)
         translate(
             "Replace only the matched part of the User-Agent, only works when User-Agent Regex is not empty")
     partialReplace.default = "0"
+    partialReplace:depends("rewrite_mode", "GLOBAL")
+    partialReplace:depends("server_mode", "NFQUEUE")
+end
 
-    -- Direct Forward
-    local directForward = section:taboption("general", Flag, "direct_forward", translate("Direct Forward"))
-    directForward.description =
-        translate("Directly forward packets without rewriting")
-    directForward.default = "0"
+-- Rewrite Rules Tab Fields
+function M.add_rewrite_fields(section)
+    local rules = section:taboption("rewrite", DummyValue, "")
+    rules.template = "ua3f/rules"
 end
 
 -- Statistics Tab Fields

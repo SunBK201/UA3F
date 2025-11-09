@@ -2,6 +2,9 @@
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid ""
+msgstr ""
+
 msgid "Status"
 msgstr "状态"
 
@@ -18,10 +21,13 @@ msgid "Stopped"
 msgstr "未运行"
 
 msgid "Settings"
-msgstr "设置"
+msgstr "通用设置"
 
 msgid "Statistics"
 msgstr "统计信息"
+
+msgid "Rewrite Rules"
+msgstr "重写规则"
 
 msgid "Log"
 msgstr "运行日志"
@@ -37,6 +43,21 @@ msgstr "绑定地址"
 
 msgid "Log Level"
 msgstr "日志级别"
+
+msgid "Rewrite Mode"
+msgstr "重写策略"
+
+msgid "Direct Forward"
+msgstr "直接转发"
+
+msgid "Global Rewrite"
+msgstr "全局重写"
+
+msgid "Rule Based"
+msgstr "规则判定"
+
+msgid "Direct Forward: No rewriting. Global Rewrite: Rewrite all User-Agents to the specified value. Rule Based: Use rewrite rules to determine behavior."
+msgstr "直接转发：不进行任何重写。全局重写：将所有 User-Agent 重写为指定值。规则判定：根据重写规则判定行为。"
 
 msgid "User-Agent"
 msgstr "User-Agent"
@@ -127,3 +148,105 @@ msgstr "持续时间"
 
 msgid "Total Connections"
 msgstr "连接总数"
+
+msgid "Add Rule"
+msgstr "添加规则"
+
+msgid "Index"
+msgstr "序号"
+
+msgid "Rule Type"
+msgstr "规则类型"
+
+msgid "Match Value"
+msgstr "匹配值"
+
+msgid "Rewrite Action"
+msgstr "重写策略"
+
+msgid "Rewrite Value"
+msgstr "重写值"
+
+msgid "Pattern"
+msgstr "匹配模式"
+
+msgid "Replacement"
+msgstr "替换内容"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "No rules configured. Click「Add Rule」to create one"
+msgstr "暂无配置规则，点击「添加规则」创建新规则"
+
+msgid "Add Rewrite Rule"
+msgstr "添加重写规则"
+
+msgid "Edit Rewrite Rule"
+msgstr "编辑重写规则"
+
+msgid "Enter match value"
+msgstr "输入匹配值"
+
+msgid "Enter rewrite value"
+msgstr "输入重写值"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Optional"
+msgstr "可选"
+
+msgid "Enter rule description"
+msgstr "输入规则描述"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Edit"
+msgstr "编辑"
+
+msgid "Move Up"
+msgstr "上移"
+
+msgid "Move Down"
+msgstr "下移"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Are you sure you want to delete this rule?"
+msgstr "确定要删除此规则吗？"
+
+msgid "Failed to delete rule"
+msgstr "删除规则失败"
+
+msgid "Failed to move rule"
+msgstr "移动规则失败"
+
+msgid "Failed to save rule"
+msgstr "保存规则失败"
+
+msgid "Match value is required"
+msgstr "匹配值为必填项"
+
+msgid "Rewrite value is required for REPLACE and REPLACE-PART strategies"
+msgstr "REPLACE 和 REPLACE-PART 策略需要填写重写值"
+
+msgid "Pattern and Replacement are required"
+msgstr "匹配模式和替换内容为必填项"
+
+msgid "Rule saved successfully"
+msgstr "规则保存成功"
+
+msgid "Rule deleted successfully"
+msgstr "规则删除成功"
+
+msgid "Confirm"
+msgstr "确认"
+
+msgid "Note: Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable."
+msgstr "注意：重写规则仅在规则判定模式下生效。NFQUEUE 模式暂不可用。"

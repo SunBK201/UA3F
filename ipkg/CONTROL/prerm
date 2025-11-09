@@ -1,4 +1,6 @@
 #!/bin/sh
+uci set ua3f.enabled.enabled='0' > /dev/null 2>&1
+uci commit ua3f > /dev/null 2>&1
 [ -s ${IPKG_INSTROOT}/lib/functions.sh ] || exit 0
 . ${IPKG_INSTROOT}/lib/functions.sh
 default_prerm $0 $@

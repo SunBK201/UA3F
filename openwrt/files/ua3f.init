@@ -505,6 +505,7 @@ start_service() {
     LOG "Starting $NAME service..."
 
     local port bind ua log_level ua_regex partial_replace set_ttl direct_forward
+    local rewrite_mode rewrite_rules
     config_get server_mode "main" "server_mode" "SOCKS5"
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
@@ -514,6 +515,8 @@ start_service() {
     config_get log_level "main" "log_level" "info"
     config_get_bool set_ttl "main" "set_ttl" 0
     config_get_bool direct_forward "main" "direct_forward" 0
+    config_get rewrite_mode "main" "rewrite_mode" "GLOBAL"
+    config_get rewrite_rules "main" "rewrite_rules" ""
 
     SERVER_MODE="$(echo "$server_mode" | tr '[:lower:]' '[:upper:]')"
     SERVER_MODE="$server_mode"
@@ -645,6 +648,8 @@ start_service() {
     procd_append_param command -f "$ua"
     procd_append_param command -r "$ua_regex"
     procd_append_param command -l "$log_level"
+    procd_append_param command -x "$rewrite_mode"
+    procd_append_param command -z "$rewrite_rules"
     [ "$partial_replace" = "1" ] && procd_append_param command -s
     [ "$direct_forward" = "1" ] && procd_append_param command -d
 
