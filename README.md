@@ -6,15 +6,15 @@ UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TP
 
 - 多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
 - 高度灵活的重写规则系统，支持多种规则类型与重写策略
-- LRU 高速缓存非 HTTP 流量，加速非 HTTP 流量转发
+- 实时统计面板，支持流量修改监控与分析
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 支持 OpenWrt 17.01 及以上版本
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 
 <table>
   <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci.png" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-stat.png" alt="UA3F-Statistics"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci160.png" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
   </tr>
 </table>
 
@@ -65,7 +65,6 @@ UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置�
 > - User-Agent (自定义重写 User-Agent): 默认 `FFF`
 > - User-Agent Regex (User-Agent 正则表达式): 只重写匹配成功的 User-Agent。如果为空，全部重写
 > - Partial Replace (部分替换): 只替换正则表达式匹配的部分。该选项仅在 User-Agent 正则表达式非空时生效
-> - Direct Forward (直接转发): 不进行 User-Agent 重写，直接转发数据包
 
 设备与系统信息正则表达式参考：
 
