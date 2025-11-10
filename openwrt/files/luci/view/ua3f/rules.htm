@@ -55,11 +55,11 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
 
 <table id="rewrite-rules-table" class="table cbi-section-table">
     <tr class="tr table-titles">
-        <th class="th" style="width: 80px; text-align: center"><%:Enabled%></th>
+        <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
         <th class="th" style="width: 50px"><%:Index%></th>
-        <th class="th" style="width: 120px"><%:Rule Type%></th>
+        <th class="th" style="width: 95px"><%:Rule Type%></th>
         <th class="th"><%:Match Value%></th>
-        <th class="th" style="width: 120px"><%:Rewrite Action%></th>
+        <th class="th" style="width: 100px"><%:Rewrite Action%></th>
         <th class="th"><%:Rewrite Value%></th>
         <th class="th" style="width: 280px"><%:Actions%></th>
     </tr>
@@ -177,7 +177,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
             // Match Value column
             var td4 = document.createElement('td');
             td4.className = 'td';
-            td4.style.maxWidth = '200px';
+            td4.style.maxWidth = '150px';
             td4.style.overflow = 'hidden';
             td4.style.textOverflow = 'ellipsis';
             td4.style.whiteSpace = 'nowrap';
@@ -191,6 +191,9 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
             var td5 = document.createElement('td');
             td5.className = 'td';
             td5.textContent = this.getActionLabel(rule.action);
+            td5.style.overflow = 'hidden';
+            td5.style.textOverflow = 'ellipsis';
+            td5.style.whiteSpace = 'nowrap';
             tr.appendChild(td5);
             
             // Rewrite Value column
