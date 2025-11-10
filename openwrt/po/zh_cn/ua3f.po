@@ -250,3 +250,6 @@ msgstr "确认"
 
 msgid "Note: Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable."
 msgstr "注意：重写规则仅在规则判定模式下生效。NFQUEUE 模式暂不可用。"
+
+msgid "Rewrite Header"
+msgstr "重写请求头"

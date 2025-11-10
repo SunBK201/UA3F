@@ -34,12 +34,13 @@ const (
 )
 
 type Rule struct {
-	Enabled      bool     `json:"enabled"`
-	Type         RuleType `json:"type"`
-	Action       Action   `json:"action"`
-	MatchValue   string   `json:"match_value"`
-	RewriteValue string   `json:"rewrite_value"`
-	Description  string   `json:"description"`
+	Enabled       bool     `json:"enabled"`
+	Type          RuleType `json:"type"`
+	Action        Action   `json:"action"`
+	MatchValue    string   `json:"match_value"`
+	RewriteValue  string   `json:"rewrite_value"`
+	RewriteHeader string   `json:"rewrite_header"`
+	Description   string   `json:"description"`
 
 	regex *regexp2.Regexp
 	ipNet *net.IPNet
@@ -62,6 +63,11 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 	for _, rule := range rules {
 		if !rule.Enabled {
 			continue
+		}
+
+		// Set default RewriteHeader if not specified
+		if rule.RewriteHeader == "" {
+			rule.RewriteHeader = "User-Agent"
 		}
 
 		switch rule.Type {
@@ -131,16 +137,16 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 }
 
 func (e *Engine) matchKeyword(req *http.Request, rule *Rule) bool {
-	ua := req.Header.Get("User-Agent")
-	return strings.Contains(strings.ToLower(ua), strings.ToLower(rule.MatchValue))
+	header := req.Header.Get(rule.RewriteHeader)
+	return strings.Contains(strings.ToLower(header), strings.ToLower(rule.MatchValue))
 }
 
 func (e *Engine) matchRegex(req *http.Request, rule *Rule) (bool, error) {
 	if rule.regex == nil {
 		return false, nil
 	}
-	ua := req.Header.Get("User-Agent")
-	return rule.regex.MatchString(ua)
+	header := req.Header.Get(rule.RewriteHeader)
+	return rule.regex.MatchString(header)
 }
 
 func (e *Engine) matchIPCIDR(destAddr string, rule *Rule) bool {

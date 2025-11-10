@@ -4,38 +4,43 @@
         "type": "DEST-PORT",
         "action": "DIRECT",
         "match_value": "443",
-        "description": "",
-        "rewrite_value": ""
+        "rewrite_header": "User-Agent",
+        "rewrite_value": "",
+        "description": ""
     },
     {
         "enabled": true,
         "type": "KEYWORD",
         "action": "DIRECT",
         "match_value": "MicroMessenger Client",
-        "description": "",
-        "rewrite_value": ""
+        "rewrite_header": "User-Agent",
+        "rewrite_value": "",
+        "description": ""
     },
     {
         "enabled": true,
         "type": "KEYWORD",
         "action": "DIRECT",
         "match_value": "Bilibili Freedoooooom\/MarkII",
-        "description": "",
-        "rewrite_value": ""
+        "rewrite_header": "User-Agent",
+        "rewrite_value": "",
+        "description": ""
     },
     {
         "enabled": true,
         "type": "KEYWORD",
         "action": "DIRECT",
         "match_value": "Valve\/Steam HTTP Client 1.0",
-        "description": "",
-        "rewrite_value": ""
+        "rewrite_header": "User-Agent",
+        "rewrite_value": "",
+        "description": ""
     },
     {
         "enabled": true,
         "type": "KEYWORD",
         "action": "REPLACE",
         "match_value": "Mac",
+        "rewrite_header": "User-Agent",
         "description": "",
         "rewrite_value": "FFF"
     },
@@ -44,14 +49,16 @@
         "type": "REGEX",
         "action": "REPLACE",
         "match_value": "(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)",
-        "rewrite_value": "FFF",
-        "description": ""
+        "rewrite_header": "User-Agent",
+        "description": "",
+        "rewrite_value": "FFF"
     },
     {
         "enabled": true,
         "type": "FINAL",
         "action": "REPLACE",
         "match_value": "",
+        "rewrite_header": "User-Agent",
         "description": "Default Fallback Rule",
         "rewrite_value": "FFF"
     }

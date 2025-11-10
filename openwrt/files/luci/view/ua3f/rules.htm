@@ -58,6 +58,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
         <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
         <th class="th" style="width: 50px"><%:Index%></th>
         <th class="th" style="width: 95px"><%:Rule Type%></th>
+        <th class="th" style="width: 120px"><%:Rewrite Header%></th>
         <th class="th"><%:Match Value%></th>
         <th class="th" style="width: 100px"><%:Rewrite Action%></th>
         <th class="th"><%:Rewrite Value%></th>
@@ -127,7 +128,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 tr.className = 'tr';
                 var td = document.createElement('td');
                 td.className = 'td empty-message';
-                td.colSpan = 7;
+                td.colSpan = 8;
                 td.textContent = '<%:No rules configured. Click「Add Rule」to create one%>';
                 tr.appendChild(td);
                 tbody.appendChild(tr);
@@ -174,7 +175,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
             td3.textContent = this.getRuleTypeLabel(rule.type);
             tr.appendChild(td3);
             
-            // Match Value column
+            // Rewrite Header column
             var td4 = document.createElement('td');
             td4.className = 'td';
             td4.style.maxWidth = '150px';
@@ -182,47 +183,72 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
             td4.style.textOverflow = 'ellipsis';
             td4.style.whiteSpace = 'nowrap';
             var span4 = document.createElement('span');
-            span4.textContent = isFinal ? '-' : (rule.match_value || '');
-            span4.title = isFinal ? '' : (rule.match_value || '');
+            // Show '-' only for FINAL rule with DIRECT action
+            if (isFinal && rule.action === 'DIRECT') {
+                span4.textContent = '-';
+                span4.title = '';
+            } else {
+                span4.textContent = rule.rewrite_header || 'User-Agent';
+                span4.title = rule.rewrite_header || 'User-Agent';
+            }
             td4.appendChild(span4);
             tr.appendChild(td4);
             
-            // Rewrite Action column
+            // Match Value column
             var td5 = document.createElement('td');
             td5.className = 'td';
-            td5.textContent = this.getActionLabel(rule.action);
+            td5.style.maxWidth = '150px';
             td5.style.overflow = 'hidden';
             td5.style.textOverflow = 'ellipsis';
             td5.style.whiteSpace = 'nowrap';
+            var span5 = document.createElement('span');
+            span5.textContent = isFinal ? '-' : (rule.match_value || '');
+            span5.title = isFinal ? '' : (rule.match_value || '');
+            td5.appendChild(span5);
             tr.appendChild(td5);
             
-            // Rewrite Value column
+            // Rewrite Action column
             var td6 = document.createElement('td');
             td6.className = 'td';
-            td6.style.maxWidth = '200px';
+            td6.textContent = this.getActionLabel(rule.action);
             td6.style.overflow = 'hidden';
             td6.style.textOverflow = 'ellipsis';
             td6.style.whiteSpace = 'nowrap';
-            var span6 = document.createElement('span');
-            span6.textContent = rule.rewrite_value || '-';
-            span6.title = rule.rewrite_value || '';
-            td6.appendChild(span6);
             tr.appendChild(td6);
             
-            // Actions column
+            // Rewrite Value column
             var td7 = document.createElement('td');
-            td7.className = 'td rule-actions';
+            td7.className = 'td';
+            td7.style.maxWidth = '200px';
+            td7.style.overflow = 'hidden';
+            td7.style.textOverflow = 'ellipsis';
+            td7.style.whiteSpace = 'nowrap';
+            var span7 = document.createElement('span');
+            // Show '-' for DIRECT and DROP actions
+            if (rule.action === 'DIRECT' || rule.action === 'DROP') {
+                span7.textContent = '-';
+                span7.title = '';
+            } else {
+                span7.textContent = rule.rewrite_value || '-';
+                span7.title = rule.rewrite_value || '';
+            }
+            td7.appendChild(span7);
+            tr.appendChild(td7);
+            
+            // Actions column
+            var td8 = document.createElement('td');
+            td8.className = 'td rule-actions';
             
             var editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'cbi-button cbi-button-edit';
             editBtn.textContent = '<%:Edit%>';
             editBtn.onclick = function() { rewriteRules.editRule(index); };
-            td7.appendChild(editBtn);
+            td8.appendChild(editBtn);
             
             // Only show move and delete buttons for non-FINAL rules
             if (!isFinal) {
-                td7.appendChild(document.createTextNode(' '));
+                td8.appendChild(document.createTextNode(' '));
                 
                 var upBtn = document.createElement('button');
                 upBtn.type = 'button';
@@ -230,9 +256,9 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 upBtn.textContent = '<%:Move Up%>';
                 upBtn.disabled = index === 0;
                 upBtn.onclick = function() { rewriteRules.moveRuleUp(index); };
-                td7.appendChild(upBtn);
+                td8.appendChild(upBtn);
                 
-                td7.appendChild(document.createTextNode(' '));
+                td8.appendChild(document.createTextNode(' '));
                 
                 var downBtn = document.createElement('button');
                 downBtn.type = 'button';
@@ -241,19 +267,19 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 // Can't move down if it's the second-to-last (because last is FINAL)
                 downBtn.disabled = index >= this.rules.length - 2;
                 downBtn.onclick = function() { rewriteRules.moveRuleDown(index); };
-                td7.appendChild(downBtn);
+                td8.appendChild(downBtn);
                 
-                td7.appendChild(document.createTextNode(' '));
+                td8.appendChild(document.createTextNode(' '));
                 
                 var delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'cbi-button cbi-button-remove';
                 delBtn.textContent = '<%:Delete%>';
                 delBtn.onclick = function() { rewriteRules.deleteRule(index); };
-                td7.appendChild(delBtn);
+                td8.appendChild(delBtn);
             }
             
-            tr.appendChild(td7);
+            tr.appendChild(td8);
             
             return tr;
         },
@@ -348,6 +374,26 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 typeValue.appendChild(typeField);
                 section.appendChild(typeValue);
             }
+            
+            // Rewrite Header
+            var headerValue = document.createElement('div');
+            headerValue.className = 'cbi-value';
+            headerValue.id = 'rewrite_header_container';
+            var headerLabel = document.createElement('label');
+            headerLabel.className = 'cbi-value-title';
+            headerLabel.textContent = '<%:Rewrite Header%>';
+            headerValue.appendChild(headerLabel);
+            var headerField = document.createElement('div');
+            headerField.className = 'cbi-value-field';
+            var headerInput = document.createElement('input');
+            headerInput.type = 'text';
+            headerInput.className = 'cbi-input-text';
+            headerInput.id = 'modal_rewrite_header';
+            headerInput.placeholder = 'User-Agent';
+            headerInput.value = (rule && rule.rewrite_header) ? rule.rewrite_header : 'User-Agent';
+            headerField.appendChild(headerInput);
+            headerValue.appendChild(headerField);
+            section.appendChild(headerValue);
             
             // Match Value (hidden for FINAL rule)
             if (!isFinal) {
@@ -497,6 +543,8 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
         updateRewriteValueVisibility: function() {
             var actionSelect = document.getElementById('modal_action');
             var rewriteValueContainer = document.getElementById('rewrite_value_container');
+            var rewriteHeaderContainer = document.getElementById('rewrite_header_container');
+            var ruleTypeSelect = document.getElementById('modal_rule_type');
             if (!actionSelect || !rewriteValueContainer) return;
             
             var action = actionSelect.value;
@@ -505,6 +553,16 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 rewriteValueContainer.style.display = '';
             } else {
                 rewriteValueContainer.style.display = 'none';
+            }
+            
+            // Hide rewrite header for DIRECT action only in FINAL rule (when ruleTypeSelect doesn't exist)
+            if (rewriteHeaderContainer) {
+                if (action === 'DIRECT' && !ruleTypeSelect) {
+                    // This is FINAL rule with DIRECT action
+                    rewriteHeaderContainer.style.display = 'none';
+                } else {
+                    rewriteHeaderContainer.style.display = '';
+                }
             }
         },
         
@@ -518,6 +576,8 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
         saveFromDialog: function(index) {
             var isFinal = index >= 0 && this.rules[index].type === 'FINAL';
             
+            var rewriteHeader = document.getElementById('modal_rewrite_header').value || 'User-Agent';
+            
             var newRule;
             if (isFinal) {
                 // For FINAL rule, only allow changing action and rewrite_value
@@ -525,6 +585,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                     type: 'FINAL',
                     match_value: '',
                     action: document.getElementById('modal_action').value,
+                    rewrite_header: rewriteHeader,
                     rewrite_value: document.getElementById('modal_rewrite_value').value,
                     description: document.getElementById('modal_rule_description').value,
                     enabled: this.rules[index].enabled
@@ -534,6 +595,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                     type: document.getElementById('modal_rule_type').value,
                     match_value: document.getElementById('modal_match_value').value,
                     action: document.getElementById('modal_action').value,
+                    rewrite_header: rewriteHeader,
                     rewrite_value: document.getElementById('modal_rewrite_value').value,
                     description: document.getElementById('modal_rule_description').value,
                     enabled: index >= 0 ? this.rules[index].enabled : true

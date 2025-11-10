@@ -159,6 +159,7 @@ function save_rules()
             match_value = "",
             action = "DIRECT",
             rewrite_value = "",
+            rewrite_header = "User-Agent",
             description = "Default fallback rule",
             enabled = true
         })
@@ -169,6 +170,13 @@ function save_rules()
                 rule.enabled = true
                 break
             end
+        end
+    end
+
+    -- Ensure all rules have rewrite_header field with default value
+    for i, rule in ipairs(data.rules) do
+        if not rule.rewrite_header or rule.rewrite_header == "" then
+            rule.rewrite_header = "User-Agent"
         end
     end
 

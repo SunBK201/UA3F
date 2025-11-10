@@ -217,27 +217,35 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 }
 
 func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, decision *RewriteDecision) *http.Request {
-	originalUA := req.Header.Get("User-Agent")
-	rewriteValue := decision.MatchedRule.RewriteValue
+	headerName := "User-Agent"
+	if decision.MatchedRule != nil && decision.MatchedRule.RewriteHeader != "" {
+		headerName = decision.MatchedRule.RewriteHeader
+	}
+
+	originalValue := req.Header.Get(headerName)
+	rewriteValue := ""
+	if decision.MatchedRule != nil {
+		rewriteValue = decision.MatchedRule.RewriteValue
+	}
 	action := decision.Action
-	var rewritedUA string
+	var rewritedValue string
 
 	// RULES
 	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
-		rewritedUA = r.ruleEngine.ApplyAction(action, rewriteValue, originalUA, decision.MatchedRule)
+		rewritedValue = r.ruleEngine.ApplyAction(action, rewriteValue, originalValue, decision.MatchedRule)
 	} else {
 		// GLOBAL
-		rewritedUA = r.buildUserAgent(originalUA)
+		rewritedValue = r.buildUserAgent(originalValue)
 	}
 
-	req.Header.Set("User-Agent", rewritedUA)
+	req.Header.Set(headerName, rewritedValue)
 
-	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite User-Agent from (%s) to (%s)", originalUA, rewritedUA))
+	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite %s from (%s) to (%s)", headerName, originalValue, rewritedValue))
 
 	statistics.AddRewriteRecord(&statistics.RewriteRecord{
 		Host:       destAddr,
-		OriginalUA: originalUA,
-		MockedUA:   rewritedUA,
+		OriginalUA: originalValue,
+		MockedUA:   rewritedValue,
 	})
 	return req
 }
