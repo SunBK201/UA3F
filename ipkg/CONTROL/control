@@ -1,5 +1,5 @@
 Package: ua3f
-Version: 1.6.0-1
+Version: 1.7.0-1
 Depends: luci-compat, ipset, iptables, iptables-mod-tproxy, iptables-mod-extra, iptables-mod-nat-extra, kmod-ipt-conntrack, iptables-mod-ipopt, iptables-mod-nfqueue, iptables-mod-conntrack-extra, kmod-nf-conntrack-netlink
 Source: /feed/openwrt
 SourceName: UA3F
