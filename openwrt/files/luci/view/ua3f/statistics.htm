@@ -10,30 +10,30 @@ local rowstyle = data.rowstyle
 <h3><%:Statistics%></h3>
 
 <!-- Rewrite Statistics Table -->
-<div class="cbi-section-descr" style="font-weight:bold;"><%:User-Agent Rewrite Statistics%></div>
+<div class="cbi-section-descr" style="font-weight:bold;"><%:Rewrite Statistics%></div>
 <table id="rewrite-stats-table" class="table cbi-section-table">
     <tr class="tr table-titles">
         <th class="th" data-sortable-row="true"><%:Host%></th>
         <th class="th" data-sortable-row="true"><%:Rewrite Count%></th>
-        <th class="th" data-sortable-row="true"><%:Original User-Agent%></th>
-        <th class="th" data-sortable-row="true"><%:Modified User-Agent%></th>
+        <th class="th" data-sortable-row="true"><%:Original Header%></th>
+        <th class="th" data-sortable-row="true"><%:Modified Header%></th>
     </tr>
 
     <% for i, item in ipairs(rewrite_stats) do %>
         <tr class="tr <%= rowstyle(i) %>">
             <td class="td" data-title="<%:Host%>"><span><%= item.host %></span></td>
             <td class="td" data-title="<%:Rewrite Count%>"><%= item.count %></td>
-            <td class="td" data-title="<%:Original User-Agent%>"><span><%= item.origin_ua %></span></td>
-            <td class="td" data-title="<%:Modified User-Agent%>"><span><%= item.mocked_ua %></span></td>
+            <td class="td" data-title="<%:Original Header%>"><span><%= item.origin_ua %></span></td>
+            <td class="td" data-title="<%:Modified Header%>"><span><%= item.mocked_ua %></span></td>
         </tr>
     <% end %>
 </table>
 
 <!-- Pass-Through Statistics Table -->
-<div class="cbi-section-descr" style="font-weight:bold;"><%:User-Agent Pass-Through Statistics%></div>
+<div class="cbi-section-descr" style="font-weight:bold;"><%:Pass-Through Statistics%></div>
 <table id="pass-stats-table" class="table cbi-section-table">
     <tr class="tr table-titles">
-        <th class="th" data-sortable-row="true"><%:User-Agent%></th>
+        <th class="th" data-sortable-row="true"><%:Header%></th>
         <th class="th" data-sortable-row="true"><%:Pass-Through Count%></th>
         <th class="th" data-sortable-row="true"><%:Last Source Address%></th>
         <th class="th" data-sortable-row="true"><%:Last Destination Address%></th>
@@ -41,7 +41,7 @@ local rowstyle = data.rowstyle
 
     <% for i, item in ipairs(pass_stats) do %>
         <tr class="tr <%= rowstyle(i) %>">
-            <td class="td" data-title="<%:User-Agent%>"><span><%= item.ua %></span></td>
+            <td class="td" data-title="<%:Header%>"><span><%= item.ua %></span></td>
             <td class="td" data-title="<%:Pass-Through Count%>"><%= item.count %></td>
             <td class="td" data-title="<%:Last Source Address%>"><span><%= item.srcAddr %></span></td>
             <td class="td" data-title="<%:Last Destination Address%>"><span><%= item.destAddr %></span></td>

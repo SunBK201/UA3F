@@ -83,8 +83,8 @@ msgstr "直接转发"
 msgid "Directly forward packets without rewriting"
 msgstr "不进行重写直接转发数据包"
 
-msgid "User-Agent Rewrite Statistics"
-msgstr "User-Agent 重写次数实时统计"
+msgid "Rewrite Statistics"
+msgstr "重写次数实时统计"
 
 msgid "Host"
 msgstr "地址"
@@ -92,14 +92,14 @@ msgstr "地址"
 msgid "Rewrite Count"
 msgstr "重写次数"
 
-msgid "Original User-Agent"
-msgstr "原始 User-Agent"
+msgid "Original Header"
+msgstr "原始 Header"
 
-msgid "Modified User-Agent"
-msgstr "重写后 User-Agent"
+msgid "Modified Header"
+msgstr "重写后 Header"
 
-msgid "User-Agent Pass-Through Statistics"
-msgstr "User-Agent 放行次数实时统计"
+msgid "Pass-Through Statistics"
+msgstr "放行次数实时统计"
 
 msgid "Pass-Through Count"
 msgstr "放行次数"
