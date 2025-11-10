@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"strings"
 )
 
 type ServerMode string
@@ -63,7 +64,7 @@ func Parse() (*Config, bool) {
 	flag.Parse()
 
 	cfg := &Config{
-		ServerMode:     ServerMode(serverMode),
+		ServerMode:     ServerMode(strings.ToUpper(serverMode)),
 		BindAddr:       bindAddr,
 		Port:           port,
 		ListenAddr:     fmt.Sprintf("%s:%d", bindAddr, port),
@@ -71,7 +72,7 @@ func Parse() (*Config, bool) {
 		PayloadUA:      payloadUA,
 		UARegex:        uaRegx,
 		PartialReplace: partial,
-		RewriteMode:    RewriteMode(rewriteMode),
+		RewriteMode:    RewriteMode(strings.ToUpper(rewriteMode)),
 		Rules:          rules,
 	}
 	if cfg.ServerMode == ServerModeRedirect || cfg.ServerMode == ServerModeTProxy {

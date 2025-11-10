@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
@@ -13,6 +14,8 @@ import (
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule"
 	"github.com/sunbk201/ua3f/internal/server/utils"
+	"github.com/sunbk201/ua3f/internal/sniff"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type Server struct {
@@ -28,6 +31,8 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 }
 
 func (s *Server) Start() (err error) {
+	go statistics.StartRecorder()
+
 	server := &http.Server{
 		Addr: s.cfg.ListenAddr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -50,6 +55,12 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		destPort = "80"
 	}
 	destAddr := fmt.Sprintf("%s:%s", req.URL.Hostname(), destPort)
+	statistics.AddConnection(&statistics.ConnectionRecord{
+		Protocol:  sniff.HTTP,
+		SrcAddr:   req.RemoteAddr,
+		DestAddr:  destAddr,
+		StartTime: time.Now(),
+	})
 
 	logrus.Infof("HTTP request for %s", destAddr)
 
@@ -79,6 +90,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
+	statistics.RemoveConnection(req.RemoteAddr, destAddr)
 }
 
 func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
@@ -104,24 +116,16 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) rewriteAndForward(target net.Conn, req *http.Request, dstAddr, srcAddr string) (err error) {
-	rw := s.rw
-
-	// 获取重写决策（只匹配一次规则）
-	decision := rw.EvaluateRewriteDecision(req, srcAddr, dstAddr)
-
-	// Handle DROP action
+	decision := s.rw.EvaluateRewriteDecision(req, srcAddr, dstAddr)
 	if decision.Action == rule.ActionDrop {
 		log.LogInfoWithAddr(srcAddr, dstAddr, "Request dropped by rule")
 		return fmt.Errorf("request dropped by rule")
 	}
-
-	// 如果需要重写，执行重写操作
 	if decision.ShouldRewrite() {
-		req = rw.Rewrite(req, srcAddr, dstAddr, decision)
+		req = s.rw.Rewrite(req, srcAddr, dstAddr, decision)
 	}
-
-	if err = rw.Forward(target, req); err != nil {
-		err = fmt.Errorf("r.forward: %w", err)
+	if err = s.rw.Forward(target, req); err != nil {
+		err = fmt.Errorf("s.rw.Forward: %w", err)
 		return
 	}
 	return nil
@@ -137,7 +141,7 @@ func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
 	// Server -> Client (raw)
 	go utils.CopyHalf(client, target)
 
-	if s.cfg.RewriteMode == "direct" {
+	if s.cfg.RewriteMode == config.RewriteModeDirect {
 		// Client -> Server (raw)
 		go utils.CopyHalf(target, client)
 		return

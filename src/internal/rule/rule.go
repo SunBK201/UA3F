@@ -12,50 +12,43 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RuleType 规则类型
 type RuleType string
 
 const (
-	RuleTypeKeyword  RuleType = "KEYWORD"   // 关键字匹配
-	RuleTypeRegex    RuleType = "REGEX"     // 正则表达式匹配
-	RuleTypeIPCIDR   RuleType = "IP-CIDR"   // IP地址段匹配
-	RuleTypeSrcIP    RuleType = "SRC-IP"    // 源IP地址匹配
-	RuleTypeDestPort RuleType = "DEST-PORT" // 目标端口匹配
-	RuleTypeFinal    RuleType = "FINAL"     // 兜底规则
+	RuleTypeKeyword  RuleType = "KEYWORD"
+	RuleTypeRegex    RuleType = "REGEX"
+	RuleTypeIPCIDR   RuleType = "IP-CIDR"
+	RuleTypeSrcIP    RuleType = "SRC-IP"
+	RuleTypeDestPort RuleType = "DEST-PORT"
+	RuleTypeFinal    RuleType = "FINAL"
 )
 
-// Action 重写策略
 type Action string
 
 const (
-	ActionReplace     Action = "REPLACE"      // 替换整个 User-Agent
-	ActionReplacePart Action = "REPLACE-PART" // 部分替换
-	ActionDelete      Action = "DELETE"       // 删除 User-Agent
-	ActionDirect      Action = "DIRECT"       // 直接转发
-	ActionDrop        Action = "DROP"         // 丢弃请求
+	ActionReplace     Action = "REPLACE"
+	ActionReplacePart Action = "REPLACE-PART"
+	ActionDelete      Action = "DELETE"
+	ActionDirect      Action = "DIRECT"
+	ActionDrop        Action = "DROP"
 )
 
-// Rule 重写规则
 type Rule struct {
-	Enabled      bool     `json:"enabled"`       // 是否启用
-	Type         RuleType `json:"type"`          // 规则类型
-	Action       Action   `json:"action"`        // 重写策略
-	MatchValue   string   `json:"match_value"`   // 匹配值
-	RewriteValue string   `json:"rewrite_value"` // 重写值
-	Description  string   `json:"description"`   // 描述
+	Enabled      bool     `json:"enabled"`
+	Type         RuleType `json:"type"`
+	Action       Action   `json:"action"`
+	MatchValue   string   `json:"match_value"`
+	RewriteValue string   `json:"rewrite_value"`
+	Description  string   `json:"description"`
 
-	// 编译后的正则表达式（仅用于 REGEX 类型）
 	regex *regexp2.Regexp
-	// 解析后的 IP 网络（仅用于 IP-CIDR 和 SRC-IP 类型）
 	ipNet *net.IPNet
 }
 
-// Engine 规则引擎
 type Engine struct {
 	rules []*Rule
 }
 
-// NewEngine 创建规则引擎
 func NewEngine(rulesJSON string) (*Engine, error) {
 	if rulesJSON == "" {
 		return &Engine{rules: []*Rule{}}, nil
@@ -66,7 +59,6 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 		return nil, fmt.Errorf("failed to parse rules JSON: %w", err)
 	}
 
-	// 编译正则表达式和解析 IP 网络
 	for _, rule := range rules {
 		if !rule.Enabled {
 			continue
@@ -103,7 +95,6 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 	return &Engine{rules: rules}, nil
 }
 
-// MatchWithRule 匹配规则并返回匹配的规则
 func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rule {
 	for _, rule := range e.rules {
 		if !rule.Enabled {
@@ -139,13 +130,11 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 	return nil
 }
 
-// matchKeyword 关键字匹配
 func (e *Engine) matchKeyword(req *http.Request, rule *Rule) bool {
 	ua := req.Header.Get("User-Agent")
 	return strings.Contains(strings.ToLower(ua), strings.ToLower(rule.MatchValue))
 }
 
-// matchRegex 正则表达式匹配
 func (e *Engine) matchRegex(req *http.Request, rule *Rule) (bool, error) {
 	if rule.regex == nil {
 		return false, nil
@@ -154,7 +143,6 @@ func (e *Engine) matchRegex(req *http.Request, rule *Rule) (bool, error) {
 	return rule.regex.MatchString(ua)
 }
 
-// matchIPCIDR 目标IP地址段匹配
 func (e *Engine) matchIPCIDR(destAddr string, rule *Rule) bool {
 	if rule.ipNet == nil {
 		return false
@@ -170,7 +158,6 @@ func (e *Engine) matchIPCIDR(destAddr string, rule *Rule) bool {
 	return rule.ipNet.Contains(ip)
 }
 
-// matchSrcIP 源IP地址匹配
 func (e *Engine) matchSrcIP(srcAddr string, rule *Rule) bool {
 	if rule.ipNet == nil {
 		return false
@@ -186,7 +173,6 @@ func (e *Engine) matchSrcIP(srcAddr string, rule *Rule) bool {
 	return rule.ipNet.Contains(ip)
 }
 
-// matchDestPort 目标端口匹配
 func (e *Engine) matchDestPort(destAddr string, rule *Rule) bool {
 	_, portStr, err := net.SplitHostPort(destAddr)
 	if err != nil {
@@ -203,7 +189,6 @@ func (e *Engine) matchDestPort(destAddr string, rule *Rule) bool {
 	return port == matchPort
 }
 
-// ApplyAction 应用规则动作
 func (e *Engine) ApplyAction(action Action, rewriteValue string, originalUA string, rule *Rule) string {
 	switch action {
 	case ActionReplace:
@@ -217,20 +202,19 @@ func (e *Engine) ApplyAction(action Action, rewriteValue string, originalUA stri
 			}
 			return newUA
 		}
-		// 如果不是正则规则，使用简单字符串替换
+		// if not regex, do simple string replacement
 		return strings.ReplaceAll(originalUA, rule.MatchValue, rewriteValue)
 	case ActionDelete:
 		return ""
 	case ActionDirect:
 		return originalUA
 	case ActionDrop:
-		return originalUA // DROP 由上层处理
+		return originalUA // DROP action handled elsewhere
 	default:
 		return originalUA
 	}
 }
 
-// HasRules 是否有启用的规则
 func (e *Engine) HasRules() bool {
 	for _, rule := range e.rules {
 		if rule.Enabled {
@@ -240,7 +224,6 @@ func (e *Engine) HasRules() bool {
 	return false
 }
 
-// GetRules 获取所有规则
 func (e *Engine) GetRules() []*Rule {
 	return e.rules
 }

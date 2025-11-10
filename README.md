@@ -1,6 +1,6 @@
 # UA3F
 
-UA3F 是下一代 HTTP User-Agent 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 进行 User-Agent 透明重写。
+UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 请求 Header (例如 User-Agent) 进行透明重写。
 
 ## 特性
 
@@ -103,13 +103,23 @@ sudo -u shellcrash /usr/bin/ua3f
 
 UA3F 支持 5 种不同的服务模式，各模式的特点和使用场景如下：
 
-| 服务模式     | 工作原理           | 是否依赖 Clash 等 | 兼容性 | 性能 | 能否与 Clash 等伴生运行 |
+| 服务模式     | 工作原理           | 是否依赖 Clash 等 | 兼容性 | 效能 | 能否与 Clash 等伴生运行 |
 | ------------ | ------------------ | ----------------- | ------ | ---- | ----------------------- |
 | **HTTP**     | HTTP 代理          | 是                | 高     | 低   | 能                      |
 | **SOCKS5**   | SOCKS5 代理        | 是                | 高     | 低   | 能                      |
 | **TPROXY**   | netfilter TPROXY   | 否                | 中     | 中   | 能                      |
 | **REDIRECT** | netfilter REDIRECT | 否                | 中     | 中   | 能                      |
 | **NFQUEUE**  | netfilter NFQUEUE  | 否                | 中     | 高   | 能                      |
+
+### 重写策略说明
+
+UA3F 支持 3 种不同的重写策略：
+
+| 重写策略   | 重写行为             | 适用服务模式                       |
+| ---------- | -------------------- | ---------------------------------- |
+| **GLOBAL** | 所有请求均进行重写   | 适用于所有服务模式                 |
+| **DIRECT** | 不进行重写，纯转发   | 适用于所有服务模式                 |
+| **RULES**  | 根据重写规则进行重写 | 适用于 HTTP/SOCKS5/TPROXY/REDIRECT |
 
 ## Clash 配置
 
@@ -130,7 +140,7 @@ rules:
 ```
 
 > [!IMPORTANT]
-> 如果 Clash 使用 Fake-IP 模式，确保 OpenClash 本地 DNS 劫持选择「使用防火墙转发」，不要使用「Dnsmasq 转发」。
+> HTTP/SOCKS5 模式下，如果 Clash 使用 Fake-IP 模式，确保 OpenClash 本地 DNS 劫持选择「使用防火墙转发」，不要使用「Dnsmasq 转发」。
 
 ### Clash 参考配置
 

@@ -35,13 +35,11 @@ type Rewriter struct {
 	Cache      *expirable.LRU[string, struct{}]
 }
 
-// RewriteDecision 重写决策结果
 type RewriteDecision struct {
 	Action      rule.Action
 	MatchedRule *rule.Rule
 }
 
-// ShouldRewrite 判断是否需要重写
 func (d *RewriteDecision) ShouldRewrite() bool {
 	return d.Action == rule.ActionReplace ||
 		d.Action == rule.ActionReplacePart ||
@@ -57,7 +55,6 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		return nil, err
 	}
 
-	// 创建规则引擎
 	var ruleEngine *rule.Engine
 	if cfg.RewriteMode == config.RewriteModeRules {
 		ruleEngine, err = rule.NewEngine(cfg.Rules)
@@ -94,7 +91,6 @@ func (r *Rewriter) inWhitelist(ua string) bool {
 	return false
 }
 
-// GetRuleEngine 获取规则引擎
 func (r *Rewriter) GetRuleEngine() *rule.Engine {
 	return r.ruleEngine
 }
@@ -119,7 +115,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		req.Header.Set("User-Agent", "")
 	}
 
-	// 「直接转发」模式：不进行任何重写
+	// DIRECT
 	if r.rewriteMode == config.RewriteModeDirect {
 		log.LogDebugWithAddr(srcAddr, destAddr, "Direct forward mode, skip rewriting")
 		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
@@ -132,11 +128,11 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		}
 	}
 
-	// 「规则判定」模式：使用规则引擎（只匹配一次）
+	// RULES
 	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
 		matchedRule := r.ruleEngine.MatchWithRule(req, srcAddr, destAddr)
 
-		// 没有匹配到任何规则，默认直接转发
+		// no match rule, direct forward
 		if matchedRule == nil {
 			log.LogDebugWithAddr(srcAddr, destAddr, "No rule matched, direct forward")
 			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
@@ -149,7 +145,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 			}
 		}
 
-		// DROP 动作：丢弃请求
+		// DROP
 		if matchedRule.Action == rule.ActionDrop {
 			log.LogInfoWithAddr(srcAddr, destAddr, "Rule matched: DROP action, request will be dropped")
 			return &RewriteDecision{
@@ -158,7 +154,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 			}
 		}
 
-		// DIRECT 动作：直接转发
+		// DIRECT
 		if matchedRule.Action == rule.ActionDirect {
 			log.LogDebugWithAddr(srcAddr, destAddr, "Rule matched: DIRECT action, skip rewriting")
 			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
@@ -172,14 +168,14 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 			}
 		}
 
-		// REPLACE、REPLACE-PART、DELETE 动作：需要重写
+		// REPLACE、REPLACE-PART、DELETE, Rewrite
 		return &RewriteDecision{
 			Action:      matchedRule.Action,
 			MatchedRule: matchedRule,
 		}
 	}
 
-	// 「全局重写」模式：使用原有逻辑
+	// GLOBAL
 	var err error
 	matches := false
 	isWhitelist := r.inWhitelist(originalUA)
@@ -226,11 +222,11 @@ func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, d
 	action := decision.Action
 	var rewritedUA string
 
-	// 「规则判定」模式：根据规则动作决定如何重写
+	// RULES
 	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
 		rewritedUA = r.ruleEngine.ApplyAction(action, rewriteValue, originalUA, decision.MatchedRule)
 	} else {
-		// 「全局重写」模式：使用原有逻辑
+		// GLOBAL
 		rewritedUA = r.buildUserAgent(originalUA)
 	}
 
@@ -328,14 +324,13 @@ func (r *Rewriter) Process(dst net.Conn, src net.Conn, destAddr string, srcAddr 
 			return
 		}
 
-		// 获取重写决策（只匹配一次规则）
 		decision := r.EvaluateRewriteDecision(req, srcAddr, destAddr)
-		// 处理 DROP 动作
+
 		if decision.Action == rule.ActionDrop {
 			log.LogInfoWithAddr(srcAddr, destAddr, "Request dropped by rule")
 			continue
 		}
-		// 如果需要重写，执行重写操作
+
 		if decision.ShouldRewrite() {
 			req = r.Rewrite(req, srcAddr, destAddr, decision)
 		}
