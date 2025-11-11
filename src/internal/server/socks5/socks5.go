@@ -65,6 +65,8 @@ func (s *Server) Start() (err error) {
 		if client, err = s.listener.Accept(); err != nil {
 			if errors.Is(err, syscall.EMFILE) {
 				time.Sleep(time.Second)
+			} else if errors.Is(err, net.ErrClosed) {
+				return nil
 			}
 			logrus.Error("s.listener.Accept:", err)
 			continue

@@ -78,6 +78,7 @@ func LogHeader(version string, cfg *config.Config) {
 	logrus.Infof("User-Agent Regex: '%s'", cfg.UARegex)
 	logrus.Infof("Partial Replace: %v", cfg.PartialReplace)
 	logrus.Infof("Log level: %s", cfg.LogLevel)
+	logrus.Infof("Packet Modifications - SetTTL: %v, SetIPID: %v, DelTCPTimestamp: %v", cfg.SetTTL, cfg.SetIPID, cfg.DelTCPTimestamp)
 }
 
 func LogDebugWithAddr(src string, dest string, msg string) {

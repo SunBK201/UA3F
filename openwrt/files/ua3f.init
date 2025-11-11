@@ -137,8 +137,8 @@ detect_backend() {
         if [ "$SERVER_MODE" = "TPROXY" ]; then
             if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
                 if nft_available; then
-                FW_BACKEND="nft"
-                return 0
+                    FW_BACKEND="nft"
+                    return 0
                 fi
             else
                 FW_BACKEND="ipt"
@@ -147,8 +147,8 @@ detect_backend() {
         elif [ "$SERVER_MODE" = "NFQUEUE" ]; then
             if opkg list-installed kmod-nft-queue | grep -q 'kmod-nft-queue'; then
                 if nft_available; then
-                FW_BACKEND="nft"
-                return 0
+                    FW_BACKEND="nft"
+                    return 0
                 fi
             else
                 FW_BACKEND="ipt"
@@ -510,6 +510,7 @@ start_service() {
 
     local port bind ua log_level ua_regex partial_replace set_ttl
     local rewrite_mode rewrite_rules
+    local set_ttl set_ipid del_tcpts
     config_get server_mode "main" "server_mode" "SOCKS5"
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
@@ -517,14 +518,20 @@ start_service() {
     config_get ua_regex "main" "ua_regex" ""
     config_get_bool partial_replace "main" "partial_replace" 0
     config_get log_level "main" "log_level" "info"
-    config_get_bool set_ttl "main" "set_ttl" 0
     config_get rewrite_mode "main" "rewrite_mode" "GLOBAL"
     config_get rewrite_rules "main" "rewrite_rules" ""
+    config_get_bool set_ttl "main" "set_ttl" 0
+    config_get_bool set_ipid "main" "set_ipid" 0
+    config_get_bool del_tcpts "main" "del_tcpts" 0
+
+    # compose set_ttl set_ipid del_tcpts with others ",ttl,ipid,tcpts,"
+    local others=","
+    [ "$set_ipid" -eq "1" ] && others="${others}ipid,"
+    [ "$del_tcpts" -eq "1" ] && others="${others}tcpts,"
+    [ "$set_ttl" -eq "1" ] && others="${others}ttl,"
 
     SERVER_MODE="$(echo "$server_mode" | tr '[:lower:]' '[:upper:]')"
     SERVER_MODE="$server_mode"
-
-    SET_TTL="$set_ttl"
 
     LOG "Server Mode: $SERVER_MODE"
     LOG "Port: $port"
@@ -533,7 +540,6 @@ start_service() {
     LOG "User-Agent Regex: $ua_regex"
     LOG "Log level: $log_level"
     LOG "Partial Replace: $partial_replace"
-    LOG "Set TTL: $SET_TTL"
 
     set_ua3f_group
     LOG "Run as GID: $UA3F_GID, Group: $UA3F_GROUP"
@@ -551,6 +557,22 @@ start_service() {
         fw_revert_nft
     else
         fw_revert_ipt
+    fi
+
+    # dump all fw rules for debug
+    if [ "$log_level" = "debug" ]; then
+        if [ "$FW_BACKEND" = "nft" ]; then
+            LOG "nftables before rules:"
+            nft --handle list ruleset >>"$LOG_FILE" 2>&1
+        elif [ "$FW_BACKEND" = "ipt" ]; then
+            LOG "iptables before rules:"
+            LOG "mangle table:"
+            iptables -t mangle -L -v -n >>"$LOG_FILE" 2>&1
+            LOG "nat table:"
+            iptables -t nat -L -v -n >>"$LOG_FILE" 2>&1
+            LOG "filter table:"
+            iptables -t filter -L -v -n >>"$LOG_FILE" 2>&1
+        fi
     fi
 
     case "$SERVER_MODE" in
@@ -607,20 +629,6 @@ start_service() {
         ;;
     esac
 
-    if [ "$SET_TTL" = "1" ]; then
-        if [ "$FW_BACKEND" = "nft" ]; then
-            set_ttl_nft || {
-                LOG "set_ttl_nft setup failed"
-            }
-            LOG "Set TTL 64 via nftables"
-        else
-            set_ttl_ipt || {
-                LOG "set_ttl_ipt setup failed"
-            }
-            LOG "Set TTL 64 via iptables"
-        fi
-    fi
-
     # dump all fw rules for debug
     if [ "$log_level" = "debug" ]; then
         if [ "$FW_BACKEND" = "nft" ]; then
@@ -653,6 +661,7 @@ start_service() {
     procd_append_param command -x "$rewrite_mode"
     procd_append_param command -z "$rewrite_rules"
     [ "$partial_replace" = "1" ] && procd_append_param command -s
+    procd_append_param command -o "$others"
 
     procd_set_param respawn
     procd_set_param stdout 1

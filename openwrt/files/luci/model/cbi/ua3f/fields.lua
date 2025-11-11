@@ -190,6 +190,14 @@ function M.add_others_fields(section)
     -- TTL Setting
     local ttl = section:taboption("others", Flag, "set_ttl", translate("Set TTL"))
     ttl.description = translate("Set the TTL 64 for packets")
+
+    -- TCP Timestamp Deletion
+    local tcpts = section:taboption("others", Flag, "del_tcpts", translate("Delete TCP Timestamps"))
+    tcpts.description = translate("Remove TCP Timestamp option")
+
+    -- IP ID Setting
+    local ipid = section:taboption("others", Flag, "set_ipid", translate("Set IP ID"))
+    ipid.description = translate("Set the IP ID to 0 for packets")
 end
 
 return M

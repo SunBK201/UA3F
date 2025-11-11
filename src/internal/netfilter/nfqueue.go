@@ -107,7 +107,6 @@ func (s *NfqueueServer) Start() error {
 		s.wg.Wait()
 		return fmt.Errorf("failed to register nfqueue handler: %w", err)
 	}
-	logrus.Info("NFQUEUE handler registered, listening for packets")
 
 	// Wait until context is done
 	<-ctx.Done()

@@ -253,3 +253,15 @@ msgstr "注意：重写规则仅在规则判定模式下生效。NFQUEUE 模式�
 
 msgid "Rewrite Header"
 msgstr "重写请求头"
+
+msgid "Delete TCP Timestamps"
+msgstr "删除 TCP 时间戳"
+
+msgid "Remove TCP Timestamp option"
+msgstr "移除 TCP 时间戳选项"
+
+msgid "Set IP ID"
+msgstr "固定 IP ID"
+
+msgid "Set the IP ID to 0 for packets"
+msgstr "将数据包的 IP ID 设置为 0，不推荐开启，除非你知道这是什么"

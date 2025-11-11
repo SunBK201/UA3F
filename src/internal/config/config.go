@@ -25,16 +25,19 @@ const (
 )
 
 type Config struct {
-	ServerMode     ServerMode
-	BindAddr       string
-	Port           int
-	ListenAddr     string
-	LogLevel       string
-	RewriteMode    RewriteMode
-	Rules          string
-	PayloadUA      string
-	UARegex        string
-	PartialReplace bool
+	ServerMode      ServerMode
+	BindAddr        string
+	Port            int
+	ListenAddr      string
+	LogLevel        string
+	RewriteMode     RewriteMode
+	Rules           string
+	PayloadUA       string
+	UARegex         string
+	PartialReplace  bool
+	SetTTL          bool
+	SetIPID         bool
+	DelTCPTimestamp bool
 }
 
 func Parse() (*Config, bool) {
@@ -48,6 +51,7 @@ func Parse() (*Config, bool) {
 		partial     bool
 		rewriteMode string
 		rules       string
+		others      string
 		showVer     bool
 	)
 
@@ -60,6 +64,7 @@ func Parse() (*Config, bool) {
 	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
 	flag.StringVar(&rewriteMode, "x", string(RewriteModeGlobal), "Rewrite mode: GLOBAL, DIRECT, RULES")
 	flag.StringVar(&rules, "z", "", "Rules JSON string")
+	flag.StringVar(&others, "o", "", "Other options (tcpts, ttl, ipid)")
 	flag.BoolVar(&showVer, "v", false, "Show version")
 	flag.Parse()
 
@@ -79,5 +84,19 @@ func Parse() (*Config, bool) {
 		cfg.BindAddr = "0.0.0.0"
 		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
 	}
+
+	// Parse other options
+	opts := strings.Split(others, ",")
+	for _, opt := range opts {
+		switch strings.ToLower(strings.TrimSpace(opt)) {
+		case "tcpts":
+			cfg.DelTCPTimestamp = true
+		case "ttl":
+			cfg.SetTTL = true
+		case "ipid":
+			cfg.SetIPID = true
+		}
+	}
+
 	return cfg, showVer
 }
