@@ -27,6 +27,10 @@ func (s *Server) Start() error {
 	return fmt.Errorf("TPROXY Mode is only supported on Linux")
 }
 
+func (s *Server) Close() error {
+	return nil
+}
+
 func (s *Server) HandleClient(client net.Conn) {
 	defer client.Close()
 }

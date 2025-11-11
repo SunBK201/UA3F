@@ -24,6 +24,7 @@ const (
 
 type Server interface {
 	Start() error
+	Close() error
 }
 
 func NewServer(cfg *config.Config, rw *rewrite.Rewriter) (Server, error) {

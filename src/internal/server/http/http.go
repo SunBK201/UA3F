@@ -44,6 +44,10 @@ func (s *Server) Start() (err error) {
 	return server.ListenAndServe()
 }
 
+func (s *Server) Close() (err error) {
+	return nil
+}
+
 func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	req.RequestURI = ""
 	req.URL.Scheme = "http"

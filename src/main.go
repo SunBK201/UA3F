@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -35,6 +39,19 @@ func main() {
 	log.LogHeader(version, cfg)
 
 	go statistics.StartRecorder()
+
+	cleanup := make(chan os.Signal, 1)
+	signal.Notify(cleanup, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-cleanup
+		logrus.Info("Shutting down UA3F...")
+		if err := srv.Close(); err != nil {
+			logrus.Errorf("Error during UA3F close: %v", err)
+		}
+		logrus.Info("UA3F exited gracefully")
+		os.Exit(0)
+	}()
 
 	if err := srv.Start(); err != nil {
 		logrus.Fatal(err)

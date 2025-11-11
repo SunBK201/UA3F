@@ -67,6 +67,13 @@ func (s *Server) Start() error {
 	}
 }
 
+func (s *Server) Close() error {
+	if s.listener != nil {
+		return s.listener.Close()
+	}
+	return nil
+}
+
 func (s *Server) HandleClient(client net.Conn) {
 	addr, err := getOriginalDstAddr(client)
 	if err != nil {

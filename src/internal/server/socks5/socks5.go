@@ -48,6 +48,13 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	}
 }
 
+func (s *Server) Close() (err error) {
+	if s.listener != nil {
+		err = s.listener.Close()
+	}
+	return
+}
+
 // Start begins listening for SOCKS5 clients.
 func (s *Server) Start() (err error) {
 	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {

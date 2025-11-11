@@ -41,6 +41,11 @@ func (s *Server) Start() (err error) {
 	return s.nfqServer.Start()
 }
 
+func (s *Server) Close() (err error) {
+	// err = s.nfqServer.Nf.Close()
+	return nil
+}
+
 // handlePacket processes a single NFQUEUE packet
 func (s *Server) handlePacket(packet *netfilter.Packet) {
 	if s.cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil {
