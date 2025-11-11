@@ -32,7 +32,7 @@ UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、
 
   ```sh
   git clone https://github.com/openwrt/openwrt.git && cd openwrt
-  git checkout openwrt-22.03
+  git checkout openwrt-23.05
   ./scripts/feeds update -a && ./scripts/feeds install -a
   git clone https://github.com/SunBK201/UA3F.git package/UA3F
   make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
