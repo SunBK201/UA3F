@@ -22,7 +22,7 @@ func New(cfg *config.Config) *Server {
 	s := &Server{
 		cfg: cfg,
 		nfqServer: &netfilter.NfqueueServer{
-			QueueNum: 10301,
+			QueueNum: netfilter.HELPER_QUEUE,
 		},
 		nftable: &knftables.Table{
 			Name:   "UA3F_HELPER",

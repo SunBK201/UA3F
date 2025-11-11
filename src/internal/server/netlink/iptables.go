@@ -3,7 +3,10 @@
 package netlink
 
 import (
+	"strconv"
+
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/sunbk201/ua3f/internal/netfilter"
 )
 
 const (
@@ -20,13 +23,13 @@ var RuleDelTCPTS = []string{
 	"-p", "tcp",
 	"--tcp-flags", "SYN", "SYN",
 	"-j", "NFQUEUE",
-	"--queue-num", "10301",
+	"--queue-num", strconv.Itoa(netfilter.HELPER_QUEUE),
 	"--queue-bypass",
 }
 
 var RuleIP = []string{
 	"-j", "NFQUEUE",
-	"--queue-num", "10301",
+	"--queue-num", strconv.Itoa(netfilter.HELPER_QUEUE),
 	"--queue-bypass",
 }
 

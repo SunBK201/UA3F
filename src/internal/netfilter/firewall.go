@@ -6,11 +6,19 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
+	"sigs.k8s.io/knftables"
 )
 
 const (
 	NFT = "nft"
 	IPT = "ipt"
+)
+
+const (
+	LANSET       = "UA3F_LAN"
+	SKIP_PORTS   = "22,51080,51090"
+	FAKEIP_RANGE = "198.18.0.0/16,198.18.0.1/15,28.0.0.1/8"
+	HELPER_QUEUE = 10301
 )
 
 type Firewall struct {
@@ -37,6 +45,37 @@ func (f *Firewall) Cleanup() error {
 	f.NftCleanup()
 	f.IptCleanup()
 	return nil
+}
+
+func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table) {
+	ipset := &knftables.Set{
+		Name:   LANSET,
+		Table:  table.Name,
+		Family: table.Family,
+		Type:   "ipv4_addr",
+		Flags: []knftables.SetFlag{
+			knftables.IntervalFlag,
+		},
+		AutoMerge: knftables.PtrTo(true),
+	}
+	iplan := &knftables.Element{
+		Table:  table.Name,
+		Family: table.Family,
+		Set:    ipset.Name,
+		Key: []string{
+			"0.0.0.0/8",
+			"10.0.0.0/8",
+			"100.64.0.0/10",
+			"127.0.0.0/8",
+			"169.254.0.0/16",
+			"172.16.0.0/12",
+			"192.168.1.0/24",
+			"224.0.0.0/4",
+			"240.0.0.0/4",
+		},
+	}
+	tx.Add(ipset)
+	tx.Add(iplan)
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
