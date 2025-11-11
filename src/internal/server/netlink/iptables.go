@@ -15,7 +15,7 @@ var RuleTTL = []string{
 }
 
 var RuleIP = []string{
-	"-j", "QUEUE",
+	"-j", "NFQUEUE",
 	"--queue-num", "10301",
 	"--queue-bypass",
 }
@@ -23,7 +23,7 @@ var RuleIP = []string{
 var RuleDelTCPTS = []string{
 	"-p", "tcp",
 	"--tcp-flags", "SYN,RST,ACK,FIN",
-	"-j", "QUEUE",
+	"-j", "NFQUEUE",
 	"--queue-num", "10301",
 	"--queue-bypass",
 }
