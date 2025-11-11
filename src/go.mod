@@ -2,8 +2,6 @@ module github.com/sunbk201/ua3f
 
 go 1.21
 
-toolchain go1.24.6
-
 require (
 	github.com/coreos/go-iptables v0.8.0
 	github.com/dlclark/regexp2 v1.11.4

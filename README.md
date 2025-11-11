@@ -10,6 +10,7 @@ UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 支持 OpenWrt 17.01 及以上版本
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
+- 支持 TTL，TCP Timestamp，IPID 伪装
 
 <table>
   <tr>
@@ -97,6 +98,8 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认为空, 表示所有 User-Agent 都会被重写
 - `-s`: 部分替换，仅替换正则匹配到的部分
 - `-z`: 重写规则，json string 格式，仅在 RULES 重写策略模式下生效
+- `-o ttl,tcpts,ipid`: 启用 TTL、TCP Timestamp、IP ID 伪装功能
+
 </details>
 
 ### 服务模式说明
