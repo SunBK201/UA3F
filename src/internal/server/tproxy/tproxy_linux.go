@@ -16,7 +16,6 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/utils"
-	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type Server struct {
@@ -54,9 +53,6 @@ func (s *Server) Start() error {
 	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
-
-	go statistics.StartRecorder()
-
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {

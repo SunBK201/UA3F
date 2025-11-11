@@ -31,8 +31,6 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 }
 
 func (s *Server) Start() (err error) {
-	go statistics.StartRecorder()
-
 	server := &http.Server{
 		Addr: s.cfg.ListenAddr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

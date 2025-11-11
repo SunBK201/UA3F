@@ -13,7 +13,6 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/utils"
-	"github.com/sunbk201/ua3f/internal/statistics"
 	"golang.org/x/sys/unix"
 )
 
@@ -34,9 +33,6 @@ func (s *Server) Start() (err error) {
 	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
-
-	go statistics.StartRecorder()
-
 	var client net.Conn
 	for {
 		if client, err = s.listener.Accept(); err != nil {

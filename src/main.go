@@ -7,6 +7,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 const version = "1.7.0"
@@ -32,6 +33,8 @@ func main() {
 	}
 
 	log.LogHeader(version, cfg)
+
+	go statistics.StartRecorder()
 
 	if err := srv.Start(); err != nil {
 		logrus.Fatal(err)
