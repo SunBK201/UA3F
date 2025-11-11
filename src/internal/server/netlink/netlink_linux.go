@@ -12,6 +12,7 @@ import (
 )
 
 type Server struct {
+	netfilter.Firewall
 	cfg       *config.Config
 	nfqServer *netfilter.NfqueueServer
 	nftable   *knftables.Table
@@ -29,12 +30,19 @@ func New(cfg *config.Config) *Server {
 		},
 	}
 	s.nfqServer.HandlePacket = s.handlePacket
+	s.Firewall = netfilter.Firewall{
+		NftSetup:   s.nftSetup,
+		NftCleanup: s.nftCleanup,
+		IptSetup:   s.iptSetup,
+		IptCleanup: s.iptCleanup,
+	}
 	return s
 }
 
 func (s *Server) Setup() (err error) {
-	err = s.setupFirewall()
+	err = s.Firewall.Setup(s.cfg)
 	if err != nil {
+		logrus.Errorf("s.Firewall.Setup: %v", err)
 		return err
 	}
 	return nil
@@ -49,11 +57,10 @@ func (s *Server) Start() (err error) {
 }
 
 func (s *Server) Close() (err error) {
-	err = s.cleanupFirewall()
+	err = s.Firewall.Cleanup()
 	if err != nil {
 		return err
 	}
-	// err = s.nfqServer.Nf.Close()
 	return nil
 }
 

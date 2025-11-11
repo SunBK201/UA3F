@@ -1,9 +1,8 @@
-//go:build linux
-
-package netlink
+package netfilter
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
@@ -14,29 +13,36 @@ const (
 	IPT = "ipt"
 )
 
-func (s *Server) setupFirewall() error {
-	s.cleanupFirewall()
-	backend := s.detectFirewallBackend()
+type Firewall struct {
+	NftSetup   func() error
+	NftCleanup func() error
+	IptSetup   func() error
+	IptCleanup func() error
+}
+
+func (f *Firewall) Setup(cfg *config.Config) error {
+	f.Cleanup()
+	backend := detectFirewallBackend(cfg)
 	switch backend {
 	case NFT:
-		return s.nftSetup()
+		return f.NftSetup()
 	case IPT:
-		return s.iptSetup()
+		return f.IptSetup()
 	default:
 		return fmt.Errorf("unsupported or no firewall backend: %s", backend)
 	}
 }
 
-func (s *Server) cleanupFirewall() error {
-	s.nftCleanup()
-	s.iptCleanup()
+func (f *Firewall) Cleanup() error {
+	f.NftCleanup()
+	f.IptCleanup()
 	return nil
 }
 
-func (s *Server) detectFirewallBackend() string {
+func detectFirewallBackend(cfg *config.Config) string {
 	// Check if opkg is available (OpenWrt environment)
 	if isCommandAvailable("opkg") {
-		switch s.cfg.ServerMode {
+		switch cfg.ServerMode {
 		case config.ServerModeTProxy:
 			// Check if kmod-nft-tproxy is installed
 			if isOpkgPackageInstalled("kmod-nft-tproxy") && isCommandAvailable("nft") {
@@ -71,4 +77,20 @@ func (s *Server) detectFirewallBackend() string {
 	// No backend detected
 	logrus.Warn("No firewall backend detected")
 	return ""
+}
+
+// IsCommandAvailable checks if a command is available in the system
+func isCommandAvailable(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
+
+// IsOpkgPackageInstalled checks if a package is installed via opkg
+func isOpkgPackageInstalled(pkg string) bool {
+	cmd := exec.Command("opkg", "list-installed", pkg)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return len(output) > 0
 }

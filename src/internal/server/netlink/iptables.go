@@ -16,12 +16,6 @@ var RuleTTL = []string{
 	"--ttl-set", "64",
 }
 
-var RuleIP = []string{
-	"-j", "NFQUEUE",
-	"--queue-num", "10301",
-	"--queue-bypass",
-}
-
 var RuleDelTCPTS = []string{
 	"-p", "tcp",
 	"--tcp-flags", "SYN", "SYN",
@@ -30,9 +24,13 @@ var RuleDelTCPTS = []string{
 	"--queue-bypass",
 }
 
-func (s *Server) iptSetup() error {
-	_ = s.iptCleanup()
+var RuleIP = []string{
+	"-j", "NFQUEUE",
+	"--queue-num", "10301",
+	"--queue-bypass",
+}
 
+func (s *Server) iptSetup() error {
 	ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
 		return err
@@ -65,14 +63,10 @@ func (s *Server) iptCleanup() error {
 	}
 	_ = ipt.DeleteIfExists(table, chain, RuleTTL...)
 	_ = ipt.DeleteIfExists(table, chain, RuleIP...)
-	err = ipt.DeleteIfExists(table, chain, RuleDelTCPTS...)
-	if err != nil {
-		return err
-	}
+	_ = ipt.DeleteIfExists(table, chain, RuleDelTCPTS...)
 	return nil
 }
 
-// IptSetTTL creates a chain that sets TTL to 64 for IPv4 packets
 func IptSetTTL(ipt *iptables.IPTables) error {
 	err := ipt.Append(table, chain, RuleTTL...)
 	if err != nil {
@@ -81,16 +75,16 @@ func IptSetTTL(ipt *iptables.IPTables) error {
 	return nil
 }
 
-func IptSetIP(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleIP...)
+func IptDelTCPTS(ipt *iptables.IPTables) error {
+	err := ipt.Append(table, chain, RuleDelTCPTS...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func IptDelTCPTS(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleDelTCPTS...)
+func IptSetIP(ipt *iptables.IPTables) error {
+	err := ipt.Append(table, chain, RuleIP...)
 	if err != nil {
 		return err
 	}
