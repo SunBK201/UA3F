@@ -136,16 +136,20 @@ detect_backend() {
     if opkg_available; then
         if [ "$SERVER_MODE" = "TPROXY" ]; then
             if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
+                if nft_available; then
                 FW_BACKEND="nft"
                 return 0
+                fi
             else
                 FW_BACKEND="ipt"
                 return 0
             fi
         elif [ "$SERVER_MODE" = "NFQUEUE" ]; then
             if opkg list-installed kmod-nft-queue | grep -q 'kmod-nft-queue'; then
+                if nft_available; then
                 FW_BACKEND="nft"
                 return 0
+                fi
             else
                 FW_BACKEND="ipt"
                 return 0
