@@ -10,11 +10,10 @@ import (
 
 // RewriteResult contains the result of TCP rewriting
 type RewriteResult struct {
-	Modified    bool   // Whether the packet was modified
-	NewPayload  []byte // New packet data (only if Modified is true)
-	HasUA       bool   // Whether User-Agent was found
-	InCache     bool   // Whether destination address is in cache
-	InWhitelist bool   // Whether User-Agent was in whitelist
+	Modified    bool // Whether the packet was modified
+	HasUA       bool // Whether User-Agent was found
+	InCache     bool // Whether destination address is in cache
+	InWhitelist bool // Whether User-Agent was in whitelist
 }
 
 // shouldRewriteUA checks if the given User-Agent should be rewritten
@@ -67,27 +66,23 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 	return out
 }
 
-// RewritePacketUserAgent rewrites User-Agent in a raw packet payload
-// Returns the rewritten payload and metadata about the operation
-func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (newPayload []byte, hasUA, modified, inWhitelist bool) {
+// RewritePacketUserAgent rewrites User-Agent in a raw packet payload in-place
+// Returns metadata about the operation
+func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (hasUA, modified, inWhitelist bool) {
 	// Find all User-Agent positions
 	positions, unterm := findUserAgentInPayload(payload)
 
 	if unterm {
 		log.LogInfoWithAddr(srcAddr, dstAddr, "Unterminated User-Agent found, not rewriting")
-		return payload, true, false, false
+		return true, false, false
 	}
 
 	if len(positions) == 0 {
 		log.LogDebugWithAddr(srcAddr, dstAddr, "No User-Agent found in payload")
-		return payload, false, false, false
+		return false, false, false
 	}
 
-	// Copy payload for in-place modification
-	out := make([]byte, len(payload))
-	copy(out, payload)
-
-	// Replace each User-Agent value
+	// Replace each User-Agent value in-place
 	for _, pos := range positions {
 		valStart, valEnd := pos[0], pos[1]
 		n := valEnd - valStart
@@ -108,7 +103,7 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 				DestAddr: dstAddr,
 				UA:       originalUA,
 			})
-			return payload, true, false, true
+			return true, false, true
 		}
 
 		// Check if should rewrite
@@ -118,18 +113,17 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 				DestAddr: dstAddr,
 				UA:       originalUA,
 			})
-			return payload, true, false, false
+			return true, false, false
 		}
 
 		// Build replacement with regex matching
 		repl := r.buildReplacement(srcAddr, dstAddr, originalUA, n)
 		if repl != nil {
-			copy(out[valStart:valEnd], repl)
+			copy(payload[valStart:valEnd], repl)
 			modified = true
 		}
 	}
-
-	return out, true, modified, false
+	return true, modified, false
 }
 
 // RewriteTCP rewrites the TCP packet's User-Agent if applicable
@@ -139,11 +133,10 @@ func (r *Rewriter) RewriteTCP(tcp *layers.TCP, srcAddr, dstAddr string) *Rewrite
 		return &RewriteResult{Modified: false}
 	}
 
-	newPayload, hasUA, modified, inWhitelist := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
+	hasUA, modified, inWhitelist := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
 
 	return &RewriteResult{
 		Modified:    modified,
-		NewPayload:  newPayload,
 		HasUA:       hasUA,
 		InWhitelist: inWhitelist,
 	}
