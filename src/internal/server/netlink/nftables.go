@@ -4,6 +4,7 @@ package netlink
 
 import (
 	"context"
+	"fmt"
 
 	"sigs.k8s.io/knftables"
 )
@@ -18,13 +19,13 @@ func (s *Server) nftSetup() error {
 	tx.Add(s.nftable)
 
 	if s.cfg.SetTTL {
-		NftSetTTL(tx, s.nftable)
+		s.NftSetTTL(tx, s.nftable)
 	}
 	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		NftDelTCPTS(tx, s.nftable)
+		s.NftDelTCPTS(tx, s.nftable)
 	}
 	if s.cfg.SetIPID {
-		NftSetIP(tx, s.nftable)
+		s.NftSetIP(tx, s.nftable)
 	}
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -48,7 +49,7 @@ func (s *Server) nftCleanup() error {
 	return nil
 }
 
-func NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
+func (s *Server) NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
 		Name:     "TTL64",
 		Type:     knftables.PtrTo(knftables.FilterType),
@@ -66,7 +67,7 @@ func NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 	tx.Add(rule)
 }
 
-func NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) {
+func (s *Server) NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
 		Name:     "HELPER_QUEUE",
 		Type:     knftables.PtrTo(knftables.FilterType),
@@ -77,14 +78,15 @@ func NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) {
 	rule := &knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			"tcp flags syn counter queue num 10301 bypass",
+			"tcp flags syn",
+			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
 	}
 	tx.Add(chain)
 	tx.Add(rule)
 }
 
-func NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
+func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
 		Name:     "HELPER_QUEUE",
 		Type:     knftables.PtrTo(knftables.FilterType),
@@ -95,7 +97,7 @@ func NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
 	rule := &knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			"counter queue num 10301 bypass",
+			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
 	}
 	tx.Add(chain)

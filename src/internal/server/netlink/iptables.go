@@ -36,19 +36,19 @@ func (s *Server) iptSetup() error {
 		return err
 	}
 	if s.cfg.SetTTL {
-		err = IptSetTTL(ipt)
+		err = s.IptSetTTL(ipt)
 		if err != nil {
 			return err
 		}
 	}
 	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		err = IptDelTCPTS(ipt)
+		err = s.IptDelTCPTS(ipt)
 		if err != nil {
 			return err
 		}
 	}
 	if s.cfg.SetIPID {
-		err = IptSetIP(ipt)
+		err = s.IptSetIP(ipt)
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func (s *Server) iptCleanup() error {
 	return nil
 }
 
-func IptSetTTL(ipt *iptables.IPTables) error {
+func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
 	err := ipt.Append(table, chain, RuleTTL...)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func IptSetTTL(ipt *iptables.IPTables) error {
 	return nil
 }
 
-func IptDelTCPTS(ipt *iptables.IPTables) error {
+func (s *Server) IptDelTCPTS(ipt *iptables.IPTables) error {
 	err := ipt.Append(table, chain, RuleDelTCPTS...)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func IptDelTCPTS(ipt *iptables.IPTables) error {
 	return nil
 }
 
-func IptSetIP(ipt *iptables.IPTables) error {
+func (s *Server) IptSetIP(ipt *iptables.IPTables) error {
 	err := ipt.Append(table, chain, RuleIP...)
 	if err != nil {
 		return err
