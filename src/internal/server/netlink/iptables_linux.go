@@ -24,7 +24,7 @@ var RuleIP = []string{
 
 var RuleDelTCPTS = []string{
 	"-p", "tcp",
-	"--tcp-flags", "SYN,RST,ACK,FIN",
+	"--tcp-flags", "SYN", "SYN",
 	"-j", "NFQUEUE",
 	"--queue-num", "10301",
 	"--queue-bypass",
