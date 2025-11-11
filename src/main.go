@@ -41,11 +41,11 @@ func main() {
 	log.LogHeader(version, cfg)
 
 	helper := netlink.New(cfg)
+	defer helper.Close()
 	err = helper.Setup()
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	defer helper.Close()
 
 	cleanup := make(chan os.Signal, 1)
 	signal.Notify(cleanup, syscall.SIGINT, syscall.SIGTERM)
