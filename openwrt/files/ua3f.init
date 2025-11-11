@@ -611,17 +611,7 @@ start_service() {
         fi
         ;;
     NFQUEUE)
-        if [ "$FW_BACKEND" = "nft" ]; then
-            fw_setup_nft_nfqueue || {
-                LOG "fw_setup_nft_nfqueue setup failed"
-                return 1
-            }
-        else
-            fw_setup_ipt_nfqueue || {
-                LOG "fw_setup_ipt_nfqueue setup failed"
-                return 1
-            }
-        fi
+        # No firewall interception
         ;;
     *)
         LOG "Unsupported server_mode: $SERVER_MODE"

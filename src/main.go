@@ -36,6 +36,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	defer srv.Close()
 
 	log.LogHeader(version, cfg)
 
@@ -44,6 +45,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	defer helper.Close()
 
 	cleanup := make(chan os.Signal, 1)
 	signal.Notify(cleanup, syscall.SIGINT, syscall.SIGTERM)
@@ -68,6 +70,4 @@ func main() {
 	if err := srv.Start(); err != nil {
 		logrus.Fatal(err)
 	}
-	helper.Close()
-	srv.Close()
 }

@@ -1,9 +1,13 @@
+//go:build linux
+
 package nfqueue
 
 import (
 	"fmt"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
+	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/knftables"
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -12,9 +16,11 @@ import (
 )
 
 type Server struct {
+	netfilter.Firewall
 	cfg                 *config.Config
 	rw                  *rewrite.Rewriter
 	nfqServer           *netfilter.NfqueueServer
+	nftable             *knftables.Table
 	SniffMarkRangeLower uint32
 	SniffMarkRangeUpper uint32
 	HTTPMark            uint32
@@ -32,18 +38,33 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 		nfqServer: &netfilter.NfqueueServer{
 			QueueNum: 10201,
 		},
+		nftable: &knftables.Table{
+			Name:   "UA3F",
+			Family: knftables.IPv4Family,
+		},
 	}
 	s.nfqServer.HandlePacket = s.handlePacket
+	s.Firewall = netfilter.Firewall{
+		NftSetup:   s.nftSetup,
+		NftCleanup: s.nftCleanup,
+		IptSetup:   s.iptSetup,
+		IptCleanup: s.iptCleanup,
+	}
 	return s
 }
 
 func (s *Server) Start() (err error) {
+	err = s.Firewall.Setup(s.cfg)
+	if err != nil {
+		logrus.Errorf("s.Firewall.Setup: %v", err)
+		return err
+	}
 	return s.nfqServer.Start()
 }
 
 func (s *Server) Close() (err error) {
-	// err = s.nfqServer.Nf.Close()
-	return nil
+	err = s.Firewall.Cleanup()
+	return err
 }
 
 // handlePacket processes a single NFQUEUE packet

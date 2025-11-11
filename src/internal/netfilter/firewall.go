@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/gonetx/ipset"
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"sigs.k8s.io/knftables"
@@ -21,6 +22,37 @@ const (
 	HELPER_QUEUE = 10301
 )
 
+var LAN_CIDRS = []string{
+	"0.0.0.0/8",
+	"10.0.0.0/8",
+	"100.64.0.0/10",
+	"127.0.0.0/8",
+	"169.254.0.0/16",
+	"172.16.0.0/12",
+	"192.168.1.0/24",
+	"224.0.0.0/4",
+	"240.0.0.0/4",
+}
+
+var RuleIgnoreReply = []string{
+	"-m", "conntrack",
+	"--ctdir", "REPLY",
+	"-j", "RETURN",
+}
+
+var RuleIgnoreLAN = []string{
+	"-m", "set",
+	"--match-set", LANSET, "dst",
+	"-j", "RETURN",
+}
+
+var RuleIgnorePorts = []string{
+	"-p", "tcp",
+	"-m", "multiport",
+	"--dports", SKIP_PORTS,
+	"-j", "RETURN",
+}
+
 type Firewall struct {
 	NftSetup   func() error
 	NftCleanup func() error
@@ -28,17 +60,21 @@ type Firewall struct {
 	IptCleanup func() error
 }
 
-func (f *Firewall) Setup(cfg *config.Config) error {
+func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	f.Cleanup()
 	backend := detectFirewallBackend(cfg)
 	switch backend {
 	case NFT:
-		return f.NftSetup()
+		err = f.NftSetup()
 	case IPT:
-		return f.IptSetup()
+		err = f.IptSetup()
 	default:
-		return fmt.Errorf("unsupported or no firewall backend: %s", backend)
+		err = fmt.Errorf("unsupported or no firewall backend: %s", backend)
 	}
+	if err != nil {
+		f.Cleanup()
+	}
+	return err
 }
 
 func (f *Firewall) Cleanup() error {
@@ -58,24 +94,45 @@ func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table
 		},
 		AutoMerge: knftables.PtrTo(true),
 	}
-	iplan := &knftables.Element{
-		Table:  table.Name,
-		Family: table.Family,
-		Set:    ipset.Name,
-		Key: []string{
-			"0.0.0.0/8",
-			"10.0.0.0/8",
-			"100.64.0.0/10",
-			"127.0.0.0/8",
-			"169.254.0.0/16",
-			"172.16.0.0/12",
-			"192.168.1.0/24",
-			"224.0.0.0/4",
-			"240.0.0.0/4",
-		},
-	}
 	tx.Add(ipset)
-	tx.Add(iplan)
+
+	for _, cidr := range LAN_CIDRS {
+		iplan := &knftables.Element{
+			Table:  table.Name,
+			Family: table.Family,
+			Set:    ipset.Name,
+			Key:    []string{cidr},
+		}
+		tx.Add(iplan)
+	}
+}
+
+func (f *Firewall) IptSetLanIP() error {
+	if err := ipset.Check(); err != nil {
+		return err
+	}
+	set, err := ipset.New(
+		LANSET,
+		ipset.HashNet,
+		ipset.Exist(false),
+		ipset.Family(ipset.Inet),
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, cidr := range LAN_CIDRS {
+		err := set.Add(cidr)
+		if err != nil {
+			return err
+		}
+	}
+	set.Flush()
+	return nil
+}
+
+func (f *Firewall) IptDeleteLanIP() error {
+	return ipset.Destroy(LANSET)
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
@@ -118,13 +175,13 @@ func detectFirewallBackend(cfg *config.Config) string {
 	return ""
 }
 
-// IsCommandAvailable checks if a command is available in the system
+// isCommandAvailable checks if a command is available in the system
 func isCommandAvailable(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
 }
 
-// IsOpkgPackageInstalled checks if a package is installed via opkg
+// isOpkgPackageInstalled checks if a package is installed via opkg
 func isOpkgPackageInstalled(pkg string) bool {
 	cmd := exec.Command("opkg", "list-installed", pkg)
 	output, err := cmd.Output()
