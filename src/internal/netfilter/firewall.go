@@ -118,6 +118,8 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	if err != nil {
 		f.Cleanup()
 	}
+	f.DumpNFTables()
+	f.DumpIPTables()
 	return err
 }
 
@@ -125,6 +127,27 @@ func (f *Firewall) Cleanup() error {
 	f.NftCleanup()
 	f.IptCleanup()
 	return nil
+}
+
+func (f *Firewall) DumpNFTables() {
+	cmd := exec.Command("nft", "--handle", "list", "ruleset")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return
+	}
+	logrus.Infof("nftables ruleset:\n%s", string(output))
+}
+
+func (f *Firewall) DumpIPTables() {
+	var tables = []string{"filter", "nat", "mangle", "raw"}
+	for _, table := range tables {
+		cmd := exec.Command("iptables", "-t", table, "-L", "-v", "-n", "--line-numbers")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			continue
+		}
+		logrus.Infof("iptables table(%s):\n%s", table, string(output))
+	}
 }
 
 func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table) {
