@@ -268,3 +268,6 @@ msgstr "将数据包的 IP ID 设置为 0，不推荐开启，除非你知道这
 
 msgid "Issue Report"
 msgstr "问题反馈"
+
+msgid "Log Management"
+msgstr "日志管理"

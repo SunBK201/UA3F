@@ -149,54 +149,53 @@ function M.add_log_fields(section)
     logLines.datatype = "uinteger"
     logLines.rmempty = false
 
-    -- Clear Log Button
-    local clearlog = section:taboption("log", Button, "_clearlog", translate("Clear Logs"))
-    clearlog.inputtitle = translate("Clear Logs")
-    clearlog.inputstyle = "reset"
-    function clearlog.write(self, section)
+    -- Button Container (DummyValue to hold all buttons)
+    local button_container = section:taboption("log", DummyValue, "_button_container", translate("Log Actions"))
+    button_container.rawhtml = true
+
+    function button_container.cfgvalue(self, section)
+        return ""
     end
 
-    function clearlog.render(self, section, scope)
-        Button.render(self, section, scope)
+    function button_container.render(self, section, scope)
         luci.http.write([[
+            <div class="cbi-value" id="cbi-ua3f-main-_button_container">
+                <label class="cbi-value-title">]] .. translate("Log Management") .. [[</label>
+                <div class="cbi-value-field" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="button" class="btn cbi-button cbi-button-reset"
+                           value="]] .. translate("Clear Logs") .. [[" id="ua3f-clearlog-btn"/>
+                    <input type="button" class="btn cbi-button cbi-button-apply"
+                           value="]] .. translate("Download Logs") .. [[" id="ua3f-download-btn"/>
+                    <input type="button" class="btn cbi-button cbi-button-save"
+                           value="]] .. translate("Issue Report") .. [[" id="ua3f-issue-btn"/>
+                </div>
+            </div>
             <script>
-            document.querySelector("input[name='cbid.ua3f.main._clearlog']").addEventListener("click", function(e) {
-                e.preventDefault();
-                fetch(']] .. luci.dispatcher.build_url("admin/services/ua3f/clear_log") .. [[', {method: 'POST'})
-                .then(resp => {
-                    if (resp.ok) {
-                        var textarea = document.getElementById('cbid.ua3f.main.log');
-                        if (textarea) textarea.value = "";
-                    }
+            (function() {
+                // Clear Log Button
+                document.getElementById('ua3f-clearlog-btn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    fetch(']] .. luci.dispatcher.build_url("admin/services/ua3f/clear_log") .. [[', {method: 'POST'})
+                    .then(resp => {
+                        if (resp.ok) {
+                            var textarea = document.getElementById('cbid.ua3f.main.log');
+                            if (textarea) textarea.value = "";
+                        }
+                    });
                 });
-            });
-            </script>
-        ]])
-    end
 
-    -- Download Log Button
-    local download = section:taboption("log", Button, "_download", translate("Download Logs"))
-    download.inputtitle = translate("Download Logs")
-    download.inputstyle = "apply"
-    function download.write(self, section)
-        luci.http.redirect(luci.dispatcher.build_url("admin/services/ua3f/download_log"))
-    end
+                // Download Log Button
+                document.getElementById('ua3f-download-btn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = ']] .. luci.dispatcher.build_url("admin/services/ua3f/download_log") .. [[';
+                });
 
-    -- Issue Report Button
-    local issue = section:taboption("log", Button, "_issue", translate("Issue Report"))
-    issue.inputtitle = translate("Issue Report")
-    issue.inputstyle = "save"
-    function issue.write(self, section)
-    end
-
-    function issue.render(self, section, scope)
-        Button.render(self, section, scope)
-        luci.http.write([[
-            <script>
-            document.querySelector("input[name='cbid.ua3f.main._issue']").addEventListener("click", function(e) {
-                e.preventDefault();
-                window.open('https://github.com/SunBK201/UA3F/issues/new?template=bug-report.md', '_blank');
-            });
+                // Issue Report Button
+                document.getElementById('ua3f-issue-btn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.open('https://github.com/SunBK201/UA3F/issues/new?template=bug-report.md', '_blank');
+                });
+            })();
             </script>
         ]])
     end
