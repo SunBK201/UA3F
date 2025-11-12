@@ -20,6 +20,7 @@ const (
 	SKIP_PORTS   = "22,51080,51090"
 	FAKEIP_RANGE = "198.18.0.0/16,198.18.0.1/15,28.0.0.1/8"
 	HELPER_QUEUE = 10301
+	SO_MARK      = 0xc9
 )
 
 var LAN_CIDRS = []string{
@@ -34,24 +35,50 @@ var LAN_CIDRS = []string{
 	"240.0.0.0/4",
 }
 
-var RuleIgnoreReply = []string{
-	"-m", "conntrack",
-	"--ctdir", "REPLY",
-	"-j", "RETURN",
-}
-
-var RuleIgnoreLAN = []string{
-	"-m", "set",
-	"--match-set", LANSET, "dst",
-	"-j", "RETURN",
-}
-
-var RuleIgnorePorts = []string{
-	"-p", "tcp",
-	"-m", "multiport",
-	"--dports", SKIP_PORTS,
-	"-j", "RETURN",
-}
+var (
+	IptRuleIgnoreBrLAN = []string{
+		"!", "-i", "br-lan",
+		"-j", "RETURN",
+	}
+	IptRuleIgnoreReply = []string{
+		"-m", "conntrack",
+		"--ctdir", "REPLY",
+		"-j", "RETURN",
+	}
+	IptRuleIgnoreLAN = []string{
+		"-m", "set",
+		"--match-set", LANSET, "dst",
+		"-j", "RETURN",
+	}
+	IptRuleIgnorePorts = []string{
+		"-p", "tcp",
+		"-m", "multiport",
+		"--dports", SKIP_PORTS,
+		"-j", "RETURN",
+	}
+)
+var (
+	NftRuleIgnoreNotTCP = knftables.Concat(
+		"meta l4proto != tcp",
+		"return",
+	)
+	NftRuleIgnoreBrLAN = knftables.Concat(
+		"iifname != \"br-lan\"",
+		"return",
+	)
+	NftRuleIgnoreReply = knftables.Concat(
+		"ct direction reply",
+		"return",
+	)
+	NftRuleIgnoreLAN = knftables.Concat(
+		fmt.Sprintf("ip daddr @%s", LANSET),
+		"return",
+	)
+	NftRuleIgnorePorts = knftables.Concat(
+		fmt.Sprintf("tcp dport { %s }", SKIP_PORTS),
+		"return",
+	)
+)
 
 type Firewall struct {
 	NftSetup   func() error
@@ -136,11 +163,9 @@ func (f *Firewall) IptDeleteLanIP() error {
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
-	// Check if opkg is available (OpenWrt environment)
 	if isCommandAvailable("opkg") {
 		switch cfg.ServerMode {
 		case config.ServerModeTProxy:
-			// Check if kmod-nft-tproxy is installed
 			if isOpkgPackageInstalled("kmod-nft-tproxy") && isCommandAvailable("nft") {
 				logrus.Info("Detected nftables backend (kmod-nft-tproxy installed)")
 				return NFT
@@ -148,7 +173,6 @@ func detectFirewallBackend(cfg *config.Config) string {
 			logrus.Info("Detected iptables backend (kmod-nft-tproxy not installed)")
 			return IPT
 		case config.ServerModeNFQueue:
-			// Check if kmod-nft-queue is installed
 			if isOpkgPackageInstalled("kmod-nft-queue") && isCommandAvailable("nft") {
 				logrus.Info("Detected nftables backend (kmod-nft-queue installed)")
 				return NFT
@@ -158,30 +182,25 @@ func detectFirewallBackend(cfg *config.Config) string {
 		}
 	}
 
-	// Check if nft command is available
 	if isCommandAvailable("nft") {
 		logrus.Info("Detected nftables backend (nft command available)")
 		return NFT
 	}
 
-	// Check if iptables command is available
 	if isCommandAvailable("iptables") {
 		logrus.Info("Detected iptables backend (iptables command available)")
 		return IPT
 	}
 
-	// No backend detected
 	logrus.Warn("No firewall backend detected")
 	return ""
 }
 
-// isCommandAvailable checks if a command is available in the system
 func isCommandAvailable(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
 }
 
-// isOpkgPackageInstalled checks if a package is installed via opkg
 func isOpkgPackageInstalled(pkg string) bool {
 	cmd := exec.Command("opkg", "list-installed", pkg)
 	output, err := cmd.Output()

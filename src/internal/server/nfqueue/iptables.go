@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	table = "mangle"
-	chain = "UA3F"
+	table     = "mangle"
+	chain     = "UA3F"
+	jumpPoint = "POSTROUTING"
 )
 
 var JumpChain = []string{
@@ -35,7 +36,7 @@ func (s *Server) iptSetup() error {
 		return err
 	}
 
-	err = ipt.Append(table, "POSTROUTING", JumpChain...)
+	err = ipt.Append(table, jumpPoint, JumpChain...)
 	if err != nil {
 		return err
 	}
@@ -52,22 +53,22 @@ func (s *Server) iptCleanup() error {
 	if err != nil {
 		return err
 	}
-	ipt.Delete(table, "POSTROUTING", JumpChain...)
+	ipt.Delete(table, jumpPoint, JumpChain...)
 	ipt.ClearAndDeleteChain(table, chain)
 	s.IptDeleteLanIP()
 	return nil
 }
 
 func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, netfilter.RuleIgnoreReply...)
+	err := ipt.Append(table, chain, netfilter.IptRuleIgnoreReply...)
 	if err != nil {
 		return err
 	}
-	err = ipt.Append(table, chain, netfilter.RuleIgnoreLAN...)
+	err = ipt.Append(table, chain, netfilter.IptRuleIgnoreLAN...)
 	if err != nil {
 		return err
 	}
-	err = ipt.Append(table, chain, netfilter.RuleIgnorePorts...)
+	err = ipt.Append(table, chain, netfilter.IptRuleIgnorePorts...)
 	if err != nil {
 		return err
 	}
