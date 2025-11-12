@@ -236,37 +236,39 @@ func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
-	if isCommandAvailable("opkg") {
-		switch cfg.ServerMode {
-		case config.ServerModeTProxy:
-			if isOpkgPackageInstalled("kmod-nft-tproxy") && isCommandAvailable("nft") {
-				logrus.Info("Detected nftables backend (kmod-nft-tproxy installed)")
-				return NFT
-			}
-			logrus.Info("Detected iptables backend (kmod-nft-tproxy not installed)")
-			return IPT
-		case config.ServerModeNFQueue:
-			if isOpkgPackageInstalled("kmod-nft-queue") && isCommandAvailable("nft") {
-				logrus.Info("Detected nftables backend (kmod-nft-queue installed)")
-				return NFT
-			}
-			logrus.Info("Detected iptables backend (kmod-nft-queue not installed)")
-			return IPT
+	nftAvailable := isCommandAvailable("nft")
+	iptAvailable := isCommandAvailable("iptables")
+	nftTproxyAvailable := isOpkgPackageInstalled("kmod-nft-tproxy") && nftAvailable
+	nftNfqueueAvailable := isOpkgPackageInstalled("kmod-nft-queue") && nftAvailable
+	tproxyNeeded := cfg.ServerMode == config.ServerModeTProxy
+	nfqueueNeeded := cfg.DelTCPTimestamp || cfg.SetIPID || cfg.ServerMode == config.ServerModeNFQueue
+
+	selectNFT := func() bool {
+		if !nftAvailable {
+			return false
 		}
+		if nfqueueNeeded && !nftNfqueueAvailable {
+			return false
+		}
+		if tproxyNeeded && !nftTproxyAvailable {
+			return false
+		}
+		return true
 	}
 
-	if isCommandAvailable("nft") {
-		logrus.Info("Detected nftables backend (nft command available)")
+	selectIPT := func() bool {
+		return iptAvailable
+	}
+
+	switch {
+	case selectNFT():
 		return NFT
-	}
-
-	if isCommandAvailable("iptables") {
-		logrus.Info("Detected iptables backend (iptables command available)")
+	case selectIPT():
 		return IPT
+	default:
+		logrus.Warn("No firewall backend detected")
+		return ""
 	}
-
-	logrus.Warn("No firewall backend detected")
-	return ""
 }
 
 func isCommandAvailable(cmd string) bool {
