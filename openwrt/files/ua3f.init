@@ -7,29 +7,8 @@ START=99
 
 NAME="ua3f"
 PROG="/usr/bin/$NAME"
-
 SERVER_MODE=""
-SERVER_PORT="1080"
-
-FW_BACKEND=""
-NFT_TABLE="UA3F"
-UA3F_TTL_TABLE="UA3F_TTL"
-UA3F_CHAIN="UA3F"
-UA3F_OUT_CHAIN="UA3F_OUTPUT"
-UA3F_LANSET="ua3f_localnetwork"
-UA3F_SOMARK="0xc9"
-UA3F_FWMARK="0x1c9"
-ROUTE_TABLE="0x1c9"
-UA3F_GID="65534"
 UA3F_GROUP="nogroup"
-SKIP_GIDS=""
-SIDECAR="OC"
-FAKEIP_RANGE="198.18.0.0/16, 198.18.0.1/15, 28.0.0.1/8"
-SKIP_PORTS="22,51080,51090"
-SET_TTL="0"
-
-server_mode="SOCKS5"
-
 LOG_FILE="/var/log/ua3f/ua3f.log"
 
 LOG() {
@@ -38,10 +17,6 @@ LOG() {
     fi
 }
 
-try_modprobe() { command -v modprobe >/dev/null 2>&1 && modprobe "$1" 2>/dev/null; }
-
-nft_available() { command -v nft >/dev/null 2>&1; }
-ipt_available() { command -v iptables >/dev/null 2>&1; }
 opkg_available() { command -v opkg >/dev/null 2>&1; }
 
 openclash_exists() {
@@ -78,419 +53,24 @@ shellclash_running() {
 }
 
 set_ua3f_group() {
-    if [ $server_mode = "REDIRECT" ]; then
-        UA3F_GID="0"
+    if [ "$SERVER_MODE" = "REDIRECT" ]; then
         UA3F_GROUP="root"
         return
-    elif [ $server_mode = "NFQUEUE" ]; then
-        UA3F_GID="0"
+    elif [ "$SERVER_MODE" = "NFQUEUE" ]; then
         UA3F_GROUP="root"
         return
     fi
-    add_skip_gids "453"
     if openclash_running; then
-        UA3F_GID="65534"
         UA3F_GROUP="nogroup"
-        SIDECAR="OCSC"
-        add_skip_gids "7890"
     elif shellclash_running; then
-        UA3F_GID="7890"
         UA3F_GROUP="shellcrash"
-        add_skip_gids "65534"
-        SIDECAR="SC"
     elif openclash_exists; then
-        UA3F_GID="65534"
         UA3F_GROUP="nogroup"
-        add_skip_gids "7890"
-        SIDECAR="OC"
     elif shellclash_exists; then
-        UA3F_GID="7890"
         UA3F_GROUP="shellcrash"
-        add_skip_gids "65534"
-        SIDECAR="SC"
     else
-        UA3F_GID="65534"
         UA3F_GROUP="nogroup"
-        add_skip_gids "7890"
-        SIDECAR="OC"
     fi
-}
-
-add_skip_gids() {
-    for gid in "$@"; do
-        [ -z "$gid" ] && continue
-        case ",$SKIP_GIDS," in
-        *,"$gid",*) ;;
-        *)
-            if [ -z "$SKIP_GIDS" ]; then
-                SKIP_GIDS=$gid
-            else
-                SKIP_GIDS=$SKIP_GIDS,$gid
-            fi
-            ;;
-        esac
-    done
-}
-
-detect_backend() {
-    if opkg_available; then
-        if [ "$SERVER_MODE" = "TPROXY" ]; then
-            if opkg list-installed kmod-nft-tproxy | grep -q 'kmod-nft-tproxy'; then
-                if nft_available; then
-                    FW_BACKEND="nft"
-                    return 0
-                fi
-            else
-                FW_BACKEND="ipt"
-                return 0
-            fi
-        elif [ "$SERVER_MODE" = "NFQUEUE" ]; then
-            if opkg list-installed kmod-nft-queue | grep -q 'kmod-nft-queue'; then
-                if nft_available; then
-                    FW_BACKEND="nft"
-                    return 0
-                fi
-            else
-                FW_BACKEND="ipt"
-                return 0
-            fi
-        fi
-    fi
-    if nft_available; then
-        FW_BACKEND="nft"
-        return 0
-    fi
-    if ipt_available; then
-        FW_BACKEND="ipt"
-        return 0
-    fi
-    FW_BACKEND=""
-    return 1
-}
-
-add_tproxy_route() {
-    sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1
-    sysctl -w net.bridge.bridge-nf-call-ip6tables=0 >/dev/null 2>&1
-
-    if ! output=$(ip rule add fwmark "$UA3F_FWMARK" table "$ROUTE_TABLE" 2>&1); then
-        LOG "Failed to add ip rule fwmark: $output"
-        return 1
-    fi
-
-    if ! output=$(ip route add local 0.0.0.0/0 dev lo table "$ROUTE_TABLE" 2>&1); then
-        LOG "Failed to add ip route local lo: $output"
-        return 1
-    fi
-}
-
-cleanup_tproxy_route() {
-    ip route flush table "$ROUTE_TABLE" >/dev/null 2>&1
-    ip rule del fwmark "$UA3F_FWMARK" table "$ROUTE_TABLE" >/dev/null 2>&1
-    ip rule del fwmark 0x1c9 table "$ROUTE_TABLE" >/dev/null 2>&1
-}
-
-nft_drop_table() {
-    nft delete table ip "$NFT_TABLE" 2>/dev/null
-    nft delete table inet "$UA3F_TTL_TABLE" 2>/dev/null
-    nft delete table inet "$NFT_TABLE" 2>/dev/null
-    # nft delete chain inet fw4 "$NFT_TABLE" 2>/dev/null
-}
-
-nft_reinit_table() {
-    nft_drop_table
-    nft add table ip "$NFT_TABLE" || return 1
-
-    nft "add set ip $NFT_TABLE $UA3F_LANSET { type ipv4_addr; flags interval; auto-merge; }" || return 1
-    nft "add element ip $NFT_TABLE $UA3F_LANSET { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 }" >/dev/null 2>&1
-}
-
-fw_setup_nft_tproxy_tcp() {
-    nft_reinit_table || {
-        LOG "Failed to reinitialize nft table"
-        return 1
-    }
-    add_tproxy_route || {
-        LOG "Failed to add tproxy route"
-        return 1
-    }
-
-    if [ "$SIDECAR" = "SC" ]; then
-        nft add chain ip $NFT_TABLE sidecar '{ type filter hook prerouting priority mangle - 20; }'
-        nft add rule ip $NFT_TABLE sidecar meta l4proto tcp mark $UA3F_FWMARK mark set 7894 tproxy to 127.0.0.1:$SERVER_PORT counter accept comment '"cap sc"'
-    fi
-
-    # PREROUTING -> UA3F
-    nft add chain ip $NFT_TABLE prerouting '{ type filter hook prerouting priority filter + 20; }'
-    nft add rule ip $NFT_TABLE prerouting meta l4proto != tcp counter return
-    nft add rule ip $NFT_TABLE prerouting ct direction reply counter return
-    nft add rule ip $NFT_TABLE prerouting mark {$UA3F_SOMARK} counter return comment '"UA3F somark, never hit"'
-    nft add rule ip $NFT_TABLE prerouting mark {0x162} counter return comment '"354"'
-    nft add rule ip $NFT_TABLE prerouting mark {0x1ed4} counter return comment '"sc tproxy mark 7892"'
-    nft add rule ip $NFT_TABLE prerouting ip daddr {$FAKEIP_RANGE} counter return comment '"fakeip range"'
-    nft add rule ip $NFT_TABLE prerouting ip daddr @$UA3F_LANSET counter return
-    nft add rule ip $NFT_TABLE prerouting tcp dport {$SKIP_PORTS} return
-    nft add rule ip $NFT_TABLE prerouting meta l4proto tcp mark $UA3F_FWMARK tproxy to 127.0.0.1:$SERVER_PORT counter accept comment '"cap oc"'
-    nft add rule ip $NFT_TABLE prerouting meta l4proto tcp mark set $UA3F_FWMARK tproxy to 127.0.0.1:$SERVER_PORT counter accept comment '"default less hit. sc"'
-
-    # OUTPUT -> UA3F_OUTPUT
-    nft add chain ip $NFT_TABLE output '{ type route hook output priority filter + 20; }'
-    nft add rule ip $NFT_TABLE output meta l4proto != tcp counter return
-    nft add rule ip $NFT_TABLE output mark $UA3F_SOMARK counter return comment '"UA3F somark"'
-    nft add rule ip $NFT_TABLE output ip daddr {$FAKEIP_RANGE} counter return
-    nft add rule ip $NFT_TABLE output meta skgid {$SKIP_GIDS} counter return
-    nft add rule ip $NFT_TABLE output ip daddr @$UA3F_LANSET counter return
-    nft add rule ip $NFT_TABLE output tcp dport {$SKIP_PORTS} return
-    nft add rule ip $NFT_TABLE output meta l4proto tcp meta skgid $UA3F_GID mark set $UA3F_FWMARK counter accept comment '"ghost oc"'
-    nft add rule ip $NFT_TABLE output meta l4proto tcp mark set $UA3F_FWMARK counter accept comment '"default tproxy mark. bypass sc pre pollution"'
-}
-
-nft_reinit_table_redirect() {
-    nft_drop_table
-    nft add chain inet fw4 $NFT_TABLE '{ type nat hook prerouting priority dstnat - 1; }' || return 1
-
-    nft "add set inet fw4 $UA3F_LANSET { type ipv4_addr; flags interval; auto-merge; }" || return 1
-    nft "add element inet fw4 $UA3F_LANSET { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 }" || return 1
-}
-
-fw_setup_nft_redirect_tcp() {
-    nft_reinit_table || return 1
-
-    # PREROUTING -> UA3F
-    nft add chain ip $NFT_TABLE prerouting '{ type nat hook prerouting priority dstnat - 20; }'
-    nft add rule ip $NFT_TABLE prerouting iifname != "br-lan" counter return
-    nft add rule ip $NFT_TABLE prerouting meta l4proto != tcp counter return
-    nft add rule ip $NFT_TABLE prerouting ct direction reply counter return
-    nft add rule ip $NFT_TABLE prerouting mark {$UA3F_SOMARK} counter return
-    nft add rule ip $NFT_TABLE prerouting tcp dport {$SKIP_PORTS} return
-    nft add rule ip $NFT_TABLE prerouting ip daddr @$UA3F_LANSET counter return
-    nft add rule ip $NFT_TABLE prerouting tcp dport != {22} counter redirect to :$SERVER_PORT
-
-    # PREROUTING -> UA3F
-    # nft add chain ip $NFT_TABLE prerouting '{ type nat hook prerouting priority filter + 20; }'
-    # nft add rule ip $NFT_TABLE prerouting meta l4proto != tcp counter return
-    # nft add rule ip $NFT_TABLE prerouting ct direction reply counter return
-    # nft add rule ip $NFT_TABLE prerouting mark {$UA3F_SOMARK} counter return comment '"UA3F somark, never hit"'
-    # nft add rule ip $NFT_TABLE prerouting mark {0x162} counter return comment '"354"'
-    # nft add rule ip $NFT_TABLE prerouting mark {0x1ed4} counter return comment '"sc tproxy mark 7892"'
-    # nft add rule ip $NFT_TABLE prerouting ip daddr {$FAKEIP_RANGE} counter return comment '"fakeip range"'
-    # nft add rule ip $NFT_TABLE prerouting tcp dport {$SKIP_PORTS} return
-    # nft add rule ip $NFT_TABLE prerouting ip daddr @$UA3F_LANSET counter return
-    # nft add rule ip $NFT_TABLE prerouting tcp dport != {22} counter redirect to :$SERVER_PORT
-
-    # OUTPUT -> UA3F_OUTPUT
-    # nft add chain ip $NFT_TABLE output '{ type nat hook output priority filter + 20; }'
-    # nft add rule ip $NFT_TABLE output meta l4proto != tcp counter return
-    # nft add rule ip $NFT_TABLE output mark $UA3F_SOMARK counter return comment '"UA3F somark"'
-    # nft add rule ip $NFT_TABLE output ip daddr {$FAKEIP_RANGE} counter return
-    # nft add rule ip $NFT_TABLE output ip daddr @$UA3F_LANSET counter return
-    # nft add rule ip $NFT_TABLE output meta skgid {$SKIP_GIDS} counter return
-    # nft add rule ip $NFT_TABLE output tcp dport {$SKIP_PORTS} return
-    # nft add rule ip $NFT_TABLE output meta l4proto tcp mark {0x1ed6} counter redirect to :$SERVER_PORT comment '"cap sc meta"'
-    # nft add rule ip $NFT_TABLE output meta skgid $UA3F_GID tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap oc"'
-    # nft add rule ip $NFT_TABLE output tcp dport != {22} counter redirect to :$SERVER_PORT comment '"cap scc"'
-}
-
-setup_ipset_ipt() {
-    cleanup_ipset_ipt
-    ipset create $UA3F_LANSET hash:net || return 1
-    ipset add $UA3F_LANSET 0.0.0.0/8
-    ipset add $UA3F_LANSET 10.0.0.0/8
-    ipset add $UA3F_LANSET 100.64.0.0/10
-    ipset add $UA3F_LANSET 127.0.0.0/8
-    ipset add $UA3F_LANSET 169.254.0.0/16
-    ipset add $UA3F_LANSET 172.16.0.0/12
-    ipset add $UA3F_LANSET 192.168.0.0/16
-    ipset add $UA3F_LANSET 224.0.0.0/4
-    ipset add $UA3F_LANSET 240.0.0.0/4
-}
-
-fw_setup_ipt_tproxy_tcp() {
-    setup_ipset_ipt || return 1
-    add_tproxy_route || return 1
-
-    if [ "$SIDECAR" = "SC" ]; then
-        iptables -t mangle -F SIDECAR 2>/dev/null
-        iptables -t mangle -D PREROUTING -p tcp -j SIDECAR 2>/dev/null
-        iptables -t mangle -X SIDECAR 2>/dev/null
-        iptables -t mangle -N SIDECAR
-        iptables -t mangle -I PREROUTING -p tcp -j SIDECAR
-        iptables -t mangle -A SIDECAR -m mark --mark $UA3F_FWMARK -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port $SERVER_PORT --tproxy-mark 7894
-    fi
-
-    # PREROUTING
-    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -D PREROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -N $UA3F_CHAIN
-    iptables -t mangle -A PREROUTING -p tcp -j $UA3F_CHAIN
-    iptables -t mangle -A $UA3F_CHAIN -m conntrack --ctdir REPLY -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m mark --mark $UA3F_SOMARK -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m mark --mark 0x162 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m mark --mark 0x1ed4 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -d 198.18.0.0/16 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -d 28.0.0.1/8 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -d 198.18.0.1/15 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -p tcp -m mark --mark $UA3F_FWMARK -j TPROXY --on-ip 127.0.0.1 --on-port $SERVER_PORT
-    iptables -t mangle -A $UA3F_CHAIN -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port $SERVER_PORT --tproxy-mark $UA3F_FWMARK
-
-    # OUTPUT
-    iptables -t mangle -F $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t mangle -D OUTPUT -p tcp -j $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t mangle -N $UA3F_OUT_CHAIN
-    iptables -t mangle -I OUTPUT -p tcp -j $UA3F_OUT_CHAIN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -m mark --mark $UA3F_SOMARK -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -d 198.18.0.0/16 -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -d 28.0.0.1/8 -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -d 198.18.0.1/15 -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m owner --gid-owner 453 -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -m owner --gid-owner $UA3F_GID -j MARK --set-mark $UA3F_FWMARK
-    iptables -t mangle -A $UA3F_OUT_CHAIN -p tcp -j MARK --set-mark $UA3F_FWMARK
-}
-
-fw_setup_ipt_redirect_tcp() {
-    setup_ipset_ipt || return 1
-
-    # PREROUTING
-    iptables -t nat -F $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -D PREROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -X $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -N $UA3F_CHAIN
-    iptables -t nat -I PREROUTING -p tcp -j $UA3F_CHAIN
-    iptables -t nat -A $UA3F_CHAIN ! -i "br-lan" -j RETURN
-    iptables -t nat -A $UA3F_CHAIN -m conntrack --ctdir REPLY -j RETURN
-    iptables -t nat -A $UA3F_CHAIN -m mark --mark $UA3F_SOMARK -j RETURN
-    iptables -t nat -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    iptables -t nat -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    iptables -t nat -A $UA3F_CHAIN -p tcp -j REDIRECT --to-ports $SERVER_PORT
-
-    # PREROUTING
-    # iptables -t nat -F $UA3F_CHAIN 2>/dev/null
-    # iptables -t nat -D PREROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    # iptables -t nat -X $UA3F_CHAIN 2>/dev/null
-    # iptables -t nat -N $UA3F_CHAIN
-    # iptables -t nat -A PREROUTING -p tcp -j $UA3F_CHAIN
-    # iptables -t nat -A $UA3F_CHAIN -m conntrack --ctdir REPLY -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -m mark --mark $UA3F_SOMARK -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -m mark --mark 0x162 -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -m mark --mark 0x1ed4 -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -d 198.18.0.0/16 -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -d 28.0.0.1/8 -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -d 198.18.0.1/15 -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    # iptables -t nat -A $UA3F_CHAIN -p tcp -j REDIRECT --to-ports $SERVER_PORT
-
-    # OUTPUT
-    # iptables -t nat -F $UA3F_OUT_CHAIN 2>/dev/null
-    # iptables -t nat -D OUTPUT -p tcp -j $UA3F_OUT_CHAIN 2>/dev/null
-    # iptables -t nat -X $UA3F_OUT_CHAIN 2>/dev/null
-    # iptables -t nat -N $UA3F_OUT_CHAIN
-    # iptables -t nat -I OUTPUT -p tcp -j $UA3F_OUT_CHAIN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -m mark --mark $UA3F_SOMARK -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -d 198.18.0.0/16 -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -d 28.0.0.1/8 -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -d 198.18.0.1/15 -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -m owner --gid-owner 453 -j RETURN
-    # iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -m mark --mark 0x1ed6 -j REDIRECT --to-ports $SERVER_PORT
-    # iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -m owner --gid-owner $UA3F_GID -j REDIRECT --to-ports $SERVER_PORT
-    # iptables -t nat -A $UA3F_OUT_CHAIN -p tcp -j REDIRECT --to-ports $SERVER_PORT
-}
-
-cleanup_ipset_ipt() {
-    ipset destroy $UA3F_LANSET 2>/dev/null
-}
-
-fw_setup_nft_nfqueue() {
-    nft_reinit_table || {
-        LOG "Failed to reinitialize nft table"
-        return 1
-    }
-
-    nft add chain ip $NFT_TABLE postrouting '{ type filter hook postrouting priority mangle - 20; }'
-    nft add rule ip $NFT_TABLE postrouting meta l4proto != tcp counter return
-    nft add rule ip $NFT_TABLE postrouting ct direction reply counter return
-    nft add rule ip $NFT_TABLE postrouting ip daddr @$UA3F_LANSET counter return
-    nft add rule ip $NFT_TABLE postrouting tcp dport {$SKIP_PORTS} return
-    nft add rule ip $NFT_TABLE postrouting ct mark 201 counter return
-    nft add rule ip $NFT_TABLE postrouting ct direction original ct state established ip length \> 40 counter queue num 10201 bypass
-}
-
-fw_setup_ipt_nfqueue() {
-    setup_ipset_ipt || return 1
-
-    # POSTROUTING
-    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -D POSTROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -N $UA3F_CHAIN
-    iptables -t mangle -A POSTROUTING -p tcp -j $UA3F_CHAIN
-    iptables -t mangle -A $UA3F_CHAIN -m conntrack --ctdir REPLY -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m set --match-set $UA3F_LANSET dst -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -p tcp -m multiport --dports $SKIP_PORTS -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m connmark --mark 201 -j RETURN
-    iptables -t mangle -A $UA3F_CHAIN -m conntrack --ctdir ORIGINAL --ctstate ESTABLISHED -m length --length 41:0xffff -j NFQUEUE --queue-num 10201 --queue-bypass
-}
-
-set_ttl_nft() {
-    nft drop table inet $UA3F_TTL_TABLE 2>/dev/null
-    nft add table inet $UA3F_TTL_TABLE || return 1
-    nft add chain inet $UA3F_TTL_TABLE postrouting '{ type filter hook postrouting priority -150; policy accept; }' || return 1
-    nft add rule inet $UA3F_TTL_TABLE postrouting ip ttl set 64 || return 1
-}
-
-unset_ttl_nft() {
-    nft delete table inet $UA3F_TTL_TABLE 2>/dev/null
-}
-
-set_ttl_ipt() {
-    iptables -t mangle -A POSTROUTING -j TTL --ttl-set 64 || return 1
-}
-
-unset_ttl_ipt() {
-    iptables -t mangle -D POSTROUTING -j TTL --ttl-set 64 2>/dev/null
-}
-
-fw_revert_nft() {
-    nft_drop_table
-    cleanup_tproxy_route
-    unset_ttl_nft
-}
-
-fw_revert_ipt() {
-    # sidecar
-    iptables -t mangle -F SIDECAR 2>/dev/null
-    iptables -t mangle -D PREROUTING -p tcp -j SIDECAR 2>/dev/null
-    iptables -t mangle -X SIDECAR 2>/dev/null
-    # mangle
-    iptables -t mangle -D PREROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -D OUTPUT -p tcp -j $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t mangle -F $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_OUT_CHAIN 2>/dev/null
-    # nat
-    iptables -t nat -D PREROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -F $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -X $UA3F_CHAIN 2>/dev/null
-    iptables -t nat -D OUTPUT -p tcp -j $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t nat -F $UA3F_OUT_CHAIN 2>/dev/null
-    iptables -t nat -X $UA3F_OUT_CHAIN 2>/dev/null
-    # NFQUEUE
-    iptables -t mangle -D POSTROUTING -p tcp -j $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -F $UA3F_CHAIN 2>/dev/null
-    iptables -t mangle -X $UA3F_CHAIN 2>/dev/null
-    # ipset
-    cleanup_ipset_ipt
-    cleanup_tproxy_route
-    # ttl
-    unset_ttl_ipt
 }
 
 start_service() {
@@ -508,10 +88,10 @@ start_service() {
 
     LOG "Starting $NAME service..."
 
-    local port bind ua log_level ua_regex partial_replace set_ttl
+    local port bind ua log_level ua_regex partial_replace
     local rewrite_mode rewrite_rules
     local set_ttl set_ipid del_tcpts
-    config_get server_mode "main" "server_mode" "SOCKS5"
+    config_get SERVER_MODE "main" "server_mode" "TPROXY"
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
     config_get ua "main" "ua" "FFF"
@@ -530,8 +110,7 @@ start_service() {
     [ "$del_tcpts" -eq "1" ] && others="${others}tcpts,"
     [ "$set_ttl" -eq "1" ] && others="${others}ttl,"
 
-    SERVER_MODE="$(echo "$server_mode" | tr '[:lower:]' '[:upper:]')"
-    SERVER_MODE="$server_mode"
+    SERVER_MODE="$(echo "$SERVER_MODE" | tr '[:lower:]' '[:upper:]')"
 
     LOG "Server Mode: $SERVER_MODE"
     LOG "Port: $port"
@@ -542,85 +121,11 @@ start_service() {
     LOG "Partial Replace: $partial_replace"
 
     set_ua3f_group
-    LOG "Run as GID: $UA3F_GID, Group: $UA3F_GROUP"
-    LOG "Skip GIDs: $SKIP_GIDS"
-    LOG "UA3F_FWMARK: $UA3F_FWMARK"
-
-    detect_backend || {
-        LOG "No supported firewall backend found (nftables or iptables)"
-        return 1
-    }
-    LOG "Using firewall backend: $FW_BACKEND"
-
-    # Always cleanup first (idempotent)
-    if [ "$FW_BACKEND" = "nft" ]; then
-        fw_revert_nft
-    else
-        fw_revert_ipt
-    fi
-
-    # dump all fw rules for debug
-    if [ "$log_level" = "debug" ]; then
-        if [ "$FW_BACKEND" = "nft" ]; then
-            LOG "nftables before rules:"
-            nft --handle list ruleset >>"$LOG_FILE" 2>&1
-        elif [ "$FW_BACKEND" = "ipt" ]; then
-            LOG "iptables before rules:"
-            LOG "mangle table:"
-            iptables -t mangle -L -v -n >>"$LOG_FILE" 2>&1
-            LOG "nat table:"
-            iptables -t nat -L -v -n >>"$LOG_FILE" 2>&1
-            LOG "filter table:"
-            iptables -t filter -L -v -n >>"$LOG_FILE" 2>&1
-        fi
-    fi
-
-    case "$SERVER_MODE" in
-    HTTP)
-        # No firewall interception
-        ;;
-    SOCKS5)
-        # No firewall interception
-        ;;
-    TPROXY)
-        # No firewall interception
-        ;;
-    REDIRECT)
-        # No firewall interception
-        ;;
-    NFQUEUE)
-        # No firewall interception
-        ;;
-    *)
-        LOG "Unsupported server_mode: $SERVER_MODE"
-        return 1
-        ;;
-    esac
-
-    # dump all fw rules for debug
-    if [ "$log_level" = "debug" ]; then
-        if [ "$FW_BACKEND" = "nft" ]; then
-            LOG "nftables rules:"
-            nft --handle list ruleset >>"$LOG_FILE" 2>&1
-        elif [ "$FW_BACKEND" = "ipt" ]; then
-            LOG "iptables rules:"
-            LOG "mangle table:"
-            iptables -t mangle -L -v -n >>"$LOG_FILE" 2>&1
-            LOG "nat table:"
-            iptables -t nat -L -v -n >>"$LOG_FILE" 2>&1
-            LOG "filter table:"
-            iptables -t filter -L -v -n >>"$LOG_FILE" 2>&1
-        fi
-    fi
-    # dump route rules for debug
-    if [ "$log_level" = "debug" ]; then
-        LOG "ip rule list:"
-        ip rule show >>"$LOG_FILE" 2>&1
-    fi
+    LOG "Group: $UA3F_GROUP"
 
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
-    procd_append_param command -m "$server_mode"
+    procd_append_param command -m "$SERVER_MODE"
     procd_append_param command -p "$port"
     procd_append_param command -b "$bind"
     procd_append_param command -f "$ua"
@@ -628,8 +133,8 @@ start_service() {
     procd_append_param command -l "$log_level"
     procd_append_param command -x "$rewrite_mode"
     procd_append_param command -z "$rewrite_rules"
-    [ "$partial_replace" = "1" ] && procd_append_param command -s
     procd_append_param command -o "$others"
+    [ "$partial_replace" = "1" ] && procd_append_param command -s
 
     procd_set_param respawn
     procd_set_param stdout 1
@@ -643,13 +148,10 @@ start_service() {
 
 stop_service() {
     LOG "Stopping $NAME service..."
-    fw_revert_ipt >/dev/null 2>&1
-    fw_revert_nft >/dev/null 2>&1
     LOG "$NAME service stopped"
 }
 
 reload_service() {
-    set_ua3f_group
     stop
     start
 }
