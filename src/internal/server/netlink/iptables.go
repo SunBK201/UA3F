@@ -33,6 +33,13 @@ var RuleIP = []string{
 	"--queue-bypass",
 }
 
+var RuleRstTimestamp = []string{
+	"-p", "tcp",
+	"--tcp-option", "8",
+	"-j", "TCPOPTSTRIP",
+	"--strip-options", "timestamp",
+}
+
 func (s *Server) iptSetup() error {
 	ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
@@ -79,7 +86,12 @@ func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
 }
 
 func (s *Server) IptDelTCPTS(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleDelTCPTS...)
+	err := ipt.Append(table, chain, RuleRstTimestamp...)
+	if err == nil {
+		return nil
+	}
+
+	err = ipt.Append(table, chain, RuleDelTCPTS...)
 	if err != nil {
 		return err
 	}
