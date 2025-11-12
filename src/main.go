@@ -68,6 +68,7 @@ func main() {
 	}()
 
 	if err := srv.Start(); err != nil {
+		helper.Close()
 		logrus.Fatal(err)
 	}
 }
