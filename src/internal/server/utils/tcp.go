@@ -71,8 +71,8 @@ func ProxyHalf(dst, src net.Conn, rw *rewrite.Rewriter, destAddr string) {
 	})
 
 	if rw.Cache.Contains(destAddr) {
-		// Fast path: known pass-through
-		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("destination (%s) in cache, passing through", destAddr))
+		// Fast path
+		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("destination (%s) in cache, direct forward", destAddr))
 		io.CopyBuffer(dst, src, one)
 		return
 	}

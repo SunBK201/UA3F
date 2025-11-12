@@ -64,7 +64,6 @@ func main() {
 		}
 		logrus.Info("UA3F exited gracefully")
 		os.Exit(0)
-
 	}()
 
 	if err := srv.Start(); err != nil {

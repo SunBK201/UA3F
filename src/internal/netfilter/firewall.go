@@ -118,8 +118,6 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	if err != nil {
 		f.Cleanup()
 	}
-	f.DumpNFTables()
-	f.DumpIPTables()
 	return err
 }
 

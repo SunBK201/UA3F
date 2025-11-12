@@ -45,6 +45,8 @@ func (s *Server) Setup() (err error) {
 		logrus.Errorf("s.Firewall.Setup: %v", err)
 		return err
 	}
+	s.Firewall.DumpNFTables()
+	s.Firewall.DumpIPTables()
 	return nil
 }
 
