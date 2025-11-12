@@ -15,4 +15,4 @@ assignees: ''
 
 OpenWrt 有无同时运行 Clash 等代理客户端：
 
-请提供 debug 运行日志。
+请提供 debug 运行日志，并描述你的问题：
