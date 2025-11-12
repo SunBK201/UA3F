@@ -58,17 +58,6 @@ function M.add_general_fields(section)
     port:depends("server_mode", "TPROXY")
     port:depends("server_mode", "REDIRECT")
 
-    -- Log Level
-    local log_level = section:taboption("general", ListValue, "log_level", translate("Log Level"))
-    log_level:value("debug")
-    log_level:value("info")
-    log_level:value("warn")
-    log_level:value("error")
-    log_level:value("fatal")
-    log_level:value("panic")
-    log_level.description = translate(
-        "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time.")
-
     -- Rewrite Mode
     local rewrite_mode = section:taboption("general", ListValue, "rewrite_mode", translate("Rewrite Mode"))
     rewrite_mode:value("DIRECT", translate("Direct Forward"))
@@ -143,6 +132,17 @@ function M.add_log_fields(section)
         luci.http.write("</script>")
     end
 
+    -- Log Level
+    local log_level = section:taboption("log", ListValue, "log_level", translate("Log Level"))
+    log_level:value("debug")
+    log_level:value("info")
+    log_level:value("warn")
+    log_level:value("error")
+    log_level:value("fatal")
+    log_level:value("panic")
+    log_level.description = translate(
+        "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time.")
+
     -- Log Lines
     local logLines = section:taboption("log", Value, "log_lines", translate("Display Lines"))
     logLines.default = "1000"
@@ -180,6 +180,25 @@ function M.add_log_fields(section)
     download.inputstyle = "apply"
     function download.write(self, section)
         luci.http.redirect(luci.dispatcher.build_url("admin/services/ua3f/download_log"))
+    end
+
+    -- Issue Report Button
+    local issue = section:taboption("log", Button, "_issue", translate("Issue Report"))
+    issue.inputtitle = translate("Issue Report")
+    issue.inputstyle = "save"
+    function issue.write(self, section)
+    end
+
+    function issue.render(self, section, scope)
+        Button.render(self, section, scope)
+        luci.http.write([[
+            <script>
+            document.querySelector("input[name='cbid.ua3f.main._issue']").addEventListener("click", function(e) {
+                e.preventDefault();
+                window.open('https://github.com/SunBK201/UA3F/issues/new?template=bug-report.md', '_blank');
+            });
+            </script>
+        ]])
     end
 
     return log

@@ -114,7 +114,7 @@ msgid "Display Lines"
 msgstr "显示行数"
 
 msgid "Sets the logging level. Do not keep the log level set to debug/info/warn for an extended period of time."
-msgstr "设置日志级别，请勿长时间将日志级别设置为 debug / info / warn"
+msgstr "设置日志级别，debug / info / warn 仅用于问题反馈与调试，请勿长时间保持该级别。"
 
 msgid "Download Logs"
 msgstr "下载日志"
@@ -265,3 +265,6 @@ msgstr "固定 IP ID"
 
 msgid "Set the IP ID to 0 for packets"
 msgstr "将数据包的 IP ID 设置为 0，不推荐开启，除非你知道这是什么"
+
+msgid "Issue Report"
+msgstr "问题反馈"
