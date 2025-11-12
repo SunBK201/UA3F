@@ -11,27 +11,60 @@ import (
 	"time"
 
 	"golang.org/x/sys/unix"
+	"sigs.k8s.io/knftables"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/utils"
 )
 
 type Server struct {
-	cfg      *config.Config
-	rw       *rewrite.Rewriter
-	listener net.Listener
+	netfilter.Firewall
+	cfg              *config.Config
+	rw               *rewrite.Rewriter
+	listener         net.Listener
+	so_mark          int
+	tproxyFwMark     string
+	tproxyRouteTable string
+	nftable          *knftables.Table
+	ignoreMark       []string
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
-	return &Server{
-		cfg: cfg,
-		rw:  rw,
+	s := &Server{
+		cfg:              cfg,
+		rw:               rw,
+		so_mark:          netfilter.SO_MARK,
+		tproxyFwMark:     "0x1c9",
+		tproxyRouteTable: "0x1c9",
+		nftable: &knftables.Table{
+			Name:   "UA3F",
+			Family: knftables.IPv4Family,
+		},
+		ignoreMark: []string{
+			"0x162",
+			"0x1ed4", // sc tproxy mark 7892
+		},
 	}
+	s.Firewall = netfilter.Firewall{
+		NftSetup:   s.nftSetup,
+		NftCleanup: s.nftCleanup,
+		IptSetup:   s.iptSetup,
+		IptCleanup: s.iptCleanup,
+	}
+	return s
 }
 
 func (s *Server) Start() error {
+	var err error
+
+	err = s.Firewall.Setup(s.cfg)
+	if err != nil {
+		logrus.Errorf("s.Firewall.Setup: %v", err)
+		return err
+	}
 	lc := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var err error
@@ -49,7 +82,6 @@ func (s *Server) Start() error {
 		},
 	}
 
-	var err error
 	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
@@ -70,6 +102,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Close() error {
+	_ = s.Firewall.Cleanup()
 	if s.listener != nil {
 		return s.listener.Close()
 	}
@@ -85,7 +118,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	}
 	logrus.Debugf("Original destination address: %s", addr)
 
-	target, err := utils.ConnectWithMark(addr, utils.SO_MARK)
+	target, err := utils.ConnectWithMark(addr, s.so_mark)
 	if err != nil {
 		_ = client.Close()
 		logrus.Warnf("utils.ConnectWithMark %s: %v", addr, err)

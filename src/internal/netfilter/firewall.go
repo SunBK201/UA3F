@@ -3,6 +3,7 @@ package netfilter
 import (
 	"fmt"
 	"os/exec"
+	"os/user"
 
 	"github.com/gonetx/ipset"
 	"github.com/sirupsen/logrus"
@@ -22,6 +23,14 @@ const (
 	HELPER_QUEUE = 10301
 	SO_MARK      = 0xc9
 )
+
+const (
+	OC = "openclash"
+	SC = "shellcrash"
+)
+
+var SIDECAR = OC
+var SKIP_GIDS = "453"
 
 var LAN_CIDRS = []string{
 	"0.0.0.0/8",
@@ -78,7 +87,15 @@ var (
 		fmt.Sprintf("tcp dport { %s }", SKIP_PORTS),
 		"return",
 	)
+	NftRuleIgnoreFakeIP = knftables.Concat(
+		fmt.Sprintf("ip daddr { %s }", FAKEIP_RANGE),
+		"return",
+	)
 )
+
+func init() {
+	initSkipGids()
+}
 
 type Firewall struct {
 	NftSetup   func() error
@@ -162,6 +179,41 @@ func (f *Firewall) IptDeleteLanIP() error {
 	return ipset.Destroy(LANSET)
 }
 
+func (f *Firewall) AddTproxyRoute(fwmark, routeTable string) error {
+	sysctlCmds := [][]string{
+		{"-w", "net.bridge.bridge-nf-call-iptables=0"},
+		{"-w", "net.bridge.bridge-nf-call-ip6tables=0"},
+	}
+	for _, args := range sysctlCmds {
+		cmd := exec.Command("sysctl", args...)
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		_ = cmd.Run()
+	}
+
+	cmd := exec.Command("ip", "rule", "add", "fwmark", fwmark, "table", routeTable)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cmd.Run: %w", err)
+	}
+
+	cmd = exec.Command("ip", "route", "add", "local", "0.0.0.0/0", "dev", "lo", "table", routeTable)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cmd.Run: %w", err)
+	}
+
+	return nil
+}
+
+func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
+	cmd := exec.Command("ip", "rule", "del", "fwmark", fwmark, "table", routeTable)
+	_ = cmd.Run()
+
+	cmd = exec.Command("ip", "route", "flush", "table", routeTable)
+	_ = cmd.Run()
+
+	return nil
+}
+
 func detectFirewallBackend(cfg *config.Config) string {
 	if isCommandAvailable("opkg") {
 		switch cfg.ServerMode {
@@ -208,4 +260,39 @@ func isOpkgPackageInstalled(pkg string) bool {
 		return false
 	}
 	return len(output) > 0
+}
+
+func commandRunning(c string) bool {
+	cmd := exec.Command("pgrep", "-f", c)
+	err := cmd.Run()
+	return err == nil
+}
+
+func shellclashExists() bool {
+	if _, err := user.Lookup("shellclash"); err == nil {
+		return true
+	}
+	if _, err := user.Lookup("shellcrash"); err == nil {
+		return true
+	}
+	return false
+}
+
+func initSkipGids() {
+	if commandRunning("openclash") {
+		SKIP_GIDS += ",7890"
+		SIDECAR = OC
+	} else if commandRunning("ShellCrash") {
+		SKIP_GIDS += ",65534"
+		SIDECAR = SC
+	} else if isOpkgPackageInstalled("luci-app-openclash") {
+		SKIP_GIDS += ",7890"
+		SIDECAR = OC
+	} else if shellclashExists() {
+		SKIP_GIDS += ",65534"
+		SIDECAR = SC
+	} else {
+		SKIP_GIDS += ",7890"
+		SIDECAR = OC
+	}
 }

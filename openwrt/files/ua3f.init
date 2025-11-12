@@ -583,19 +583,7 @@ start_service() {
         # No firewall interception
         ;;
     TPROXY)
-        if [ "$FW_BACKEND" = "nft" ]; then
-            try_modprobe nft_tproxy
-            fw_setup_nft_tproxy_tcp || {
-                LOG "fw_setup_nft_tproxy_tcp setup failed"
-                return 1
-            }
-        else
-            try_modprobe xt_TPROXY
-            fw_setup_ipt_tproxy_tcp || {
-                LOG "fw_setup_ipt_tproxy_tcp setup failed"
-                return 1
-            }
-        fi
+        # No firewall interception
         ;;
     REDIRECT)
         # No firewall interception
