@@ -598,17 +598,7 @@ start_service() {
         fi
         ;;
     REDIRECT)
-        if [ "$FW_BACKEND" = "nft" ]; then
-            fw_setup_nft_redirect_tcp || {
-                LOG "fw_setup_nft_redirect_tcp setup failed"
-                return 1
-            }
-        else
-            fw_setup_ipt_redirect_tcp || {
-                LOG "fw_setup_ipt_redirect_tcp setup failed"
-                return 1
-            }
-        fi
+        # No firewall interception
         ;;
     NFQUEUE)
         # No firewall interception

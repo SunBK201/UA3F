@@ -11,25 +11,47 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/utils"
 	"golang.org/x/sys/unix"
+	"sigs.k8s.io/knftables"
 )
 
 type Server struct {
+	netfilter.Firewall
 	cfg      *config.Config
 	rw       *rewrite.Rewriter
 	listener net.Listener
+	nftable  *knftables.Table
+	so_mark  int
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
-	return &Server{
-		cfg: cfg,
-		rw:  rw,
+	s := &Server{
+		cfg:     cfg,
+		rw:      rw,
+		so_mark: netfilter.SO_MARK,
+		nftable: &knftables.Table{
+			Name:   "UA3F",
+			Family: knftables.IPv4Family,
+		},
 	}
+	s.Firewall = netfilter.Firewall{
+		NftSetup:   s.nftSetup,
+		NftCleanup: s.nftCleanup,
+		IptSetup:   s.iptSetup,
+		IptCleanup: s.iptCleanup,
+	}
+	return s
 }
 
 func (s *Server) Start() (err error) {
+	err = s.Firewall.Setup(s.cfg)
+	if err != nil {
+		logrus.Errorf("s.Firewall.Setup: %v", err)
+		return err
+	}
 	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
@@ -50,6 +72,7 @@ func (s *Server) Start() (err error) {
 }
 
 func (s *Server) Close() error {
+	_ = s.Firewall.Cleanup()
 	if s.listener != nil {
 		return s.listener.Close()
 	}
@@ -65,7 +88,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	}
 	logrus.Debugf("Original destination address: %s", addr)
 
-	target, err := utils.ConnectWithMark(addr, utils.SO_MARK)
+	target, err := utils.ConnectWithMark(addr, s.so_mark)
 	if err != nil {
 		_ = client.Close()
 		logrus.Warnf("utils.ConnectWithMark %s: %v", addr, err)
