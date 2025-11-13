@@ -11,6 +11,11 @@ import (
 )
 
 func (s *Server) nftSetup() error {
+	if !s.cfg.SetTTL && !s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
+		logrus.Info("No packet modification features enabled, skipping nftables setup")
+		return nil
+	}
+
 	nft, err := knftables.New(s.nftable.Family, s.nftable.Name)
 	if err != nil {
 		return err

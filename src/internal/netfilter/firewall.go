@@ -109,8 +109,14 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	backend := detectFirewallBackend(cfg)
 	switch backend {
 	case NFT:
+		if f.NftSetup == nil {
+			return fmt.Errorf("nftables setup function is nil")
+		}
 		err = f.NftSetup()
 	case IPT:
+		if f.IptSetup == nil {
+			return fmt.Errorf("iptables setup function is nil")
+		}
 		err = f.IptSetup()
 	default:
 		err = fmt.Errorf("unsupported or no firewall backend: %s", backend)
@@ -122,8 +128,12 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 }
 
 func (f *Firewall) Cleanup() error {
-	f.NftCleanup()
-	f.IptCleanup()
+	if f.NftCleanup != nil {
+		f.NftCleanup()
+	}
+	if f.IptCleanup != nil {
+		f.IptCleanup()
+	}
 	return nil
 }
 
