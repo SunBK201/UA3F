@@ -3,6 +3,8 @@
 package netlink
 
 import (
+	"errors"
+
 	"github.com/sunbk201/ua3f/internal/config"
 )
 
@@ -22,7 +24,7 @@ func (s *Server) Setup() (err error) {
 }
 
 func (s *Server) Start() (err error) {
-	return nil
+	return errors.New("netlink helper is only supported on linux")
 }
 
 func (s *Server) Close() (err error) {

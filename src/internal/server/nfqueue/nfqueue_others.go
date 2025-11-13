@@ -3,6 +3,8 @@
 package nfqueue
 
 import (
+	"errors"
+
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 )
@@ -25,7 +27,7 @@ func (s *Server) Setup() (err error) {
 }
 
 func (s *Server) Start() (err error) {
-	return nil
+	return errors.New("nfqueue server is only supported on linux")
 }
 
 func (s *Server) Close() (err error) {

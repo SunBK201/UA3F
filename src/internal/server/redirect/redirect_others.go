@@ -3,7 +3,7 @@
 package redirect
 
 import (
-	"fmt"
+	"errors"
 	"net"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -24,7 +24,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 }
 
 func (s *Server) Start() error {
-	return fmt.Errorf("REDIRECT Mode is only supported on Linux")
+	return errors.New("redirect server is only supported on linux")
 }
 
 func (s *Server) Close() error {
