@@ -143,7 +143,7 @@ func (f *Firewall) DumpNFTables() {
 	if err != nil {
 		return
 	}
-	logrus.Infof("nftables ruleset:\n%s", string(output))
+	logrus.Debugf("nftables ruleset:\n%s", string(output))
 }
 
 func (f *Firewall) DumpIPTables() {
@@ -154,7 +154,7 @@ func (f *Firewall) DumpIPTables() {
 		if err != nil {
 			continue
 		}
-		logrus.Infof("iptables table(%s):\n%s", table, string(output))
+		logrus.Debugf("iptables table(%s):\n%s", table, string(output))
 	}
 }
 
