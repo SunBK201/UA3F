@@ -74,7 +74,7 @@ func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
 	}
 	var RuleIgnoreMark = []string{
 		"-m", "connmark",
-		"--mark", strconv.Itoa(int(s.NotHTTPMark)),
+		"--mark", strconv.Itoa(int(s.NotHTTPCtMark)),
 		"-j", "RETURN",
 	}
 	err = ipt.Append(table, chain, RuleIgnoreMark...)

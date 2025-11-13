@@ -80,7 +80,7 @@ func (s *Server) NftSetNfqueue(tx *knftables.Transaction, table *knftables.Table
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			fmt.Sprintf("ct mark %d", s.NotHTTPMark),
+			fmt.Sprintf("ct mark %d", s.NotHTTPCtMark),
 			"counter return",
 		),
 	})

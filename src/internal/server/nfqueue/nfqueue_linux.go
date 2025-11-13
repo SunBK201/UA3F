@@ -17,24 +17,24 @@ import (
 
 type Server struct {
 	netfilter.Firewall
-	cfg                 *config.Config
-	rw                  *rewrite.Rewriter
-	nfqServer           *netfilter.NfqueueServer
-	nftable             *knftables.Table
-	SniffMarkRangeLower uint32
-	SniffMarkRangeUpper uint32
-	HTTPMark            uint32
-	NotHTTPMark         uint32
+	cfg              *config.Config
+	rw               *rewrite.Rewriter
+	nfqServer        *netfilter.NfqueueServer
+	nftable          *knftables.Table
+	SniffCtMarkLower uint32
+	SniffCtMarkUpper uint32
+	HTTPCtMark       uint32
+	NotHTTPCtMark    uint32
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	s := &Server{
-		cfg:                 cfg,
-		rw:                  rw,
-		SniffMarkRangeLower: 10201,
-		SniffMarkRangeUpper: 10216,
-		NotHTTPMark:         201,
-		HTTPMark:            202,
+		cfg:              cfg,
+		rw:               rw,
+		SniffCtMarkLower: 10201,
+		SniffCtMarkUpper: 10216,
+		NotHTTPCtMark:    201,
+		HTTPCtMark:       202,
 		nfqServer: &netfilter.NfqueueServer{
 			QueueNum: 10201,
 		},
@@ -122,43 +122,43 @@ func (s *Server) sendVerdict(packet *netfilter.Packet, result *rewrite.RewriteRe
 }
 
 func (s *Server) getNextMark(packet *netfilter.Packet, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
-	mark, found := packet.GetConnMark()
+	mark, found := packet.GetCtMark()
 	if !found {
-		return true, s.SniffMarkRangeLower
+		return true, s.SniffCtMarkLower
 	}
 	log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, fmt.Sprintf("Current connmark: %d", mark))
 
 	// should not happen
-	if mark == s.NotHTTPMark {
+	if mark == s.NotHTTPCtMark {
 		return false, 0
 	}
 
-	if mark == s.HTTPMark {
+	if mark == s.HTTPCtMark {
 		return false, 0
 	}
 
 	if result.InCache {
-		return true, s.NotHTTPMark
+		return true, s.NotHTTPCtMark
 	}
 
 	if result.InWhitelist {
-		return true, s.NotHTTPMark
+		return true, s.NotHTTPCtMark
 	}
 
 	if result.Modified {
-		return true, s.HTTPMark
+		return true, s.HTTPCtMark
 	}
 
 	if mark == 0 {
-		return true, s.SniffMarkRangeLower
+		return true, s.SniffCtMarkLower
 	}
 
-	if mark == s.SniffMarkRangeUpper {
+	if mark == s.SniffCtMarkUpper {
 		s.rw.Cache.Add(packet.DstAddr, struct{}{})
-		return true, s.NotHTTPMark
+		return true, s.NotHTTPCtMark
 	}
 
-	if mark >= s.SniffMarkRangeLower && mark < s.SniffMarkRangeUpper {
+	if mark >= s.SniffCtMarkLower && mark < s.SniffCtMarkUpper {
 		return true, mark + 1
 	}
 

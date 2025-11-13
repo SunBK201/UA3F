@@ -98,21 +98,39 @@ func (p *Packet) Serialize() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func (p *Packet) GetConnMark() (uint32, bool) {
-	a := p.A
-	if a.Ct == nil || len(*a.Ct) == 0 {
+func (p *Packet) GetCtMark() (uint32, bool) {
+	if p.A.Ct == nil || len(*p.A.Ct) == 0 {
 		return 0, false
 	}
 
-	attrs, err := netlink.UnmarshalAttributes(*a.Ct)
+	attrs, err := netlink.UnmarshalAttributes(*p.A.Ct)
 	if err != nil {
 		logrus.Errorf("netlink.UnmarshalAttributes: %s", err.Error())
 		return 0, false
 	}
 
 	for _, at := range attrs {
-		if at.Type == 8 && len(at.Data) >= 4 {
+		if at.Type == 8 && len(at.Data) >= 4 { // CTA_MARK
 			return binary.BigEndian.Uint32(at.Data[:4]), true
+		}
+	}
+
+	return 0, false
+}
+
+func (p *Packet) GetCtID() (uint32, bool) {
+	if p.A.Ct == nil || len(*p.A.Ct) == 0 {
+		return 0, false
+	}
+
+	attrs, err := netlink.UnmarshalAttributes(*p.A.Ct)
+	if err != nil {
+		logrus.Errorf("netlink.UnmarshalAttributes: %s", err.Error())
+		return 0, false
+	}
+	for _, at := range attrs {
+		if at.Type == 12 { // CTA_ID
+			return binary.BigEndian.Uint32(at.Data), true
 		}
 	}
 
