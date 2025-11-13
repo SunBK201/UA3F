@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
+
+      - name: Clone and build po2lmo
+        run: |
+          git clone https://github.com/openwrt-dev/po2lmo.git
+          cd po2lmo
+          make
+          cd ..
+          cp po2lmo/po2lmo ./po2lmo
+          chmod +x ./po2lmo
+          rm -rf po2lmo
+
+      - name: Build binaries
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          name: UA3F ${{ steps.get_version.outputs.VERSION }}
+          files: dist/*
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
