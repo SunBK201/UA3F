@@ -6,7 +6,7 @@ local NamedSection = cbi.NamedSection
 local ua3f = cbi.Map("ua3f",
     "UA3F",
     [[
-        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 1.8.1</a>
+        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 1.8.2</a>
         <br>
         Across the Campus we can reach every corner in the world.
     ]]

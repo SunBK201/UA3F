@@ -8,7 +8,7 @@
 set -e
 
 project_name="ua3f"
-release_version="1.8.1"
+release_version="1.8.2"
 target=main.go
 dist=./dist
 release_dir=./bin
@@ -44,25 +44,25 @@ for target_item in $TARGET_LIST; do
 
     case "$goarch" in
     mipsle-softfloat)
-        GOOS=$goos GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     mipsle-hardfloat)
-        GOOS=$goos GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     armv7)
-        GOOS=$goos GOARCH=arm GOARM=7 go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=arm GOARM=7 go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     armv8)
         alias_name=$project_name-$release_version-${goos}-arm64
         if [ ! -f "../dist/bin/$alias_name" ]; then
             echo ">>> Building $goos/arm64 (for armv8 alias)"
-            GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
+            CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
             cp "$alias_name" ../dist/bin/
         fi
         cp "../dist/bin/$alias_name" "$obj_name"
         ;;
     *)
-        GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     esac
 
@@ -106,7 +106,7 @@ mkdir -p \
 cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
 cp -r openwrt/files/luci/* $opkg_template/usr/lib/lua/luci/
-./po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
+po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 
 # only build ipk for linux targets
 for target_item in $TARGET_LIST; do
@@ -118,6 +118,8 @@ for target_item in $TARGET_LIST; do
 
     obj_name=$project_name-$release_version-${goos}-${goarch}
     [ -f "$dist/bin/$obj_name" ] || continue
+
+    echo ">>> Building IPK for $goos/$goarch ..."
 
     mv "$dist/bin/$obj_name" $opkg_template/usr/bin/ua3f
     sh "$ipkg_build" "$opkg_template"

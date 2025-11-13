@@ -23,13 +23,11 @@ jobs:
 
       - name: Clone and build po2lmo
         run: |
-          git clone https://github.com/openwrt-dev/po2lmo.git
-          cd po2lmo
-          make
-          cd ..
-          cp po2lmo/po2lmo ./po2lmo
-          chmod +x ./po2lmo
           rm -rf po2lmo
+          git clone https://github.com/openwrt-dev/po2lmo.git po2lmo-build
+          cd po2lmo-build
+          make
+          sudo make install
 
       - name: Build binaries
         run: |
