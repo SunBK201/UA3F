@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"runtime"
+	"strings"
 	"sync"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
@@ -38,7 +39,7 @@ func (s *NfqueueServer) Start() error {
 		s.MaxQueueLen = 2000
 	}
 	if s.MaxPacketLen <= 0 {
-		s.MaxPacketLen = 0xffff
+		s.MaxPacketLen = 1600
 	}
 	if s.NumWorkers <= 0 {
 		s.NumWorkers = runtime.NumCPU()
@@ -65,9 +66,9 @@ func (s *NfqueueServer) Start() error {
 	s.Nf = nf
 
 	// Ignore ENOBUFS to prevent queue drop logs
-	if err := nf.SetOption(netlink.NoENOBUFS, true); err != nil {
-		return fmt.Errorf("nf.SetOption: %w", err)
-	}
+	// if err := nf.SetOption(netlink.NoENOBUFS, true); err != nil {
+	//	return fmt.Errorf("nf.SetOption: %w", err)
+	// }
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -96,6 +97,13 @@ func (s *NfqueueServer) Start() error {
 		},
 		func(e error) int {
 			logrus.Errorf("Error in nfqueue handler: %v", e)
+			if strings.Contains(e.Error(), "no buffer space available") {
+				logrus.Warnf("Consider increasing the read buffer size to prevent packet drops")
+				err = nf.Con.SetReadBuffer(1024 * 1024 * 5)
+				if err != nil {
+					logrus.Errorf("nf.Con.SetReadBuffer: %v", err)
+				}
+			}
 			return 0
 		},
 	)
