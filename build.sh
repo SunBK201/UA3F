@@ -13,10 +13,9 @@ target=main.go
 dist=./dist
 release_dir=./bin
 
-# Linux 默认支持的架构
 LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
 
-# 默认构建目标（Linux + Windows + macOS）
+# default build target（Linux + Windows + macOS）
 DEFAULT_TARGETS=""
 for a in $LINUX_ARCHS; do
     DEFAULT_TARGETS="$DEFAULT_TARGETS linux/$a"
@@ -80,15 +79,15 @@ for target_item in $TARGET_LIST; do
         rm -f "$project_name"
     else
         mv "$obj_name" "$project_name"
-        tar -zcf ../bin/$project_name-$release_version-"${goos}"-"${goarch}".tar.gz "$project_name"
-        rm -f "$project_name"
+        # only package linux/arm64 and linux/amd64
+        if [ "$goos" = "linux" ] && [ "$goarch" != "arm64" ] && [ "$goarch" != "amd64" ]; then
+            echo ">>> Skipping packaging for linux/$goarch (only arm64 and amd64 are packaged)"
+            rm -f "$project_name"
+        else
+            tar -zcf ../bin/$project_name-$release_version-"${goos}"-"${goarch}".tar.gz "$project_name"
+            rm -f "$project_name"
+        fi
     fi
-done
-
-cd ../bin
-rm -f sha1sum.txt
-for file in ./*; do
-    md5 -r "$file" >>sha1sum.txt
 done
 
 cd ..
@@ -109,12 +108,12 @@ cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
 cp -r openwrt/files/luci/* $opkg_template/usr/lib/lua/luci/
 ./po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 
-# 仅 Linux 平台生成 ipk 包
+# only build ipk for linux targets
 for target_item in $TARGET_LIST; do
     goos=$(echo "$target_item" | cut -d'/' -f1)
     goarch=$(echo "$target_item" | cut -d'/' -f2)
 
-    # 只打包 Linux 的
+    # only package linux
     [ "$goos" = "linux" ] || continue
 
     obj_name=$project_name-$release_version-${goos}-${goarch}
@@ -124,5 +123,9 @@ for target_item in $TARGET_LIST; do
     sh "$ipkg_build" "$opkg_template"
     mv "$project_name"_"$release_version"-1_all.ipk "$dist/$project_name"_"$release_version"-1_"${goos}_${goarch}".ipk
 done
+
+rm -rf "dist/bin"
+mv bin/* dist/
+rm -rf bin
 
 echo "✅ Build complete：$TARGET_LIST"
