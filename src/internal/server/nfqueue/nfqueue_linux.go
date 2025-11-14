@@ -141,10 +141,6 @@ func (s *Server) getNextMark(packet *netfilter.Packet, result *rewrite.RewriteRe
 		return true, s.NotHTTPCtMark
 	}
 
-	if result.InWhitelist {
-		return true, s.NotHTTPCtMark
-	}
-
 	if result.Modified {
 		return true, s.HTTPCtMark
 	}
