@@ -144,10 +144,11 @@ func (s *NfqueueServer) worker(ctx context.Context, workerID int, aChan <-chan *
 				logrus.Debugf("Worker %d channel closed", workerID)
 				return
 			}
-			if ok, verdict := AttributeSanityCheck(a); !ok {
+			if ok := attributeSanityCheck(a); !ok {
 				if a.PacketID != nil {
-					_ = s.Nf.SetVerdict(*a.PacketID, verdict)
+					_ = s.Nf.SetVerdict(*a.PacketID, nfq.NfAccept)
 				}
+				logrus.Warnf("Worker %d: invalid nfq.Attribute received", workerID)
 				return
 			}
 			packet, err := NewPacket(a)
@@ -158,6 +159,7 @@ func (s *NfqueueServer) worker(ctx context.Context, workerID int, aChan <-chan *
 				}
 				continue
 			}
+			logrus.Debugf("Worker %d: Processing packet (%s -> %s)", workerID, packet.SrcAddr, packet.DstAddr)
 			s.HandlePacket(packet)
 		}
 	}
@@ -236,12 +238,12 @@ func ctIDFromCtBytes(ct []byte) uint32 {
 	return 0
 }
 
-func AttributeSanityCheck(a *nfq.Attribute) (ok bool, verdict int) {
+func attributeSanityCheck(a *nfq.Attribute) (ok bool) {
 	if a.PacketID == nil {
-		return false, -1
+		return false
 	}
 	if a.Payload == nil || len(*a.Payload) < 20 {
-		return false, nfq.NfAccept
+		return false
 	}
-	return true, 0
+	return true
 }

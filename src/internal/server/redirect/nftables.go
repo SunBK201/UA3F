@@ -90,7 +90,7 @@ func (s *Server) NftSetRedirect(tx *knftables.Transaction, table *knftables.Tabl
 		Chain: chain.Name,
 		Rule: knftables.Concat(
 			"tcp dport != {22}",
-			fmt.Sprintf("counter redirect to :%d", s.cfg.Port),
+			fmt.Sprintf("counter redirect to :%d", s.Cfg.Port),
 		),
 	})
 }

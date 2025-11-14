@@ -120,7 +120,7 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 			"--mark", s.tproxyFwMark,
 			"-j", "TPROXY",
 			"--on-ip", "127.0.0.1",
-			"--on-port", strconv.Itoa(s.cfg.Port),
+			"--on-port", strconv.Itoa(s.Cfg.Port),
 			"--tproxy-mark", "7894",
 		}
 		err := ipt.Append(table, chainSidecar, RuleSidecar...)
@@ -182,7 +182,7 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 		"--mark", s.tproxyFwMark,
 		"-j", "TPROXY",
 		"--on-ip", "127.0.0.1",
-		"--on-port", strconv.Itoa(s.cfg.Port),
+		"--on-port", strconv.Itoa(s.Cfg.Port),
 	}
 	err = ipt.Append(table, chainPre, RuleTproxyOC...)
 	if err != nil {
@@ -193,7 +193,7 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 		"-p", "tcp",
 		"-j", "TPROXY",
 		"--on-ip", "127.0.0.1",
-		"--on-port", strconv.Itoa(s.cfg.Port),
+		"--on-port", strconv.Itoa(s.Cfg.Port),
 		"--tproxy-mark", s.tproxyFwMark,
 	}
 	err = ipt.Append(table, chainPre, RuleTproxy...)

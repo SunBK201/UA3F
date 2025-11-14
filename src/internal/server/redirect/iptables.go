@@ -88,7 +88,7 @@ func (s *Server) IptSetRedirect(ipt *iptables.IPTables) error {
 	var RuleRedirect = []string{
 		"-p", "tcp",
 		"-j", "REDIRECT",
-		"--to-ports", strconv.Itoa(s.cfg.Port),
+		"--to-ports", strconv.Itoa(s.Cfg.Port),
 	}
 	err = ipt.Append(table, chain, RuleRedirect...)
 	if err != nil {

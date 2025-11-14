@@ -7,17 +7,19 @@ import (
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
+	"github.com/sunbk201/ua3f/internal/server/base"
 )
 
 type Server struct {
-	cfg *config.Config
-	rw  *rewrite.Rewriter
+	base.Server
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	s := &Server{
-		cfg: cfg,
-		rw:  rw,
+		Server: base.Server{
+			Cfg:      cfg,
+			Rewriter: rw,
+		},
 	}
 	return s
 }

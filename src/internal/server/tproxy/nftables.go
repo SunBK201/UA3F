@@ -66,7 +66,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 				"meta l4proto tcp",
 				"mark", s.tproxyFwMark,
 				"mark set 7894",
-				fmt.Sprintf("tproxy to 127.0.0.1:%d", s.cfg.Port),
+				fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
 				"counter accept",
 			),
 		})
@@ -130,7 +130,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule: knftables.Concat(
 			"meta l4proto tcp",
 			"mark", s.tproxyFwMark,
-			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.cfg.Port),
+			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
 			"counter accept",
 		),
 	})
@@ -141,7 +141,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule: knftables.Concat(
 			"meta l4proto tcp",
 			"mark set", s.tproxyFwMark,
-			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.cfg.Port),
+			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
 			"counter accept",
 		),
 	})

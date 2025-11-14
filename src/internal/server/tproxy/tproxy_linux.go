@@ -13,17 +13,17 @@ import (
 	"golang.org/x/sys/unix"
 	"sigs.k8s.io/knftables"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
-	"github.com/sunbk201/ua3f/internal/server/utils"
+	"github.com/sunbk201/ua3f/internal/server/base"
 )
 
 type Server struct {
 	netfilter.Firewall
-	cfg              *config.Config
-	rw               *rewrite.Rewriter
+	base.Server
 	listener         net.Listener
 	so_mark          int
 	tproxyFwMark     string
@@ -34,8 +34,11 @@ type Server struct {
 
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	s := &Server{
-		cfg:              cfg,
-		rw:               rw,
+		Server: base.Server{
+			Cfg:      cfg,
+			Rewriter: rw,
+			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+		},
 		so_mark:          netfilter.SO_MARK,
 		tproxyFwMark:     "0x1c9",
 		tproxyRouteTable: "0x1c9",
@@ -60,7 +63,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 func (s *Server) Start() error {
 	var err error
 
-	err = s.Firewall.Setup(s.cfg)
+	err = s.Firewall.Setup(s.Cfg)
 	if err != nil {
 		logrus.Errorf("s.Firewall.Setup: %v", err)
 		return err
@@ -82,7 +85,7 @@ func (s *Server) Start() error {
 		},
 	}
 
-	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.cfg.ListenAddr); err != nil {
+	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.Cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 	var client net.Conn
@@ -110,52 +113,24 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) HandleClient(client net.Conn) {
-	addr, err := getOriginalDstAddr(client)
+	addr, err := base.GetOriginalDstAddr(client)
 	if err != nil {
 		_ = client.Close()
-		logrus.Errorf("getOriginalDstAddr: %v", err)
+		logrus.Errorf("base.GetOriginalDstAddr: %v", err)
 		return
 	}
-	logrus.Debugf("Original destination address: %s", addr)
 
-	target, err := utils.ConnectWithMark(addr, s.so_mark)
+	target, err := base.ConnectWithMark(addr, s.so_mark)
 	if err != nil {
 		_ = client.Close()
-		logrus.Warnf("utils.ConnectWithMark %s: %v", addr, err)
+		logrus.Warnf("base.ConnectWithMark %s: %v", addr, err)
 		return
 	}
 
-	s.ForwardTCP(client, target, addr)
-}
-
-// ForwardTCP proxies traffic in both directions.
-// target->client uses raw copy.
-// client->target is processed by the rewriter (or raw if cached).
-func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
-	// Server -> Client (raw)
-	go utils.CopyHalf(client, target)
-
-	if s.cfg.RewriteMode == config.RewriteModeDirect {
-		// Client -> Server (raw)
-		go utils.CopyHalf(target, client)
-		return
-	}
-	// Client -> Server (rewriter)
-	go utils.ProxyHalf(target, client, s.rw, destAddr)
-}
-
-// getOriginalDstAddr retrieves the original destination address of a TProxy connection.
-func getOriginalDstAddr(conn net.Conn) (addr string, err error) {
-	fd, err := utils.GetConnFD(conn)
-	if err != nil {
-		return "", fmt.Errorf("utils.GetConnFD: %v", err)
-	}
-	raw, err := unix.GetsockoptIPv6Mreq(fd, unix.SOL_IP, unix.SO_ORIGINAL_DST)
-	if err != nil {
-		return "", fmt.Errorf("unix.GetsockoptIPv6Mreq SO_ORIGINAL_DST: %v", err)
-	}
-
-	ip := net.IPv4(raw.Multiaddr[4], raw.Multiaddr[5], raw.Multiaddr[6], raw.Multiaddr[7])
-	port := uint16(raw.Multiaddr[2])<<8 + uint16(raw.Multiaddr[3])
-	return fmt.Sprintf("%s:%d", ip.String(), port), nil
+	s.ServeConnLink(&base.ConnLink{
+		LConn: client,
+		RConn: target,
+		LAddr: client.RemoteAddr().String(),
+		RAddr: addr,
+	})
 }

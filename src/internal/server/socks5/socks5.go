@@ -10,10 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
-	"github.com/sunbk201/ua3f/internal/server/utils"
+	"github.com/sunbk201/ua3f/internal/server/base"
 )
 
 // SOCKS5 constants
@@ -35,16 +36,18 @@ var (
 
 // Server is a minimal SOCKS5 server that delegates HTTP UA rewriting to Rewriter.
 type Server struct {
-	cfg      *config.Config
-	rw       *rewrite.Rewriter
+	base.Server
 	listener net.Listener
 }
 
 // New returns a new Server with given config, rewriter, and version string.
 func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	return &Server{
-		cfg: cfg,
-		rw:  rw,
+		Server: base.Server{
+			Cfg:      cfg,
+			Rewriter: rw,
+			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+		},
 	}
 }
 
@@ -57,7 +60,7 @@ func (s *Server) Close() (err error) {
 
 // Start begins listening for SOCKS5 clients.
 func (s *Server) Start() (err error) {
-	if s.listener, err = net.Listen("tcp", s.cfg.ListenAddr); err != nil {
+	if s.listener, err = net.Listen("tcp", s.Cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 	var client net.Conn
@@ -105,7 +108,12 @@ func (s *Server) HandleClient(client net.Conn) {
 		_ = client.Close()
 		return
 	}
-	s.ForwardTCP(client, target, destAddrPort)
+	s.ServeConnLink(&base.ConnLink{
+		LConn: client,
+		RConn: target,
+		LAddr: client.RemoteAddr().String(),
+		RAddr: target.RemoteAddr().String(),
+	})
 }
 
 // socks5Auth performs a minimal "no-auth" negotiation.
@@ -200,7 +208,7 @@ func (s *Server) parseSocks5Request(client net.Conn) (string, byte, error) {
 
 // socks5Connect dials the target and responds success to the client.
 func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, error) {
-	target, err := utils.Connect(destAddrPort)
+	target, err := base.Connect(destAddrPort)
 	if err != nil {
 		// Reply failure
 		_, _ = client.Write([]byte{socksVer5, 0x01, 0x00, socksATYPv4, 0, 0, 0, 0, 0, 0})
@@ -212,22 +220,6 @@ func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, 
 		return nil, err
 	}
 	return target, nil
-}
-
-// ForwardTCP proxies traffic in both directions.
-// target->client uses raw copy.
-// client->target is processed by the rewriter (or raw if cached).
-func (s *Server) ForwardTCP(client, target net.Conn, destAddr string) {
-	// Server -> Client (raw)
-	go utils.CopyHalf(client, target)
-
-	if s.cfg.RewriteMode == config.RewriteModeDirect {
-		// Client -> Server (raw)
-		go utils.CopyHalf(target, client)
-		return
-	}
-	// Client -> Server (rewriter)
-	go utils.ProxyHalf(target, client, s.rw, destAddr)
 }
 
 // handleUDPAssociate handles a UDP ASSOCIATE request by creating a UDP relay socket.
