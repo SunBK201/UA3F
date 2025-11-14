@@ -1,5 +1,9 @@
 # UA3F
 
+![Release](https://img.shields.io/github/v/release/SunBK201/UA3F?sort=semver&display_name=tag&label=UA3F)
+[![CodeQL](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql)
+[![License](https://img.shields.io/github/license/SunBK201/UA3F)](https://github.com/SunBK201/UA3F/blob/master/LICENSE)
+
 UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 请求 Header (例如 User-Agent) 进行透明重写。
 
 ## 特性
