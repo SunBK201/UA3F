@@ -16,22 +16,22 @@ func (s *Server) nftSetup() error {
 		return nil
 	}
 
-	nft, err := knftables.New(s.nftable.Family, s.nftable.Name)
+	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
 	if err != nil {
 		return err
 	}
 
 	tx := nft.NewTransaction()
-	tx.Add(s.nftable)
+	tx.Add(s.Nftable)
 
 	if s.cfg.SetTTL {
-		s.NftSetTTL(tx, s.nftable)
+		s.NftSetTTL(tx, s.Nftable)
 	}
 	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		s.NftDelTCPTS(tx, s.nftable)
+		s.NftDelTCPTS(tx, s.Nftable)
 	}
 	if s.cfg.SetIPID {
-		s.NftSetIP(tx, s.nftable)
+		s.NftSetIP(tx, s.Nftable)
 	}
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -41,13 +41,13 @@ func (s *Server) nftSetup() error {
 }
 
 func (s *Server) nftCleanup() error {
-	nft, err := knftables.New(s.nftable.Family, s.nftable.Name)
+	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
 	if err != nil {
 		return err
 	}
 
 	tx := nft.NewTransaction()
-	tx.Delete(s.nftable)
+	tx.Delete(s.Nftable)
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
 		return err

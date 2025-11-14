@@ -22,7 +22,6 @@ type Server struct {
 	base.Server
 	netfilter.Firewall
 	listener net.Listener
-	nftable  *knftables.Table
 	so_mark  int
 }
 
@@ -34,12 +33,12 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
 		so_mark: netfilter.SO_MARK,
-		nftable: &knftables.Table{
+	}
+	s.Firewall = netfilter.Firewall{
+		Nftable: &knftables.Table{
 			Name:   "UA3F",
 			Family: knftables.IPv4Family,
 		},
-	}
-	s.Firewall = netfilter.Firewall{
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
 		IptSetup:   s.iptSetup,

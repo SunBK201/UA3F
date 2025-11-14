@@ -98,6 +98,7 @@ func init() {
 }
 
 type Firewall struct {
+	Nftable    *knftables.Table
 	NftSetup   func() error
 	NftCleanup func() error
 	IptSetup   func() error

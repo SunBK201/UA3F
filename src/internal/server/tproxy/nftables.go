@@ -17,16 +17,16 @@ func (s *Server) nftSetup() error {
 		return err
 	}
 
-	nft, err := knftables.New(s.nftable.Family, s.nftable.Name)
+	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
 	if err != nil {
 		return err
 	}
 
 	tx := nft.NewTransaction()
-	tx.Add(s.nftable)
+	tx.Add(s.Nftable)
 
-	s.NftSetLanIP(tx, s.nftable)
-	s.NftSetTproxy(tx, s.nftable)
+	s.NftSetLanIP(tx, s.Nftable)
+	s.NftSetTproxy(tx, s.Nftable)
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
 		return err
@@ -37,12 +37,12 @@ func (s *Server) nftSetup() error {
 func (s *Server) nftCleanup() error {
 	_ = s.Firewall.DeleteTproxyRoute(s.tproxyFwMark, s.tproxyRouteTable)
 
-	nft, err := knftables.New(s.nftable.Family, s.nftable.Name)
+	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
 	if err != nil {
 		return err
 	}
 	tx := nft.NewTransaction()
-	tx.Delete(s.nftable)
+	tx.Delete(s.Nftable)
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
 		return err

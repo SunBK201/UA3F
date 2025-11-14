@@ -22,7 +22,6 @@ type Server struct {
 	base.Server
 	netfilter.Firewall
 	nfqServer        *netfilter.NfqueueServer
-	nftable          *knftables.Table
 	SniffCtMarkLower uint32
 	SniffCtMarkUpper uint32
 	HTTPCtMark       uint32
@@ -43,13 +42,13 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 		nfqServer: &netfilter.NfqueueServer{
 			QueueNum: 10201,
 		},
-		nftable: &knftables.Table{
-			Name:   "UA3F",
-			Family: knftables.IPv4Family,
-		},
 	}
 	s.nfqServer.HandlePacket = s.handlePacket
 	s.Firewall = netfilter.Firewall{
+		Nftable: &knftables.Table{
+			Name:   "UA3F",
+			Family: knftables.IPv4Family,
+		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
 		IptSetup:   s.iptSetup,

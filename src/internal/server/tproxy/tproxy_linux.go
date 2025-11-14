@@ -28,7 +28,6 @@ type Server struct {
 	so_mark          int
 	tproxyFwMark     string
 	tproxyRouteTable string
-	nftable          *knftables.Table
 	ignoreMark       []string
 }
 
@@ -42,16 +41,16 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 		so_mark:          netfilter.SO_MARK,
 		tproxyFwMark:     "0x1c9",
 		tproxyRouteTable: "0x1c9",
-		nftable: &knftables.Table{
-			Name:   "UA3F",
-			Family: knftables.IPv4Family,
-		},
 		ignoreMark: []string{
 			"0x162",
 			"0x1ed4", // sc tproxy mark 7892
 		},
 	}
 	s.Firewall = netfilter.Firewall{
+		Nftable: &knftables.Table{
+			Name:   "UA3F",
+			Family: knftables.IPv4Family,
+		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
 		IptSetup:   s.iptSetup,

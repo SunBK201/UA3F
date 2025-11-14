@@ -15,7 +15,6 @@ type Server struct {
 	netfilter.Firewall
 	cfg       *config.Config
 	nfqServer *netfilter.NfqueueServer
-	nftable   *knftables.Table
 }
 
 func New(cfg *config.Config) *Server {
@@ -24,13 +23,13 @@ func New(cfg *config.Config) *Server {
 		nfqServer: &netfilter.NfqueueServer{
 			QueueNum: netfilter.HELPER_QUEUE,
 		},
-		nftable: &knftables.Table{
-			Name:   "UA3F_HELPER",
-			Family: knftables.InetFamily,
-		},
 	}
 	s.nfqServer.HandlePacket = s.handlePacket
 	s.Firewall = netfilter.Firewall{
+		Nftable: &knftables.Table{
+			Name:   "UA3F_HELPER",
+			Family: knftables.InetFamily,
+		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
 		IptSetup:   s.iptSetup,
