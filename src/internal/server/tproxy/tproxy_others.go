@@ -32,7 +32,9 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) HandleClient(client net.Conn) {
-	defer client.Close()
+	defer func() {
+		_ = client.Close()
+	}()
 }
 
 func (s *Server) ForwardTCP(client, target net.Conn, _ string) {

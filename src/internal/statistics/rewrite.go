@@ -32,7 +32,11 @@ func dumpRewriteRecords() {
 		logrus.Errorf("os.Create: %v", err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logrus.Errorf("os.File.Close: %v", err)
+		}
+	}()
 
 	var statList []RewriteRecord
 	for _, record := range rewriteRecords {
@@ -44,6 +48,8 @@ func dumpRewriteRecords() {
 
 	for _, record := range statList {
 		line := fmt.Sprintf("%s %d %sSEQSEQ%s\n", record.Host, record.Count, record.OriginalUA, record.MockedUA)
-		f.WriteString(line)
+		if _, err := f.WriteString(line); err != nil {
+			logrus.Errorf("os.File.WriteString: %v", err)
+		}
 	}
 }

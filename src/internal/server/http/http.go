@@ -71,7 +71,11 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	defer target.Close()
+	defer func() {
+		if err := target.Close(); err != nil {
+			logrus.Warnf("target.Close %s: %v", destAddr, err)
+		}
+	}()
 
 	err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
 	if err != nil {
@@ -83,7 +87,11 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			logrus.Warnf("resp.Body.Close %s: %v", destAddr, cerr)
+		}
+	}()
 
 	for k, v := range resp.Header {
 		for _, vv := range v {
@@ -91,7 +99,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	_, _ = io.Copy(w, resp.Body)
 	statistics.RemoveConnection(req.RemoteAddr, destAddr)
 }
 
@@ -113,7 +121,12 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	client.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
+	if _, err := client.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n")); err != nil {
+		logrus.Warnf("failed to write CONNECT response to client %s: %v", req.RemoteAddr, err)
+		_ = client.Close()
+		_ = dest.Close()
+		return
+	}
 	s.ForwardTCP(client, dest, destAddr)
 }
 

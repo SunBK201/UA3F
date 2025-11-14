@@ -32,7 +32,11 @@ func dumpPassThroughRecords() {
 		logrus.Errorf("os.Create: %v", err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logrus.Errorf("os.File.Close: %v", err)
+		}
+	}()
 
 	var statList []PassThroughRecord
 	for _, record := range passThroughRecords {
@@ -44,6 +48,9 @@ func dumpPassThroughRecords() {
 
 	for _, record := range statList {
 		line := fmt.Sprintf("%s %s %d %s\n", record.SrcAddr, record.DestAddr, record.Count, record.UA)
-		f.WriteString(line)
+		if _, err := f.WriteString(line); err != nil {
+			logrus.Errorf("os.File.WriteString: %v", err)
+			return
+		}
 	}
 }

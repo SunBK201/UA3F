@@ -146,11 +146,6 @@ start_service() {
     procd_close_instance
 }
 
-stop_service() {
-    LOG "Stopping $NAME service..."
-    LOG "$NAME service stopped"
-}
-
 reload_service() {
     stop
     start

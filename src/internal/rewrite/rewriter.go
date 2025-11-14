@@ -254,7 +254,10 @@ func (r *Rewriter) Forward(dst net.Conn, req *http.Request) error {
 	if err := req.Write(dst); err != nil {
 		return fmt.Errorf("req.Write: %w", err)
 	}
-	req.Body.Close()
+	err := req.Body.Close()
+	if err != nil {
+		return fmt.Errorf("req.Body.Close: %w", err)
+	}
 	return nil
 }
 

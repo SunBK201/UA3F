@@ -56,7 +56,11 @@ func dumpConnectionRecords() {
 		logrus.Errorf("os.Create: %v", err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logrus.Errorf("os.File.Close: %v", err)
+		}
+	}()
 
 	var statList []ConnectionRecord
 	for _, record := range connectionRecords {
@@ -72,6 +76,9 @@ func dumpConnectionRecords() {
 		duration := time.Since(record.StartTime)
 		line := fmt.Sprintf("%s %s %s %d\n",
 			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
-		f.WriteString(line)
+		if _, err := f.WriteString(line); err != nil {
+			logrus.Errorf("os.File.WriteString: %v", err)
+			return
+		}
 	}
 }

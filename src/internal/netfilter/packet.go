@@ -66,6 +66,8 @@ func NewPacket(a *nfq.Attribute) (packet *Packet, err error) {
 }
 
 func (p *Packet) Serialize() ([]byte, error) {
+	var err error
+
 	networkLayer := p.NetworkLayer
 	tcp := p.TCP
 	isIPv6 := p.IsIPv6
@@ -79,9 +81,11 @@ func (p *Packet) Serialize() ([]byte, error) {
 
 	tcp.Checksum = 0
 	tcp.Payload = nil
-	tcp.SetNetworkLayerForChecksum(networkLayer)
+	err = tcp.SetNetworkLayerForChecksum(networkLayer)
+	if err != nil {
+		return nil, err
+	}
 
-	var err error
 	if isIPv6 {
 		ip6 := networkLayer.(*layers.IPv6)
 		ip6.NextHeader = layers.IPProtocolTCP

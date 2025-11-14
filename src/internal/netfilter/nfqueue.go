@@ -62,7 +62,11 @@ func (s *NfqueueServer) Start() error {
 	if err != nil {
 		return fmt.Errorf("nfq.Open: %w", err)
 	}
-	defer nf.Close()
+	defer func() {
+		if cerr := nf.Close(); cerr != nil {
+			logrus.Errorf("nf.Close: %v", cerr)
+		}
+	}()
 	s.Nf = nf
 
 	// Ignore ENOBUFS to prevent queue drop logs

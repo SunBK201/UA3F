@@ -39,7 +39,7 @@ func New(cfg *config.Config) *Server {
 	return s
 }
 
-func (s *Server) Setup() (err error) {
+func (s *Server) Start() (err error) {
 	err = s.Firewall.Setup(s.cfg)
 	if err != nil {
 		logrus.Errorf("s.Firewall.Setup: %v", err)
@@ -47,13 +47,9 @@ func (s *Server) Setup() (err error) {
 	}
 	s.Firewall.DumpNFTables()
 	s.Firewall.DumpIPTables()
-	return nil
-}
-
-func (s *Server) Start() (err error) {
 	if s.cfg.SetTTL || s.cfg.DelTCPTimestamp || s.cfg.SetIPID {
 		logrus.Info("Packet modification features enabled")
-		return s.nfqServer.Start()
+		go s.nfqServer.Start()
 	}
 	return nil
 }

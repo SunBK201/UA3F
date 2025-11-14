@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -27,47 +28,57 @@ func main() {
 		return
 	}
 
+	log.LogHeader(version, cfg)
+
 	rw, err := rewrite.New(cfg)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Errorf("rewrite.New: %v", err)
+		return
 	}
 
 	srv, err := server.NewServer(cfg, rw)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Errorf("server.NewServer: %v", err)
+		return
 	}
-	defer srv.Close()
-
-	log.LogHeader(version, cfg)
 
 	helper := netlink.New(cfg)
-	defer helper.Close()
-	err = helper.Setup()
-	if err != nil {
-		logrus.Fatal(err)
+	if err := helper.Start(); err != nil {
+		logrus.Errorf("helper.Start: %v", err)
+		if err := srv.Close(); err != nil {
+			logrus.Errorf("srv.Close: %v", err)
+		}
+		return
 	}
 
 	cleanup := make(chan os.Signal, 1)
-	signal.Notify(cleanup, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(cleanup, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 
-	go helper.Start()
+	var shutdownOnce sync.Once
+	shutdown := func() {
+		shutdownOnce.Do(func() {
+			if err := helper.Close(); err != nil {
+				logrus.Errorf("helper.Close: %v", err)
+			}
+			if err := srv.Close(); err != nil {
+				logrus.Errorf("srv.Close: %v", err)
+			}
+			logrus.Info("UA3F exited gracefully")
+		})
+	}
+
 	go statistics.StartRecorder()
 
 	go func() {
 		<-cleanup
-		logrus.Info("Shutting down UA3F...")
-		if err := helper.Close(); err != nil {
-			logrus.Errorf("Error during helper close: %v", err)
-		}
-		if err := srv.Close(); err != nil {
-			logrus.Errorf("Error during UA3F close: %v", err)
-		}
-		logrus.Info("UA3F exited gracefully")
+		shutdown()
 		os.Exit(0)
 	}()
 
+	defer shutdown()
+
 	if err := srv.Start(); err != nil {
-		helper.Close()
-		logrus.Fatal(err)
+		logrus.Errorf("srv.Start: %v", err)
+		return
 	}
 }

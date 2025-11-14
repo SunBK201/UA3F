@@ -58,7 +58,8 @@ func TestProxyHTTPOrRaw_HTTPRewrite(t *testing.T) {
 	dstBuf := &bytes.Buffer{}
 	dst := &mockConn{Reader: nil, Writer: dstBuf}
 
-	r.Process(dst, src, "example.com:80", "srcAddr")
+	err := r.Process(dst, src, "example.com:80", "srcAddr")
+	assert.NoError(t, err)
 
 	out := dstBuf.String()
 	assert.Contains(t, out, "User-Agent: MockUA/1.0")

@@ -238,7 +238,11 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 		logrus.Errorf("[%s][UDP] net.ListenUDP failed: %v", client.RemoteAddr().String(), err)
 		return
 	}
-	defer udpServer.Close()
+	defer func() {
+		if err := udpServer.Close(); err != nil {
+			logrus.Warnf("[%s][UDP] udpServer.Close: %v", client.RemoteAddr().String(), err)
+		}
+	}()
 
 	_, portStr, _ := net.SplitHostPort(udpServer.LocalAddr().String())
 	logrus.Debugf("[%s][UDP] net.SplitHostPort %s", client.RemoteAddr().String(), portStr)

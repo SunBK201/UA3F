@@ -55,10 +55,7 @@ func findUserAgentInPayload(payload []byte) (positions [][2]int, unterminated bo
 	}
 
 	searchStart := 0
-	for {
-		if len(payload)-searchStart < len(uaTag) {
-			break
-		}
+	for searchStart <= len(payload)-len(uaTag) {
 
 		idx := indexFoldASCII(payload[searchStart:], uaTag)
 		if idx < 0 {

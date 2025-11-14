@@ -105,7 +105,7 @@ type Firewall struct {
 }
 
 func (f *Firewall) Setup(cfg *config.Config) (err error) {
-	f.Cleanup()
+	_ = f.Cleanup()
 	backend := detectFirewallBackend(cfg)
 	switch backend {
 	case NFT:
@@ -122,17 +122,17 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 		err = fmt.Errorf("unsupported or no firewall backend: %s", backend)
 	}
 	if err != nil {
-		f.Cleanup()
+		_ = f.Cleanup()
 	}
 	return err
 }
 
 func (f *Firewall) Cleanup() error {
 	if f.NftCleanup != nil {
-		f.NftCleanup()
+		_ = f.NftCleanup()
 	}
 	if f.IptCleanup != nil {
-		f.IptCleanup()
+		_ = f.IptCleanup()
 	}
 	return nil
 }
@@ -202,8 +202,7 @@ func (f *Firewall) IptSetLanIP() error {
 			return err
 		}
 	}
-	set.Flush()
-	return nil
+	return set.Flush()
 }
 
 func (f *Firewall) IptDeleteLanIP() error {
