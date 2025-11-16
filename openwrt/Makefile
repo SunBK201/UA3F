@@ -32,7 +32,7 @@ define Package/ua3f
 endef
 
 define Package/ua3f/description
-	Advanced HTTP Header Rewriting Tool.
+	Advanced HTTP Header Rewriting Tool
 endef
 
 define Build/Prepare
@@ -57,6 +57,17 @@ define Package/ua3f/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 	$(CP) $(PKG_BUILD_DIR)/files/luci/* $(1)/usr/lib/lua/luci/
+endef
+
+define Package/ua3f/postrm
+#!/bin/sh
+uci set ua3f.enabled.enabled='0' > /dev/null 2>&1
+uci commit ua3f > /dev/null 2>&1
+rm -rf /var/log/ua3f >/dev/null 2>&1
+rm -rf /usr/lib/lua/luci/model/cbi/ua3f >/dev/null 2>&1
+rm -rf /usr/lib/lua/luci/model/cbi/ua3f.lua >/dev/null 2>&1
+rm -rf /usr/lib/lua/luci/controller/ua3f.lua >/dev/null 2>&1
+rm -rf /usr/lib/lua/luci/view/ua3f >/dev/null 2>&1
 endef
 
 $(eval $(call GoBinPackage,ua3f))
