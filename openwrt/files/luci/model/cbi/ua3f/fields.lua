@@ -108,6 +108,7 @@ function M.add_log_fields(section)
     local log = section:taboption("log", TextValue, "log")
     log.readonly = true
     log.rows = 30
+    log.wrap = "off"
     function log.cfgvalue(self, section)
         local logfile = "/var/log/ua3f/ua3f.log"
         local fs = require("nixio.fs")
