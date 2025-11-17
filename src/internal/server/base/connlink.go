@@ -94,20 +94,27 @@ func (c *ConnLink) Close() error {
 	return nil
 }
 
+func (c *ConnLink) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("LAddr", c.LAddr),
+		slog.String("RAddr", c.RAddr),
+	)
+}
+
 func (c *ConnLink) LogDebug(msg string) {
-	slog.Debug(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
+	slog.Debug(msg, "ConnLink", c)
 }
 
 func (c *ConnLink) LogInfo(msg string) {
-	slog.Info(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
+	slog.Info(msg, "ConnLink", c)
 }
 
 func (c *ConnLink) LogWarn(msg string) {
-	slog.Warn(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
+	slog.Warn(msg, "ConnLink", c)
 }
 
 func (c *ConnLink) LogError(msg string) {
-	slog.Error(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
+	slog.Error(msg, "ConnLink", c)
 }
 
 func (c *ConnLink) LogDebugf(format string, args ...interface{}) {

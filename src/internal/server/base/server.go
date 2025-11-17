@@ -25,7 +25,7 @@ type Server struct {
 }
 
 func (s *Server) ServeConnLink(connLink *ConnLink) {
-	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr))
+	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 	statistics.AddConnection(&statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
 		SrcAddr:   connLink.LAddr,
@@ -33,7 +33,7 @@ func (s *Server) ServeConnLink(connLink *ConnLink) {
 		StartTime: time.Now(),
 	})
 	defer statistics.RemoveConnection(connLink.LAddr, connLink.RAddr)
-	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr))
+	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 
 	go connLink.CopyRL()
 

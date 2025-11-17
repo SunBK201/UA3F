@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -61,19 +60,19 @@ func LogHeader(version string, cfg *config.Config) {
 }
 
 func LogDebugWithAddr(src string, dest string, msg string) {
-	slog.Debug(fmt.Sprintf("[%s -> %s] %s", src, dest, msg))
+	slog.Debug(msg, slog.String("src", src), slog.String("dest", dest))
 }
 
 func LogInfoWithAddr(src string, dest string, msg string) {
-	slog.Info(fmt.Sprintf("[%s -> %s] %s", src, dest, msg))
+	slog.Info(msg, slog.String("src", src), slog.String("dest", dest))
 }
 
 func LogWarnWithAddr(src string, dest string, msg string) {
-	slog.Warn(fmt.Sprintf("[%s -> %s] %s", src, dest, msg))
+	slog.Warn(msg, slog.String("src", src), slog.String("dest", dest))
 }
 
 func LogErrorWithAddr(src string, dest string, msg string) {
-	slog.Error(fmt.Sprintf("[%s -> %s] %s", src, dest, msg))
+	slog.Error(msg, slog.String("src", src), slog.String("dest", dest))
 }
 
 // LoadLocalLocation tries to detect and load the system local timezone from
