@@ -10,7 +10,6 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/mdlayher/netlink v1.7.2
-	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	sigs.k8s.io/knftables v0.0.19

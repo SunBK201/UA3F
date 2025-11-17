@@ -3,9 +3,10 @@
 package netlink
 
 import (
+	"log/slog"
+
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket/layers"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"sigs.k8s.io/knftables"
@@ -41,13 +42,13 @@ func New(cfg *config.Config) *Server {
 func (s *Server) Start() (err error) {
 	err = s.Firewall.Setup(s.cfg)
 	if err != nil {
-		logrus.Errorf("s.Firewall.Setup: %v", err)
+		slog.Error("Firewall.Setup", slog.Any("error", err))
 		return err
 	}
 	s.Firewall.DumpNFTables()
 	s.Firewall.DumpIPTables()
 	if s.cfg.SetTTL || s.cfg.DelTCPTimestamp || s.cfg.SetIPID {
-		logrus.Info("Packet modification features enabled")
+		slog.Info("Packet modification features enabled")
 		go s.nfqServer.Start()
 	}
 	return nil
@@ -76,12 +77,12 @@ func (s *Server) handlePacket(packet *netfilter.Packet) {
 	if modified {
 		newPacket, err := packet.Serialize()
 		if err != nil {
-			logrus.Errorf("packet.Serialize: %v", err)
+			slog.Error("packet.Serialize", slog.Any("error", err))
 			_ = nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 			return
 		}
 		if err := nf.SetVerdictWithOption(*packet.A.PacketID, nfq.NfAccept, nfq.WithAlteredPacket(newPacket)); err != nil {
-			logrus.Errorf("nf.SetVerdictWithOption: %v", err)
+			slog.Error("nf.SetVerdictWithOption", slog.Any("error", err))
 			_ = nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 		}
 	} else {

@@ -2,11 +2,11 @@ package statistics
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/sniff"
 )
 
@@ -53,12 +53,12 @@ func RemoveConnection(srcAddr, destAddr string) {
 func dumpConnectionRecords() {
 	f, err := os.Create(connStatsFile)
 	if err != nil {
-		logrus.Errorf("os.Create: %v", err)
+		slog.Error("os.Create", slog.Any("error", err))
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			logrus.Errorf("os.File.Close: %v", err)
+			slog.Error("os.File.Close", slog.Any("error", err))
 		}
 	}()
 
@@ -77,7 +77,7 @@ func dumpConnectionRecords() {
 		line := fmt.Sprintf("%s %s %s %d\n",
 			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
 		if _, err := f.WriteString(line); err != nil {
-			logrus.Errorf("os.File.WriteString: %v", err)
+			slog.Error("os.File.WriteString", slog.Any("error", err))
 			return
 		}
 	}

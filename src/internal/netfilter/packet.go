@@ -3,12 +3,12 @@ package netfilter
 import (
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/mdlayher/netlink"
-	"github.com/sirupsen/logrus"
 )
 
 type Packet struct {
@@ -109,7 +109,7 @@ func (p *Packet) GetCtMark() (uint32, bool) {
 
 	attrs, err := netlink.UnmarshalAttributes(*p.A.Ct)
 	if err != nil {
-		logrus.Errorf("netlink.UnmarshalAttributes: %s", err.Error())
+		slog.Error("netlink.UnmarshalAttributes", slog.Any("error", err))
 		return 0, false
 	}
 
@@ -129,7 +129,7 @@ func (p *Packet) GetCtID() (uint32, bool) {
 
 	attrs, err := netlink.UnmarshalAttributes(*p.A.Ct)
 	if err != nil {
-		logrus.Errorf("netlink.UnmarshalAttributes: %s", err.Error())
+		slog.Error("netlink.UnmarshalAttributes", slog.Any("error", err))
 		return 0, false
 	}
 	for _, at := range attrs {

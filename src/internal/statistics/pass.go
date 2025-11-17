@@ -2,10 +2,9 @@ package statistics
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
-
-	"github.com/sirupsen/logrus"
 )
 
 const passthroughStatsFile = "/var/log/ua3f/pass_stats"
@@ -29,12 +28,12 @@ func AddPassThroughRecord(record *PassThroughRecord) {
 func dumpPassThroughRecords() {
 	f, err := os.Create(passthroughStatsFile)
 	if err != nil {
-		logrus.Errorf("os.Create: %v", err)
+		slog.Error("os.Create", slog.Any("error", err))
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			logrus.Errorf("os.File.Close: %v", err)
+			slog.Error("os.File.Close", slog.Any("error", err))
 		}
 	}()
 
@@ -49,7 +48,7 @@ func dumpPassThroughRecords() {
 	for _, record := range statList {
 		line := fmt.Sprintf("%s %s %d %s\n", record.SrcAddr, record.DestAddr, record.Count, record.UA)
 		if _, err := f.WriteString(line); err != nil {
-			logrus.Errorf("os.File.WriteString: %v", err)
+			slog.Error("os.File.WriteString", slog.Any("error", err))
 			return
 		}
 	}

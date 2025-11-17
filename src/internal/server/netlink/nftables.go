@@ -5,14 +5,14 @@ package netlink
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/knftables"
 )
 
 func (s *Server) nftSetup() error {
 	if !s.cfg.SetTTL && !s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		logrus.Info("No packet modification features enabled, skipping nftables setup")
+		slog.Info("No packet modification features enabled, skipping nftables setup")
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func resetOptionAvailable() bool {
 	}
 	nft, err := knftables.New(table.Family, table.Name)
 	if err != nil {
-		logrus.Errorf("resetOptionAvailable knftables.New: %v", err)
+		slog.Error("resetOptionAvailable knftables.New", slog.Any("error", err))
 		return false
 	}
 	tx := nft.NewTransaction()
@@ -152,7 +152,7 @@ func resetOptionAvailable() bool {
 	tx.Add(rule)
 	err = nft.Check(context.TODO(), tx)
 	if err != nil {
-		logrus.Infof("tcp option reset is not available")
+		slog.Info("tcp option reset is not available")
 	}
 	return err == nil
 }

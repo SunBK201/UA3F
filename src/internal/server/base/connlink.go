@@ -3,9 +3,8 @@ package base
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
-
-	"github.com/sirupsen/logrus"
 )
 
 var one = make([]byte, 1)
@@ -96,19 +95,19 @@ func (c *ConnLink) Close() error {
 }
 
 func (c *ConnLink) LogDebug(msg string) {
-	logrus.Debugf("[%s -> %s] %s", c.LAddr, c.RAddr, msg)
+	slog.Debug(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
 }
 
 func (c *ConnLink) LogInfo(msg string) {
-	logrus.Infof("[%s -> %s] %s", c.LAddr, c.RAddr, msg)
+	slog.Info(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
 }
 
 func (c *ConnLink) LogWarn(msg string) {
-	logrus.Warnf("[%s -> %s] %s", c.LAddr, c.RAddr, msg)
+	slog.Warn(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
 }
 
 func (c *ConnLink) LogError(msg string) {
-	logrus.Errorf("[%s -> %s] %s", c.LAddr, c.RAddr, msg)
+	slog.Error(fmt.Sprintf("[%s -> %s] %s", c.LAddr, c.RAddr, msg))
 }
 
 func (c *ConnLink) LogDebugf(format string, args ...interface{}) {

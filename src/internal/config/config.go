@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
@@ -99,4 +100,20 @@ func Parse() (*Config, bool) {
 	}
 
 	return cfg, showVer
+}
+
+func (c *Config) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("Log Level", c.LogLevel),
+		slog.String("Server Mode", string(c.ServerMode)),
+		slog.String("Listen Address", c.ListenAddr),
+		slog.String("Rewrite Mode", string(c.RewriteMode)),
+		slog.String("User-Agent", c.PayloadUA),
+		slog.String("User-Agent Regex", c.UARegex),
+		slog.Bool("Partial Replace", c.PartialReplace),
+		slog.Bool("Set TTL", c.SetTTL),
+		slog.Bool("Set IP ID", c.SetIPID),
+		slog.Bool("Delete TCP Timestamp", c.DelTCPTimestamp),
+		slog.Any("Rules", c.Rules),
+	)
 }

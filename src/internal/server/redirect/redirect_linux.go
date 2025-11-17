@@ -5,12 +5,12 @@ package redirect
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"syscall"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
@@ -50,7 +50,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 func (s *Server) Start() (err error) {
 	err = s.Firewall.Setup(s.Cfg)
 	if err != nil {
-		logrus.Errorf("s.Firewall.Setup: %v", err)
+		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
 	if s.listener, err = net.Listen("tcp", s.Cfg.ListenAddr); err != nil {
@@ -64,10 +64,10 @@ func (s *Server) Start() (err error) {
 			} else if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
-			logrus.Error("s.listener.Accept:", err)
+			slog.Error("s.listener.Accept", slog.Any("error", err))
 			continue
 		}
-		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
+		slog.Debug("Accept connection", slog.String("addr", client.RemoteAddr().String()))
 		go s.HandleClient(client)
 	}
 }
@@ -84,14 +84,14 @@ func (s *Server) HandleClient(client net.Conn) {
 	addr, err := base.GetOriginalDstAddr(client)
 	if err != nil {
 		_ = client.Close()
-		logrus.Errorf("base.GetOriginalDstAddr: %v", err)
+		slog.Error("base.GetOriginalDstAddr", slog.Any("error", err))
 		return
 	}
 
 	target, err := base.ConnectWithMark(addr, s.so_mark)
 	if err != nil {
 		_ = client.Close()
-		logrus.Warnf("base.ConnectWithMark %s: %v", addr, err)
+		slog.Warn("base.ConnectWithMark", slog.String("addr", addr), slog.Any("error", err))
 		return
 	}
 

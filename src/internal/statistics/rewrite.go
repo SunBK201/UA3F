@@ -2,10 +2,9 @@ package statistics
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
-
-	"github.com/sirupsen/logrus"
 )
 
 const rewriteStatsFile = "/var/log/ua3f/rewrite_stats"
@@ -29,12 +28,12 @@ func AddRewriteRecord(record *RewriteRecord) {
 func dumpRewriteRecords() {
 	f, err := os.Create(rewriteStatsFile)
 	if err != nil {
-		logrus.Errorf("os.Create: %v", err)
+		slog.Error("os.Create", slog.Any("error", err))
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			logrus.Errorf("os.File.Close: %v", err)
+			slog.Error("os.File.Close", slog.Any("error", err))
 		}
 	}()
 
@@ -49,7 +48,7 @@ func dumpRewriteRecords() {
 	for _, record := range statList {
 		line := fmt.Sprintf("%s %d %sSEQSEQ%s\n", record.Host, record.Count, record.OriginalUA, record.MockedUA)
 		if _, err := f.WriteString(line); err != nil {
-			logrus.Errorf("os.File.WriteString: %v", err)
+			slog.Error("os.File.WriteString", slog.Any("error", err))
 		}
 	}
 }

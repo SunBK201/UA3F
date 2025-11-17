@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
@@ -75,11 +75,11 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer func() {
 		if err := target.Close(); err != nil {
-			logrus.Warnf("target.Close %s: %v", destAddr, err)
+			slog.Warn("target.Close", slog.String("destAddr", destAddr), slog.Any("error", err))
 		}
 	}()
 
-	logrus.Infof("New HTTP proxy request: %s -> %s", req.RemoteAddr, destAddr)
+	slog.Info("New HTTP proxy request", slog.String("srcAddr", req.RemoteAddr), slog.String("destAddr", destAddr))
 
 	err = s.rewriteAndForward(target, req, req.Host, req.RemoteAddr)
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			logrus.Warnf("resp.Body.Close %s: %v", destAddr, cerr)
+			slog.Warn("resp.Body.Close", slog.String("destAddr", destAddr), slog.Any("error", cerr))
 		}
 	}()
 
@@ -126,7 +126,7 @@ func (s *Server) rewriteAndForward(target net.Conn, req *http.Request, dstAddr, 
 }
 
 func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
-	logrus.Infof("HTTP CONNECT request for %s", req.Host)
+	slog.Info("HTTP CONNECT request", slog.String("host", req.Host))
 	destAddr := req.Host
 	dest, err := base.Connect(destAddr)
 	if err != nil {
@@ -144,7 +144,7 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if _, err := client.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n")); err != nil {
-		logrus.Warnf("failed to write CONNECT response to client %s: %v", req.RemoteAddr, err)
+		slog.Warn("failed to write CONNECT response to client", slog.String("client", req.RemoteAddr), slog.Any("error", err))
 		_ = client.Close()
 		_ = dest.Close()
 		return

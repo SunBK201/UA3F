@@ -3,13 +3,13 @@ package rule
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/dlclark/regexp2"
-	"github.com/sirupsen/logrus"
 )
 
 type RuleType string
@@ -76,7 +76,7 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 				pattern := "(?i)" + rule.MatchValue
 				regex, err := regexp2.Compile(pattern, regexp2.None)
 				if err != nil {
-					logrus.Warnf("Failed to compile regex for rule: %s, error: %v", rule.Description, err)
+					slog.Warn("regexp2.Compile", slog.String("regex", pattern), slog.Any("error", err))
 					rule.Enabled = false
 					continue
 				}
@@ -89,7 +89,7 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 				}
 				_, ipNet, err := net.ParseCIDR(rule.MatchValue)
 				if err != nil {
-					logrus.Warnf("Failed to parse CIDR for rule: %s, error: %v", rule.Description, err)
+					slog.Warn("net.ParseCIDR", slog.String("cidr", rule.MatchValue), slog.Any("error", err))
 					rule.Enabled = false
 					continue
 				}
@@ -116,7 +116,7 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 		case RuleTypeRegex:
 			matched, err = e.matchRegex(req, rule)
 			if err != nil {
-				logrus.Warnf("Regex match error: %v", err)
+				slog.Warn("e.matchRegex", slog.Any("error", err))
 			}
 		case RuleTypeIPCIDR:
 			matched = e.matchIPCIDR(destAddr, rule)
@@ -129,7 +129,7 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 		}
 
 		if matched {
-			logrus.Debugf("Rule matched: %s (type: %s, action: %s)", rule.Description, rule.Type, rule.Action)
+			slog.Debug("Rule matched", slog.String("description", rule.Description), slog.String("type", string(rule.Type)), slog.String("action", string(rule.Action)))
 			return rule
 		}
 	}
@@ -203,7 +203,7 @@ func (e *Engine) ApplyAction(action Action, rewriteValue string, originalUA stri
 		if rule != nil && rule.Type == RuleTypeRegex && rule.regex != nil {
 			newUA, err := rule.regex.Replace(originalUA, rewriteValue, -1, -1)
 			if err != nil {
-				logrus.Errorf("Failed to apply REPLACE-PART: %v, using full replacement", err)
+				slog.Error("rule.regex.Replace", slog.Any("error", err))
 				return rewriteValue
 			}
 			return newUA

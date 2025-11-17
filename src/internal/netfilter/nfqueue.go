@@ -5,13 +5,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 	"runtime"
 	"strings"
 	"sync"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/mdlayher/netlink"
-	"github.com/sirupsen/logrus"
 )
 
 type NfqHandler func(a *Packet)
@@ -64,7 +64,7 @@ func (s *NfqueueServer) Start() error {
 	}
 	defer func() {
 		if cerr := nf.Close(); cerr != nil {
-			logrus.Errorf("nf.Close: %v", cerr)
+			slog.Error("nf.Close", slog.Any("error", cerr))
 		}
 	}()
 	s.Nf = nf
@@ -92,7 +92,7 @@ func (s *NfqueueServer) Start() error {
 			case s.attrChans[s.computeWorkerIndex(&a)] <- &a:
 			default:
 				// If worker channel is full, accept the packet to avoid blocking
-				logrus.Warn("Worker channel full, accepting packet without processing")
+				slog.Warn("Worker channel full, accepting packet without processing")
 				if a.PacketID != nil {
 					_ = nf.SetVerdict(*a.PacketID, nfq.NfAccept)
 				}
@@ -100,12 +100,12 @@ func (s *NfqueueServer) Start() error {
 			return 0
 		},
 		func(e error) int {
-			logrus.Errorf("Error in nfqueue handler: %v", e)
+			slog.Error("Error in nfqueue handler", slog.Any("error", e))
 			if strings.Contains(e.Error(), "no buffer space available") {
-				logrus.Warnf("Consider increasing the read buffer size to prevent packet drops")
+				slog.Warn("Consider increasing the read buffer size to prevent packet drops")
 				err = nf.Con.SetReadBuffer(1024 * 1024 * 5)
 				if err != nil {
-					logrus.Errorf("nf.Con.SetReadBuffer: %v", err)
+					slog.Error("nf.Con.SetReadBuffer", slog.Any("error", err))
 				}
 			}
 			return 0
@@ -133,33 +133,33 @@ func (s *NfqueueServer) Start() error {
 // worker processes packets from its assigned channel
 func (s *NfqueueServer) worker(ctx context.Context, workerID int, aChan <-chan *nfq.Attribute) {
 	defer s.wg.Done()
-	logrus.Debugf("Worker %d started", workerID)
+	slog.Debug("Worker %d started", slog.Int("workerID", workerID))
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Debugf("Worker %d stopping", workerID)
+			slog.Debug("Worker stopping", slog.Int("workerID", workerID))
 			return
 		case a, ok := <-aChan:
 			if !ok {
-				logrus.Debugf("Worker %d channel closed", workerID)
+				slog.Debug("Worker channel closed", slog.Int("workerID", workerID))
 				return
 			}
 			if ok := attributeSanityCheck(a); !ok {
 				if a.PacketID != nil {
 					_ = s.Nf.SetVerdict(*a.PacketID, nfq.NfAccept)
 				}
-				logrus.Warnf("Worker %d: invalid nfq.Attribute received", workerID)
+				slog.Warn("Invalid nfq.Attribute received", slog.Int("workerID", workerID))
 				return
 			}
 			packet, err := NewPacket(a)
 			if err != nil {
-				logrus.Errorf("Worker %d: NewPacket error: %v", workerID, err)
+				slog.Error("NewPacket", slog.Int("workerID", workerID), slog.Any("error", err))
 				if a.PacketID != nil {
 					_ = s.Nf.SetVerdict(*a.PacketID, nfq.NfAccept)
 				}
 				continue
 			}
-			logrus.Debugf("Worker %d: Processing packet (%s -> %s)", workerID, packet.SrcAddr, packet.DstAddr)
+			slog.Debug("Processing packet", slog.Int("workerID", workerID), slog.String("srcAddr", packet.SrcAddr), slog.String("dstAddr", packet.DstAddr))
 			s.HandlePacket(packet)
 		}
 	}

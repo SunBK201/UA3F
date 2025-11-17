@@ -2,10 +2,10 @@ package rewrite
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/dlclark/regexp2"
-	"github.com/sirupsen/logrus"
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -55,7 +55,6 @@ func New(cfg *config.Config) (*Rewriter, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create rule engine: %w", err)
 		}
-		logrus.Info("Rule engine initialized")
 	}
 
 	return &Rewriter{
@@ -93,7 +92,7 @@ func (r *Rewriter) buildUserAgent(originUA string) string {
 	if r.partialReplace && r.uaRegex != nil && r.pattern != "" {
 		newUA, err := r.uaRegex.Replace(originUA, r.payloadUA, -1, -1)
 		if err != nil {
-			logrus.Errorf("r.uaRegex.Replace: %s, use full overwrite", err.Error())
+			slog.Error("r.uaRegex.Replace", slog.Any("error", err))
 			return r.payloadUA
 		}
 		return newUA

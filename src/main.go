@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -24,7 +24,7 @@ func main() {
 	log.SetLogConf(cfg.LogLevel)
 
 	if showVer {
-		logrus.Infof("UA3F version: %s", version)
+		fmt.Printf("UA3F version %s\n", version)
 		return
 	}
 
@@ -32,21 +32,21 @@ func main() {
 
 	rw, err := rewrite.New(cfg)
 	if err != nil {
-		logrus.Errorf("rewrite.New: %v", err)
+		slog.Error("rewrite.New", slog.Any("error", err))
 		return
 	}
 
 	srv, err := server.NewServer(cfg, rw)
 	if err != nil {
-		logrus.Errorf("server.NewServer: %v", err)
+		slog.Error("server.NewServer", slog.Any("error", err))
 		return
 	}
 
 	helper := netlink.New(cfg)
 	if err := helper.Start(); err != nil {
-		logrus.Errorf("helper.Start: %v", err)
+		slog.Error("helper.Start", slog.Any("error", err))
 		if err := srv.Close(); err != nil {
-			logrus.Errorf("srv.Close: %v", err)
+			slog.Error("srv.Close", slog.Any("error", err))
 		}
 		return
 	}
@@ -58,12 +58,12 @@ func main() {
 	shutdown := func() {
 		shutdownOnce.Do(func() {
 			if err := helper.Close(); err != nil {
-				logrus.Errorf("helper.Close: %v", err)
+				slog.Error("helper.Close", slog.Any("error", err))
 			}
 			if err := srv.Close(); err != nil {
-				logrus.Errorf("srv.Close: %v", err)
+				slog.Error("srv.Close", slog.Any("error", err))
 			}
-			logrus.Info("UA3F exited gracefully")
+			slog.Info("UA3F exited gracefully")
 		})
 	}
 
@@ -78,7 +78,7 @@ func main() {
 	defer shutdown()
 
 	if err := srv.Start(); err != nil {
-		logrus.Errorf("srv.Start: %v", err)
+		slog.Error("srv.Start", slog.Any("error", err))
 		return
 	}
 }

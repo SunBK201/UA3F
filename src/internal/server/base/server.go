@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule"
@@ -25,7 +25,7 @@ type Server struct {
 }
 
 func (s *Server) ServeConnLink(connLink *ConnLink) {
-	logrus.Infof("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr)
+	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr))
 	statistics.AddConnection(&statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
 		SrcAddr:   connLink.LAddr,
@@ -33,7 +33,7 @@ func (s *Server) ServeConnLink(connLink *ConnLink) {
 		StartTime: time.Now(),
 	})
 	defer statistics.RemoveConnection(connLink.LAddr, connLink.RAddr)
-	defer logrus.Infof("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr)
+	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr))
 
 	go connLink.CopyRL()
 

@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -71,10 +71,10 @@ func (s *Server) Start() (err error) {
 			} else if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
-			logrus.Error("s.listener.Accept:", err)
+			slog.Error("s.listener.Accept", slog.Any("error", err))
 			continue
 		}
-		logrus.Debugf("Accept connection from %s", client.RemoteAddr().String())
+		slog.Debug("Accept connection", slog.String("addr", client.RemoteAddr().String()))
 		go s.HandleClient(client)
 	}
 }
@@ -95,8 +95,7 @@ func (s *Server) HandleClient(client net.Conn) {
 			_ = client.Close()
 			return
 		}
-		logrus.Debugf("[%s][%s] ParseSocks5Request failed: %s",
-			client.RemoteAddr().String(), destAddrPort, err.Error())
+		slog.Debug("ParseSocks5Request failed", slog.String("src", client.RemoteAddr().String()), slog.String("dst", destAddrPort), slog.Any("error", err))
 		_ = client.Close()
 		return
 	}
@@ -104,7 +103,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	// TCP CONNECT
 	target, err := s.socks5Connect(client, destAddrPort)
 	if err != nil {
-		logrus.Warnf("s.socks5Connect %s: %v", destAddrPort, err)
+		slog.Warn("s.socks5Connect", slog.String("addr", destAddrPort), slog.Any("error", err))
 		_ = client.Close()
 		return
 	}
@@ -124,29 +123,29 @@ func (s *Server) socks5Auth(client net.Conn) error {
 	n, err := io.ReadFull(client, buf[:2])
 	if n != 2 {
 		if errors.Is(err, io.EOF) {
-			logrus.Warnf("[%s][Auth] read EOF", client.RemoteAddr().String())
+			slog.Warn("socks5Auth read EOF", slog.String("addr", client.RemoteAddr().String()))
 		} else {
-			logrus.Errorf("[%s][Auth] read header: %v", client.RemoteAddr().String(), err)
+			slog.Error("socks5Auth read header", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		}
 		return fmt.Errorf("io.ReadFull reading header: %w", err)
 	}
 	ver, nMethods := int(buf[0]), int(buf[1])
 	if ver != socksVer5 {
-		logrus.Errorf("[%s][Auth] invalid ver", client.RemoteAddr().String())
+		slog.Error("socks5Auth invalid ver", slog.String("addr", client.RemoteAddr().String()))
 		return ErrInvalidSocksVersion
 	}
 
 	// Read METHODS
 	n, err = io.ReadFull(client, buf[:nMethods])
 	if n != nMethods {
-		logrus.Errorf("[%s][Auth] read methods: %v", client.RemoteAddr().String(), err)
+		slog.Error("socks5Auth read methods", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		return fmt.Errorf("io.ReadFull read methods: %w", err)
 	}
 
 	// Reply: no-auth
 	n, err = client.Write([]byte{socksVer5, socksNoAuth})
 	if n != 2 || err != nil {
-		logrus.Errorf("[%s][Auth] write rsp: %v", client.RemoteAddr().String(), err)
+		slog.Error("socks5Auth write rsp", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		return fmt.Errorf("client.Write rsp: %w", err)
 	}
 	return nil
@@ -227,17 +226,17 @@ func (s *Server) socks5Connect(client net.Conn, destAddrPort string) (net.Conn, 
 func (s *Server) handleUDPAssociate(client net.Conn) {
 	udpServer, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
-		logrus.Errorf("[%s][UDP] net.ListenUDP failed: %v", client.RemoteAddr().String(), err)
+		slog.Error("net.ListenUDP failed", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		return
 	}
 	defer func() {
 		if err := udpServer.Close(); err != nil {
-			logrus.Warnf("[%s][UDP] udpServer.Close: %v", client.RemoteAddr().String(), err)
+			slog.Warn("udpServer.Close", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		}
 	}()
 
 	_, portStr, _ := net.SplitHostPort(udpServer.LocalAddr().String())
-	logrus.Debugf("[%s][UDP] net.SplitHostPort %s", client.RemoteAddr().String(), portStr)
+	slog.Debug("net.SplitHostPort", slog.String("addr", client.RemoteAddr().String()), slog.String("port", portStr))
 
 	portInt, _ := net.LookupPort("udp", portStr)
 	portBytes := make([]byte, 2)
@@ -245,7 +244,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 
 	// Reply with chosen UDP port (bind addr set to 0.0.0.0)
 	if _, err = client.Write([]byte{socksVer5, 0x00, 0x00, socksATYPv4, 0, 0, 0, 0, portBytes[0], portBytes[1]}); err != nil {
-		logrus.Errorf("[%s][UDP] client.Write rsp: %v", client.RemoteAddr().String(), err)
+		slog.Error("client.Write rsp", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 		return
 	}
 
@@ -259,13 +258,13 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 		n, fromAddr, err := udpServer.ReadFromUDP(buf)
 		if err != nil {
 			if strings.Contains(err.Error(), "i/o timeout") {
-				logrus.Debugf("[%s][UDP] ReadFromUDP timeout: %v", client.RemoteAddr().String(), err)
+				slog.Debug("ReadFromUDP timeout", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 				if !isAlive(client) {
-					logrus.Debugf("[%s][UDP] client is not alive", client.RemoteAddr().String())
+					slog.Debug("client is not alive", slog.String("addr", client.RemoteAddr().String()))
 					break
 				}
 			} else {
-				logrus.Errorf("[%s][UDP] udpServer.ReadFromUDP failed: %v", client.RemoteAddr().String(), err)
+				slog.Error("udpServer.ReadFromUDP failed", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 			}
 			continue
 		}
@@ -299,7 +298,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 				targetAddr = string(buf[5 : 5+addrLen])
 				targetIPAddr, err := net.ResolveIPAddr("ip", targetAddr)
 				if err != nil {
-					logrus.Errorf("[%s][UDP] net.ResolveIPAddr: %v", client.RemoteAddr().String(), err)
+					slog.Error("net.ResolveIPAddr", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 					break
 				}
 				targetIP = targetIPAddr.IP
@@ -308,11 +307,11 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 				header = buf[0 : 5+addrLen+2]
 
 			case socksATYPv6:
-				logrus.Errorf("[%s][UDP] IPv6: not supported yet", client.RemoteAddr().String())
+				slog.Error("IPv6: not supported yet", slog.String("addr", client.RemoteAddr().String()))
 				return
 
 			default:
-				logrus.Errorf("[%s][UDP] invalid atyp", client.RemoteAddr().String())
+				slog.Error("invalid atyp", slog.String("addr", client.RemoteAddr().String()))
 				return
 			}
 
@@ -322,14 +321,14 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 
 			_ = udpServer.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if _, err = udpServer.WriteToUDP(payload, remoteAddr); err != nil {
-				logrus.Debugf("[%s][UDP] WriteToUDP to remote failed: %v", client.RemoteAddr().String(), err)
+				slog.Debug("WriteToUDP to remote failed", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 				continue
 			}
 		} else {
 			// Packet from remote -> forward to client (rebuild header)
 			header := udpPortMap[fromAddr.String()]
 			if header == nil {
-				logrus.Errorf("[%s][UDP] udpPortMap invalid header", client.RemoteAddr().String())
+				slog.Error("udpPortMap invalid header", slog.String("addr", client.RemoteAddr().String()))
 				continue
 			}
 			// For domain ATYP, preserve original head section size
@@ -338,7 +337,7 @@ func (s *Server) handleUDPAssociate(client net.Conn) {
 			}
 			body := append(header, buf[:n]...)
 			if _, err = udpServer.WriteToUDP(body, clientAddr); err != nil {
-				logrus.Debugf("[%s][UDP] WriteToUDP to client failed: %v", client.RemoteAddr().String(), err)
+				slog.Debug("WriteToUDP to client failed", slog.String("addr", client.RemoteAddr().String()), slog.Any("error", err))
 				continue
 			}
 		}
@@ -353,16 +352,16 @@ func isAlive(conn net.Conn) bool {
 	if err != nil {
 		switch {
 		case errors.Is(err, io.EOF):
-			logrus.Debugf("[%s] isAlive: EOF", conn.RemoteAddr().String())
+			slog.Debug("isAlive: EOF", slog.String("addr", conn.RemoteAddr().String()))
 			return false
 		case strings.Contains(err.Error(), "use of closed network connection"):
-			logrus.Debugf("[%s] isAlive: closed", conn.RemoteAddr().String())
+			slog.Debug("isAlive: closed", slog.String("addr", conn.RemoteAddr().String()))
 			return false
 		case strings.Contains(err.Error(), "i/o timeout"):
-			logrus.Debugf("[%s] isAlive: timeout", conn.RemoteAddr().String())
+			slog.Debug("isAlive: timeout", slog.String("addr", conn.RemoteAddr().String()))
 			return true
 		default:
-			logrus.Debugf("[%s] isAlive: %s", conn.RemoteAddr().String(), err.Error())
+			slog.Debug("isAlive: error", slog.String("addr", conn.RemoteAddr().String()), slog.Any("error", err))
 			return false
 		}
 	}

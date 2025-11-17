@@ -4,11 +4,11 @@ package nfqueue
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/knftables"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -60,7 +60,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 func (s *Server) Start() (err error) {
 	err = s.Firewall.Setup(s.Cfg)
 	if err != nil {
-		logrus.Errorf("s.Firewall.Setup: %v", err)
+		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
 	return s.nfqServer.Start()

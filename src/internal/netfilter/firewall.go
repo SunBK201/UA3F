@@ -2,11 +2,11 @@ package netfilter
 
 import (
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"os/user"
 
 	"github.com/gonetx/ipset"
-	"github.com/sirupsen/logrus"
 	"github.com/sunbk201/ua3f/internal/config"
 	"sigs.k8s.io/knftables"
 )
@@ -144,7 +144,7 @@ func (f *Firewall) DumpNFTables() {
 	if err != nil {
 		return
 	}
-	logrus.Debugf("nftables ruleset:\n%s", string(output))
+	slog.Debug(fmt.Sprintf("nftables ruleset:\n%s", string(output)))
 }
 
 func (f *Firewall) DumpIPTables() {
@@ -155,7 +155,7 @@ func (f *Firewall) DumpIPTables() {
 		if err != nil {
 			continue
 		}
-		logrus.Debugf("iptables table(%s):\n%s", table, string(output))
+		slog.Debug(fmt.Sprintf("iptables table(%s):\n%s", table, string(output)))
 	}
 }
 
@@ -276,7 +276,7 @@ func detectFirewallBackend(cfg *config.Config) string {
 	case selectIPT():
 		return IPT
 	default:
-		logrus.Warn("No firewall backend detected")
+		slog.Warn("No firewall backend detected")
 		return ""
 	}
 }
