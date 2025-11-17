@@ -12,6 +12,8 @@ local fs = require("nixio.fs")
 
 function create_log_archive()
     local tmpfile = "/tmp/ua3f_logs.tar.gz"
+    local copyCfg = "cp /etc/config/ua3f /var/log/ua3f/config >/dev/null 2>&1"
+    os.execute(copyCfg)
     local cmd = "cd /var/log && tar -czf " .. tmpfile .. " ua3f >/dev/null 2>&1"
     os.execute(cmd)
     return tmpfile

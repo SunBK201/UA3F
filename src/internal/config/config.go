@@ -114,6 +114,5 @@ func (c *Config) LogValue() slog.Value {
 		slog.Bool("Set TTL", c.SetTTL),
 		slog.Bool("Set IP ID", c.SetIPID),
 		slog.Bool("Delete TCP Timestamp", c.DelTCPTimestamp),
-		slog.Any("Rules", c.Rules),
 	)
 }

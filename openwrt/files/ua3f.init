@@ -92,7 +92,7 @@ start_service() {
     config_get ua "main" "ua" "FFF"
     config_get ua_regex "main" "ua_regex" ""
     config_get_bool partial_replace "main" "partial_replace" 0
-    config_get log_level "main" "log_level" "info"
+    config_get log_level "main" "log_level" "INFO"
     config_get rewrite_mode "main" "rewrite_mode" "GLOBAL"
     config_get rewrite_rules "main" "rewrite_rules" ""
     config_get_bool set_ttl "main" "set_ttl" 0
@@ -107,15 +107,8 @@ start_service() {
 
     SERVER_MODE="$(echo "$SERVER_MODE" | tr '[:lower:]' '[:upper:]')"
 
-    LOG "Server Mode: $SERVER_MODE"
-    LOG "Port: $port"
-    LOG "Bind: $bind"
-    LOG "User-Agent: $ua"
-    LOG "User-Agent Regex: $ua_regex"
-    LOG "Log level: $log_level"
-    LOG "Partial Replace: $partial_replace"
-
     set_ua3f_group
+    LOG "Server Mode: $SERVER_MODE"
     LOG "Group: $UA3F_GROUP"
 
     procd_open_instance "$NAME"
@@ -138,6 +131,8 @@ start_service() {
     procd_set_param group $UA3F_GROUP
 
     procd_close_instance
+
+    LOG "Started $NAME service."
 }
 
 service_triggers() {
