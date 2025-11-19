@@ -7,4 +7,4 @@ License: GPL-3.0-only
 Section: net
 SourceDateEpoch: 1711267200
 Architecture: all
-Description: Advanced HTTP User-Agent Rewriting Tool.
+Description: Advanced HTTP User-Agent Rewriting Tool
