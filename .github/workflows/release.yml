@@ -11,6 +11,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x86_64
+          - aarch64_generic
+          - arm_cortex-a7_neon-vfpv4
+          - arm_cortex-a15_neon-vfpv4
+          - mips_24kc
+          - mipsel_24kc
     
     steps:
       - name: Checkout code
@@ -33,6 +43,19 @@ jobs:
         run: |
           chmod +x build.sh
           ./build.sh
+      
+      - name: Build APK
+        uses: openwrt/gh-action-sdk@v9
+        env:
+          ARCH: ${{ matrix.arch }}
+          FEEDNAME: ua3f_ci
+          PACKAGES: openwrt
+          V: sc
+        
+      - name: move apks to dist folder
+        run: |
+          mkdir -p dist
+          cp bin/packages/${{ matrix.arch }}/ua3f_ci/*.apk dist/
 
       - name: Get version from tag
         id: get_version
