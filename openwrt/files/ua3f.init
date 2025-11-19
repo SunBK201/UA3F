@@ -92,7 +92,7 @@ start_service() {
     config_get ua "main" "ua" "FFF"
     config_get ua_regex "main" "ua_regex" ""
     config_get_bool partial_replace "main" "partial_replace" 0
-    config_get log_level "main" "log_level" "INFO"
+    config_get log_level "main" "log_level" "ERROR"
     config_get rewrite_mode "main" "rewrite_mode" "GLOBAL"
     config_get rewrite_rules "main" "rewrite_rules" ""
     config_get_bool set_ttl "main" "set_ttl" 0
@@ -132,7 +132,7 @@ start_service() {
 
     procd_close_instance
 
-    LOG "Started $NAME service."
+    LOG "$NAME service started"
 }
 
 service_triggers() {

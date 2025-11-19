@@ -55,7 +55,7 @@ func (s *Server) NftSetRedirect(tx *knftables.Transaction, table *knftables.Tabl
 
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
-		Rule:  netfilter.NftRuleIgnoreBrLAN,
+		Rule:  netfilter.NftRuleIgnoreNotBrLAN,
 	})
 
 	tx.Add(&knftables.Rule{

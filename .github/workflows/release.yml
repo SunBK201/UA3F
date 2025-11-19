@@ -9,18 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-ipk:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch:
-          - x86_64
-          - aarch64_generic
-          - arm_cortex-a7_neon-vfpv4
-          - arm_cortex-a15_neon-vfpv4
-          - mips_24kc
-          - mipsel_24kc
     
     steps:
       - name: Checkout code
@@ -39,23 +29,71 @@ jobs:
           make
           sudo make install
 
-      - name: Build binaries
+      - name: Build IPK binaries
         run: |
           chmod +x build.sh
           ./build.sh
       
+      - name: Upload IPK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipk-packages
+          path: dist/*
+          retention-days: 1
+
+  build-apk:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x86_64
+          - aarch64_generic
+          - arm_cortex-a7_neon-vfpv4
+          - arm_cortex-a15_neon-vfpv4
+          - mips_24kc
+          - mipsel_24kc
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Build APK
         uses: openwrt/gh-action-sdk@v9
         env:
           ARCH: ${{ matrix.arch }}
           FEEDNAME: ua3f_ci
           PACKAGES: openwrt
-          V: sc
-        
-      - name: move apks to dist folder
+      
+      - name: Rename APK with arch suffix
         run: |
-          mkdir -p dist
-          cp bin/packages/${{ matrix.arch }}/ua3f_ci/*.apk dist/
+          cd bin/packages/${{ matrix.arch }}/ua3f_ci/
+          for f in *.apk; do mv "$f" "${f/.apk/-${{ matrix.arch }}.apk}" 2>/dev/null || true; done
+      
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-packages-${{ matrix.arch }}
+          path: bin/packages/${{ matrix.arch }}/ua3f_ci/*.apk
+          retention-days: 1
+
+  release:
+    needs: [build-ipk, build-apk]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download IPK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ipk-packages
+          path: dist/
+
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: apk-packages-*
+          path: dist/
+          merge-multiple: true
 
       - name: Get version from tag
         id: get_version

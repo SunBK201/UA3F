@@ -139,6 +139,7 @@ function M.add_log_fields(section)
     log_level:value("INFO")
     log_level:value("WARN")
     log_level:value("ERROR")
+    log_level.default = "ERROR"
     log_level.description = translate(
         "Sets the logging level. Do not keep the log level set to DEBUG/INFO for an extended period of time.")
 

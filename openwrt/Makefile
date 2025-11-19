@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=UA3F
-PKG_VERSION:=1.8.3
+PKG_VERSION:=1.8.4
 PKG_RELEASE:=1
 
 # PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -37,6 +37,7 @@ endef
 
 define Build/Prepare
 	$(CP) ../src/* $(PKG_BUILD_DIR)
+	$(CP) ./files $(PKG_BUILD_DIR)/
 	po2lmo ./po/zh_cn/ua3f.po $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo
 endef
 

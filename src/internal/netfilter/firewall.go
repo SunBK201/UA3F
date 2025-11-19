@@ -71,7 +71,7 @@ var (
 		"meta l4proto != tcp",
 		"return",
 	)
-	NftRuleIgnoreBrLAN = knftables.Concat(
+	NftRuleIgnoreNotBrLAN = knftables.Concat(
 		"iifname != \"br-lan\"",
 		"return",
 	)

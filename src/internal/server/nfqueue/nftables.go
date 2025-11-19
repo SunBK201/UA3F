@@ -58,25 +58,21 @@ func (s *Server) NftSetNfqueue(tx *knftables.Transaction, table *knftables.Table
 		Rule:  netfilter.NftRuleIgnoreNotTCP,
 	})
 
-	// nft add rule ip $NFT_TABLE postrouting ct direction reply counter return
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnoreReply,
 	})
 
-	// nft add rule ip $NFT_TABLE postrouting ip daddr @$UA3F_LANSET counter return
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnoreLAN,
 	})
 
-	// nft add rule ip $NFT_TABLE postrouting tcp dport {$SKIP_PORTS} return
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnorePorts,
 	})
 
-	// nft add rule ip $NFT_TABLE postrouting ct mark 201 counter return
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
