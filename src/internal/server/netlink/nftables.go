@@ -114,6 +114,7 @@ func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
 	rule := &knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
+			"meta l4proto tcp",
 			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
 	}

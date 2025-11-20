@@ -28,6 +28,7 @@ var RuleDelTCPTS = []string{
 }
 
 var RuleIP = []string{
+	"-p", "tcp",
 	"-j", "NFQUEUE",
 	"--queue-num", strconv.Itoa(netfilter.HELPER_QUEUE),
 	"--queue-bypass",
