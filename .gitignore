@@ -23,6 +23,6 @@ go.work
 .vscode
 bin/
 dist/
-ipkg/etc/
-ipkg/usr/
+scripts/ipkg/etc/
+scripts/ipkg/usr/
 test/

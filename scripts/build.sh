@@ -1,8 +1,8 @@
 #!/bin/sh
 # --------------------------------
 # Usage examples:
-#   ./build.sh                 # default: linux all + win/darwin 64/arm64
-#   ./build.sh linux/amd64 windows/arm64
+#   ./scripts/build.sh                 # default: linux all + win/darwin 64/arm64
+#   ./scripts/build.sh linux/amd64 windows/arm64
 # --------------------------------
 
 set -e
@@ -10,8 +10,6 @@ set -e
 project_name="ua3f"
 release_version="1.8.4"
 target=main.go
-dist=./dist
-release_dir=./bin
 
 LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
 
@@ -28,12 +26,17 @@ else
     TARGET_LIST="$DEFAULT_TARGETS"
 fi
 
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+project_root="$(cd "$script_dir/.." && pwd)"
+dist="$project_root/dist"
+release_dir="$project_root/bin"
+
 rm -rf "$release_dir"/* "$dist"/*
 mkdir -p "$release_dir" "$dist/bin"
 
-cd "$(dirname "$0")"
+cd "$project_root"
 gofmt -w ./
-cd "$(dirname "$0")/src"
+cd "$project_root/src"
 
 for target_item in $TARGET_LIST; do
     goos=$(echo "$target_item" | cut -d'/' -f1)
@@ -54,28 +57,28 @@ for target_item in $TARGET_LIST; do
         ;;
     armv8)
         alias_name=$project_name-$release_version-${goos}-arm64
-        if [ ! -f "../dist/bin/$alias_name" ]; then
+        if [ ! -f "$project_root/dist/bin/$alias_name" ]; then
             echo ">>> Building $goos/arm64 (for armv8 alias)"
             CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
-            cp "$alias_name" ../dist/bin/
+            cp "$alias_name" "$project_root/dist/bin/"
         fi
-        cp "../dist/bin/$alias_name" "$obj_name"
+        cp "$project_root/dist/bin/$alias_name" "$obj_name"
         ;;
     *)
         CGO_ENABLED=0 GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
         ;;
     esac
 
-    cp "$obj_name" ../dist/bin/
+    cp "$obj_name" "$project_root/dist/bin/"
 
     echo ">>> Packaging for $goos/$goarch ..."
     if [ "$goos" = "windows" ]; then
         mv "$obj_name" "$project_name.exe"
-        zip ../bin/$project_name-$release_version-"${goos}"-"${goarch}".zip "$project_name.exe"
+        zip "$project_root/bin/$project_name-$release_version-${goos}-${goarch}.zip" "$project_name.exe"
         rm -f "$project_name.exe"
     elif [ "$goos" = "darwin" ]; then
         mv "$obj_name" "$project_name"
-        zip -q ../bin/$project_name-$release_version-"${goos}"-"${goarch}".zip "$project_name"
+        zip -q "$project_root/bin/$project_name-$release_version-${goos}-${goarch}.zip" "$project_name"
         rm -f "$project_name"
     else
         mv "$obj_name" "$project_name"
@@ -84,15 +87,15 @@ for target_item in $TARGET_LIST; do
             echo ">>> Skipping packaging for linux/$goarch (only arm64 and amd64 are packaged)"
             rm -f "$project_name"
         else
-            tar -zcf ../bin/$project_name-$release_version-"${goos}"-"${goarch}".tar.gz "$project_name"
+            tar -zcf "$project_root/bin/$project_name-$release_version-${goos}-${goarch}.tar.gz" "$project_name"
             rm -f "$project_name"
         fi
     fi
 done
 
 cd ..
-opkg_template=./ipkg
-ipkg_build=ipkg-build.sh
+opkg_template=./scripts/ipkg
+ipkg_build=./scripts/ipkg-build.sh
 
 mkdir -p \
     $opkg_template/usr/bin \
@@ -123,11 +126,11 @@ for target_item in $TARGET_LIST; do
 
     mv "$dist/bin/$obj_name" $opkg_template/usr/bin/ua3f
     sh "$ipkg_build" "$opkg_template"
-    mv "$project_name"_"$release_version"-1_all.ipk "$dist/$project_name"_"$release_version"-1_"${goos}_${goarch}".ipk
+    mv "$project_root/$project_name"_"$release_version"-1_all.ipk "$dist/$project_name"_"$release_version"-1_"${goos}_${goarch}".ipk
 done
 
-rm -rf "dist/bin"
-mv bin/* dist/
-rm -rf bin
+rm -rf "$dist/bin"
+mv "$release_dir"/* "$dist/"
+rm -rf "$release_dir"
 
 echo "✅ Build complete：$TARGET_LIST"
