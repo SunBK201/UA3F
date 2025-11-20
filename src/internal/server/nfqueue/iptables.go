@@ -4,6 +4,7 @@ package nfqueue
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
@@ -36,7 +37,13 @@ func (s *Server) iptSetup() error {
 		return err
 	}
 
-	err = ipt.Append(table, jumpPoint, JumpChain...)
+	// ensure netlink helper behind nfqueue server
+	pos, exists := s.detectNfqueue(ipt)
+	if !exists {
+		err = ipt.Append(table, jumpPoint, JumpChain...)
+	} else {
+		err = ipt.Insert(table, jumpPoint, pos-1, JumpChain...)
+	}
 	if err != nil {
 		return err
 	}
@@ -96,4 +103,18 @@ func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
 		return err
 	}
 	return nil
+}
+
+// detect if iptables nfqueue rule exists and return nfqueue rule position
+func (s *Server) detectNfqueue(ipt *iptables.IPTables) (pos int, exists bool) {
+	rules, err := ipt.List(table, jumpPoint)
+	if err != nil {
+		return 0, false
+	}
+	for i, rule := range rules {
+		if strings.Contains(rule, "NFQUEUE") {
+			return i + 1, true
+		}
+	}
+	return 0, false
 }
