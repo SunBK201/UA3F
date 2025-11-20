@@ -52,13 +52,14 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 	})
 
 	// Adjust to the exact length needed
-	if len(newUA) >= n {
+	newUALen := len(newUA)
+	if newUALen >= n {
 		return []byte(newUA[:n])
 	}
 	out := make([]byte, n)
 	copy(out, newUA)
 	// Pad with spaces if newUA is shorter than needed
-	for i := len(newUA); i < n; i++ {
+	for i := newUALen; i < n; i++ {
 		out[i] = ' '
 	}
 
