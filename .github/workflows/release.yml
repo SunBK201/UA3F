@@ -1,47 +1,16 @@
-name: Release
+name: Build and Release OpenWRT Package
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
-  build-ipk:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.21'
-
-      - name: Clone and build po2lmo
-        run: |
-          rm -rf po2lmo
-          git clone https://github.com/openwrt-dev/po2lmo.git po2lmo-build
-          cd po2lmo-build
-          make
-          sudo make install
-
-      - name: Build IPK binaries
-        run: |
-          chmod +x build.sh
-          ./build.sh
-      
-      - name: Upload IPK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ipk-packages
-          path: dist/*
-          retention-days: 1
-
-  build-apk:
+  build:
+    name: Build ${{ matrix.arch }} on ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,48 +19,46 @@ jobs:
           - x86_64
           - aarch64_generic
           - arm_cortex-a7_neon-vfpv4
+          - arm_cortex-a9_vfpv3-d16
           - arm_cortex-a15_neon-vfpv4
           - mips_24kc
           - mipsel_24kc
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+        version:
+          - 24.10.0
+          - main
 
-      - name: Build APK
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
         uses: openwrt/gh-action-sdk@v9
         env:
           ARCH: ${{ matrix.arch }}
           FEEDNAME: ua3f_ci
           PACKAGES: openwrt
-      
-      - name: Rename APK with arch suffix
+
+      - name: Rename packages with arch suffix
         run: |
           cd bin/packages/${{ matrix.arch }}/ua3f_ci/
+          for f in *.ipk; do mv "$f" "${f/.ipk/-${{ matrix.arch }}.ipk}" 2>/dev/null || true; done
           for f in *.apk; do mv "$f" "${f/.apk/-${{ matrix.arch }}.apk}" 2>/dev/null || true; done
-      
-      - name: Upload APK artifacts
+
+      - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: apk-packages-${{ matrix.arch }}
-          path: bin/packages/${{ matrix.arch }}/ua3f_ci/*.apk
+          name: packages-${{ matrix.arch }}
+          path: bin/packages/${{ matrix.arch }}/ua3f_ci/*.*pk
           retention-days: 1
 
   release:
-    needs: [build-ipk, build-apk]
+    needs: [build]
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download IPK artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ipk-packages
-          path: dist/
 
-      - name: Download APK artifacts
+    steps:
+      - name: Download packages
         uses: actions/download-artifact@v4
         with:
-          pattern: apk-packages-*
+          pattern: packages-*
           path: dist/
           merge-multiple: true
 
@@ -99,7 +66,7 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
