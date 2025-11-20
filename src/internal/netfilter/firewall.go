@@ -108,6 +108,7 @@ type Firewall struct {
 func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	_ = f.Cleanup()
 	backend := detectFirewallBackend(cfg)
+	slog.Info("Setup firewall", slog.String("backend", backend))
 	switch backend {
 	case NFT:
 		if f.NftSetup == nil {
@@ -125,6 +126,8 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	if err != nil {
 		_ = f.Cleanup()
 	}
+	f.DumpNFTables()
+	f.DumpIPTables()
 	return err
 }
 
@@ -144,7 +147,7 @@ func (f *Firewall) DumpNFTables() {
 	if err != nil {
 		return
 	}
-	slog.Debug(fmt.Sprintf("nftables ruleset:\n%s", string(output)))
+	slog.Info("nftables ruleset:\n" + string(output))
 }
 
 func (f *Firewall) DumpIPTables() {

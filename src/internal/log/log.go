@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -57,6 +58,7 @@ func SetLogConf(level string) {
 
 func LogHeader(version string, cfg *config.Config) {
 	slog.Info("UA3F started", "version", version, "", cfg)
+	slog.Info("System Info", slog.String("Go Version", strings.TrimPrefix(strings.TrimSpace(runtime.Version()), "go")), slog.String("OS/Arch", runtime.GOOS+"/"+runtime.GOARCH))
 }
 
 func LogDebugWithAddr(src string, dest string, msg string) {
