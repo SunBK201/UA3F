@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"sync"
 )
 
 const passthroughStatsFile = "/var/log/ua3f/pass_stats"
@@ -16,7 +17,10 @@ type PassThroughRecord struct {
 	Count    int
 }
 
-var passThroughRecords = make(map[string]*PassThroughRecord)
+var (
+	passThroughRecords   = make(map[string]*PassThroughRecord)
+	passThroughRecordsMu sync.RWMutex
+)
 
 func AddPassThroughRecord(record *PassThroughRecord) {
 	select {
@@ -37,10 +41,13 @@ func dumpPassThroughRecords() {
 		}
 	}()
 
+	passThroughRecordsMu.RLock()
 	var statList []PassThroughRecord
 	for _, record := range passThroughRecords {
 		statList = append(statList, *record)
 	}
+	passThroughRecordsMu.RUnlock()
+
 	sort.SliceStable(statList, func(i, j int) bool {
 		return statList[i].Count > statList[j].Count
 	})

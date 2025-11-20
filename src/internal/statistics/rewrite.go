@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"sync"
 )
 
 const rewriteStatsFile = "/var/log/ua3f/rewrite_stats"
@@ -16,7 +17,10 @@ type RewriteRecord struct {
 	MockedUA   string
 }
 
-var rewriteRecords = make(map[string]*RewriteRecord)
+var (
+	rewriteRecords   = make(map[string]*RewriteRecord)
+	rewriteRecordsMu sync.RWMutex
+)
 
 func AddRewriteRecord(record *RewriteRecord) {
 	select {
@@ -37,10 +41,13 @@ func dumpRewriteRecords() {
 		}
 	}()
 
+	rewriteRecordsMu.RLock()
 	var statList []RewriteRecord
 	for _, record := range rewriteRecords {
 		statList = append(statList, *record)
 	}
+	rewriteRecordsMu.RUnlock()
+
 	sort.SliceStable(statList, func(i, j int) bool {
 		return statList[i].Count > statList[j].Count
 	})

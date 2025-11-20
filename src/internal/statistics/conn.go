@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/sunbk201/ua3f/internal/sniff"
@@ -25,7 +26,10 @@ type ConnectionAction struct {
 	Record ConnectionRecord
 }
 
-var connectionRecords = make(map[string]*ConnectionRecord)
+var (
+	connectionRecords   = make(map[string]*ConnectionRecord)
+	connectionRecordsMu sync.RWMutex
+)
 
 // AddConnection adds or updates a connection record
 func AddConnection(record *ConnectionRecord) {
@@ -62,10 +66,12 @@ func dumpConnectionRecords() {
 		}
 	}()
 
+	connectionRecordsMu.RLock()
 	var statList []ConnectionRecord
 	for _, record := range connectionRecords {
 		statList = append(statList, *record)
 	}
+	connectionRecordsMu.RUnlock()
 
 	// Sort by start time (newest first)
 	sort.SliceStable(statList, func(i, j int) bool {

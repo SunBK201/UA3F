@@ -26,6 +26,7 @@ func StartRecorder() {
 	for {
 		select {
 		case record := <-rewriteRecordChan:
+			rewriteRecordsMu.Lock()
 			if r, exists := rewriteRecords[record.Host]; exists {
 				r.Count++
 				r.OriginalUA = record.OriginalUA
@@ -38,10 +39,12 @@ func StartRecorder() {
 					MockedUA:   record.MockedUA,
 				}
 			}
+			rewriteRecordsMu.Unlock()
 		case record := <-passThroughRecordChan:
 			if strings.HasPrefix(record.UA, "curl/") {
 				record.UA = "curl/*"
 			}
+			passThroughRecordsMu.Lock()
 			if r, exists := passThroughRecords[record.UA]; exists {
 				r.Count++
 				r.DestAddr = record.DestAddr
@@ -54,7 +57,9 @@ func StartRecorder() {
 					Count:    1,
 				}
 			}
+			passThroughRecordsMu.Unlock()
 		case action := <-connectionActionChan:
+			connectionRecordsMu.Lock()
 			switch action.Action {
 			case Add:
 				if r, exists := connectionRecords[action.Key]; exists {
@@ -70,6 +75,7 @@ func StartRecorder() {
 			case Remove:
 				delete(connectionRecords, action.Key)
 			}
+			connectionRecordsMu.Unlock()
 		case <-ticker.C:
 			dumpRewriteRecords()
 			dumpPassThroughRecords()
