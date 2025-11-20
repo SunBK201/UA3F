@@ -100,13 +100,14 @@ func (s *NfqueueServer) Start() error {
 			return 0
 		},
 		func(e error) int {
-			slog.Error("Error in nfqueue handler", slog.Any("error", e))
 			if strings.Contains(e.Error(), "no buffer space available") {
-				slog.Warn("Consider increasing the read buffer size to prevent packet drops")
+				slog.Warn("No buffer space available, consider increasing the read buffer size to prevent packet drops")
 				err = nf.Con.SetReadBuffer(1024 * 1024 * 5)
 				if err != nil {
 					slog.Error("nf.Con.SetReadBuffer", slog.Any("error", err))
 				}
+			} else {
+				slog.Error("Error in nfqueue handler", slog.Any("error", e))
 			}
 			return 0
 		},
