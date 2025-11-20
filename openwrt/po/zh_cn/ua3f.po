@@ -264,7 +264,7 @@ msgid "Set IP ID"
 msgstr "固定 IP ID"
 
 msgid "Set the IP ID to 0 for packets"
-msgstr "将数据包的 IP ID 设置为 0，不推荐开启，除非你知道这是什么"
+msgstr "将数据包的 IP ID 设置为 0，不推荐开启"
 
 msgid "Issue Report"
 msgstr "问题反馈"

@@ -74,6 +74,11 @@ func (s *NfqueueServer) Start() error {
 	//	return fmt.Errorf("nf.SetOption: %w", err)
 	// }
 
+	err = nf.Con.SetReadBuffer(1024 * 1024 * 2)
+	if err != nil {
+		slog.Error("nf.Con.SetReadBuffer", slog.Any("error", err))
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

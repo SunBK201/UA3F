@@ -1,4 +1,4 @@
-name: Build and Release OpenWRT Package
+name: Build and Release Packages and Binaries
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-openwrt:
     name: Build ${{ matrix.arch }} on ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
@@ -33,32 +33,108 @@ jobs:
       - name: Build
         uses: openwrt/gh-action-sdk@v9
         env:
-          ARCH: ${{ matrix.arch }}
+          ARCH: ${{ matrix.arch }}-${{ matrix.version }}
           FEEDNAME: ua3f_ci
           PACKAGES: openwrt
 
       - name: Rename packages with arch suffix
         run: |
           cd bin/packages/${{ matrix.arch }}/ua3f_ci/
-          for f in *.ipk; do mv "$f" "${f/.ipk/-${{ matrix.arch }}.ipk}" 2>/dev/null || true; done
           for f in *.apk; do mv "$f" "${f/.apk/-${{ matrix.arch }}.apk}" 2>/dev/null || true; done
 
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.arch }}
+          name: packages-${{ matrix.arch }}-${{ matrix.version }}
           path: bin/packages/${{ matrix.arch }}/ua3f_ci/*.*pk
           retention-days: 1
 
+  build-binaries:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+          - goos: darwin
+            goarch: arm64
+          - goos: android
+            goarch: arm64
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.21"
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build binary
+        run: |
+          cd src
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          GOOS="${{ matrix.goos }}"
+          GOARCH="${{ matrix.goarch }}"
+
+          echo "Building for $GOOS/$GOARCH..."
+
+          CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
+            go build -trimpath -ldflags="-s -w" -o ua3f main.go
+
+          mkdir -p ../dist
+          cd ..
+
+          case "$GOOS" in
+            windows)
+              mv src/ua3f src/ua3f.exe
+              zip "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j src/ua3f.exe
+              ;;
+            darwin)
+              zip -q "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j src/ua3f
+              ;;
+            *)
+              tar -czf "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.tar.gz" -C src ua3f
+              ;;
+          esac
+
+      - name: Upload binary artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          retention-days: 1
+
   release:
-    needs: [build]
+    needs: [build-openwrt, build-binaries]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download packages
+      - name: Download OpenWrt packages
         uses: actions/download-artifact@v4
         with:
           pattern: packages-*
+          path: dist/
+          merge-multiple: true
+
+      - name: Download binary packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
           path: dist/
           merge-multiple: true
 
