@@ -203,7 +203,7 @@ func (f *Firewall) IptSetLanIP() error {
 			return err
 		}
 	}
-	return set.Flush()
+	return nil
 }
 
 func (f *Firewall) IptDeleteLanIP() error {
