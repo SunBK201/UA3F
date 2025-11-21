@@ -18,6 +18,9 @@ jobs:
         arch:
           - x86_64
           - aarch64_generic
+          - aarch64_cortex-a53
+          - aarch64_cortex-a72
+          - aarch64_cortex-a76
           - arm_cortex-a7_neon-vfpv4
           - arm_cortex-a9_vfpv3-d16
           - arm_cortex-a15_neon-vfpv4
@@ -76,6 +79,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: "1.21"
+          cache-dependency-path: src/go.sum
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y zip
