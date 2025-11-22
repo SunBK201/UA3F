@@ -73,7 +73,7 @@ func (s *Server) Close() (err error) {
 
 // handlePacket processes a single NFQUEUE packet
 func (s *Server) handlePacket(packet *netfilter.Packet) {
-	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil {
+	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil || len(packet.TCP.Payload) == 0 {
 		_ = s.nfqServer.Nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 		return
 	}
@@ -154,6 +154,7 @@ func (s *Server) getNextMark(packet *netfilter.Packet, result *rewrite.RewriteRe
 	}
 
 	if mark == s.SniffCtMarkUpper {
+		slog.Debug("Connmark reached upper limit, marking as NotHTTP", slog.String("SrcAddr", packet.SrcAddr), slog.String("DstAddr", packet.DstAddr))
 		s.Cache.Add(packet.DstAddr, struct{}{})
 		return true, s.NotHTTPCtMark
 	}
