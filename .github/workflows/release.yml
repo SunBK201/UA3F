@@ -13,7 +13,7 @@ jobs:
     name: Build ${{ matrix.arch }} on ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         arch:
           - x86_64
@@ -56,7 +56,7 @@ jobs:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - goos: linux
