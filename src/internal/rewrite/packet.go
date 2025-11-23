@@ -15,10 +15,8 @@ type RewriteResult struct {
 	InCache  bool // Whether destination address is in cache
 }
 
-// shouldRewriteUA checks if the given User-Agent should be rewritten
-// Returns true if UA should be rewritten (not in whitelist and matches regex pattern)
+// shouldRewriteUA determines if the User-Agent should be rewritten
 func (r *Rewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
-	// If no pattern specified, rewrite all non-whitelist UAs
 	if r.pattern == "" {
 		return true
 	}
