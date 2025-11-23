@@ -16,7 +16,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
-const version = "1.8.6"
+const version = "1.8.7"
 
 func main() {
 	cfg, showVer := config.Parse()
