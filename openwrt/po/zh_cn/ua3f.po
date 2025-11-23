@@ -56,7 +56,7 @@ msgstr "全局重写"
 msgid "Rule Based"
 msgstr "规则判定"
 
-msgid "Direct Forward: No rewriting. Global Rewrite: Rewrite all User-Agents to the specified value. Rule Based: Use rewrite rules to determine behavior."
+msgid "Direct Forward: No rewriting. Global Rewrite: Rewrite all User-Agents. Rule Based: Use rewrite rules to determine behavior."
 msgstr "直接转发：不进行任何重写。全局重写：将所有 User-Agent 重写为指定值。规则判定：根据重写规则判定行为。"
 
 msgid "User-Agent"
@@ -89,8 +89,8 @@ msgstr "重写次数实时统计"
 msgid "Host"
 msgstr "地址"
 
-msgid "Rewrite Count"
-msgstr "重写次数"
+msgid "Count"
+msgstr "次数"
 
 msgid "Original Header"
 msgstr "原始 Header"
@@ -100,9 +100,6 @@ msgstr "重写后 Header"
 
 msgid "Pass-Through Statistics"
 msgstr "放行次数实时统计"
-
-msgid "Pass-Through Count"
-msgstr "放行次数"
 
 msgid "Last Source Address"
 msgstr "最近访问源地址"
@@ -155,13 +152,13 @@ msgstr "添加规则"
 msgid "Index"
 msgstr "序号"
 
-msgid "Rule Type"
-msgstr "规则类型"
+msgid "Type"
+msgstr "类型"
 
 msgid "Match Value"
 msgstr "匹配值"
 
-msgid "Rewrite Action"
+msgid "Action"
 msgstr "重写策略"
 
 msgid "Rewrite Value"
@@ -209,10 +206,10 @@ msgstr "保存"
 msgid "Edit"
 msgstr "编辑"
 
-msgid "Move Up"
+msgid "Up"
 msgstr "上移"
 
-msgid "Move Down"
+msgid "Down"
 msgstr "下移"
 
 msgid "Delete"
