@@ -83,22 +83,12 @@ func (s *Server) NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) 
 	}
 	tx.Add(chain)
 	var rule *knftables.Rule
-	if resetOptionAvailable() {
-		rule = &knftables.Rule{
-			Chain: chain.Name,
-			Rule: knftables.Concat(
-				"tcp option timestamp exists",
-				"counter reset tcp option timestamp",
-			),
-		}
-	} else {
-		rule = &knftables.Rule{
-			Chain: chain.Name,
-			Rule: knftables.Concat(
-				"tcp flags syn",
-				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
-			),
-		}
+	rule = &knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			"tcp flags syn",
+			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+		),
 	}
 	tx.Add(rule)
 }
@@ -122,7 +112,8 @@ func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
 	tx.Add(rule)
 }
 
-func resetOptionAvailable() bool {
+// unused currently
+func ResetOptionAvailable() bool {
 	const TestName = "UA3F_TEST_RESET"
 	table := &knftables.Table{
 		Name:   TestName,
@@ -130,7 +121,7 @@ func resetOptionAvailable() bool {
 	}
 	nft, err := knftables.New(table.Family, table.Name)
 	if err != nil {
-		slog.Error("resetOptionAvailable knftables.New", slog.Any("error", err))
+		slog.Error("ResetOptionAvailable knftables.New", slog.Any("error", err))
 		return false
 	}
 	tx := nft.NewTransaction()

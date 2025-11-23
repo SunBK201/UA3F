@@ -87,12 +87,7 @@ func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
 }
 
 func (s *Server) IptDelTCPTS(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleRstTimestamp...)
-	if err == nil {
-		return nil
-	}
-
-	err = ipt.Append(table, chain, RuleDelTCPTS...)
+	err := ipt.Append(table, chain, RuleDelTCPTS...)
 	if err != nil {
 		return err
 	}
