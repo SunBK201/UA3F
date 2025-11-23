@@ -57,11 +57,11 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
     <tr class="tr table-titles">
         <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
         <th class="th" style="width: 50px"><%:Index%></th>
-        <th class="th" style="width: 95px"><%:Rule Type%></th>
+        <th class="th" style="width: 95px"><%:Type%></th>
         <th class="th" style="width: 120px"><%:Rewrite Header%></th>
         <th class="th"><%:Match Value%></th>
-        <th class="th" style="width: 100px"><%:Rewrite Action%></th>
-        <th class="th"><%:Rewrite Value%></th>
+        <th class="th" style="width: 100px"><%:Action%></th>
+        <th class="th"><%:Value%></th>
         <th class="th" style="width: 280px"><%:Actions%></th>
     </tr>
     <tbody id="rulesTableBody"></tbody>
@@ -253,7 +253,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 var upBtn = document.createElement('button');
                 upBtn.type = 'button';
                 upBtn.className = 'cbi-button cbi-button-neutral';
-                upBtn.textContent = '<%:Move Up%>';
+                upBtn.textContent = '<%:Up%>';
                 upBtn.disabled = index === 0;
                 upBtn.onclick = function() { rewriteRules.moveRuleUp(index); };
                 td8.appendChild(upBtn);
@@ -263,7 +263,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 var downBtn = document.createElement('button');
                 downBtn.type = 'button';
                 downBtn.className = 'cbi-button cbi-button-neutral';
-                downBtn.textContent = '<%:Move Down%>';
+                downBtn.textContent = '<%:Down%>';
                 // Can't move down if it's the second-to-last (because last is FINAL)
                 downBtn.disabled = index >= this.rules.length - 2;
                 downBtn.onclick = function() { rewriteRules.moveRuleDown(index); };
@@ -348,7 +348,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
                 typeValue.className = 'cbi-value';
                 var typeLabel = document.createElement('label');
                 typeLabel.className = 'cbi-value-title';
-                typeLabel.textContent = '<%:Rule Type%>';
+                typeLabel.textContent = '<%:Type%>';
                 typeValue.appendChild(typeLabel);
                 var typeField = document.createElement('div');
                 typeField.className = 'cbi-value-field';
@@ -421,7 +421,7 @@ local rules_data = uci:get("ua3f", "main", "rewrite_rules") or "[]"
             actionValue.className = 'cbi-value';
             var actionLabel = document.createElement('label');
             actionLabel.className = 'cbi-value-title';
-            actionLabel.textContent = '<%:Rewrite Action%>';
+            actionLabel.textContent = '<%:Action%>';
             actionValue.appendChild(actionLabel);
             var actionField = document.createElement('div');
             actionField.className = 'cbi-value-field';
