@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"sigs.k8s.io/knftables"
 )
 
@@ -36,6 +37,18 @@ func (s *Server) nftSetup() error {
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
 		return err
+	}
+
+	if s.cfg.SetTTL && netfilter.FlowOffloadEnabled() {
+		lanDev, err := netfilter.GetLanDevice()
+		if err != nil {
+			slog.Warn("nftSetup netfilter.GetLanDevice", slog.Any("error", err))
+		} else {
+			err = s.NftSetTTLIngress(nft, s.Nftable, lanDev)
+			if err != nil {
+				slog.Warn("NftSetTTLIngress", slog.Any("error", err))
+			}
+		}
 	}
 	return nil
 }
@@ -71,6 +84,32 @@ func (s *Server) NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 	}
 	tx.Add(chain)
 	tx.Add(rule)
+}
+
+func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Table, device string) error {
+	tx := nft.NewTransaction()
+
+	chain := &knftables.Chain{
+		Name:     "TTL64_INGRESS",
+		Table:    table.Name,
+		Type:     knftables.PtrTo(knftables.FilterType),
+		Hook:     knftables.PtrTo(knftables.IngressHook),
+		Priority: knftables.PtrTo(knftables.ManglePriority),
+		Device:   knftables.PtrTo(device),
+	}
+	rule := &knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			"ip ttl set 65",
+		),
+	}
+	tx.Add(chain)
+	tx.Add(rule)
+
+	if err := nft.Run(context.TODO(), tx); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) {
