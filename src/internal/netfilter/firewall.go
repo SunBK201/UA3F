@@ -9,7 +9,9 @@ import (
 	"net"
 	"os/exec"
 	"os/user"
+	"strings"
 
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/gonetx/ipset"
 	"github.com/sunbk201/ua3f/internal/config"
 	"sigs.k8s.io/knftables"
@@ -255,8 +257,8 @@ func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
-	nftAvailable := isCommandAvailable("nft")
-	iptAvailable := isCommandAvailable("iptables")
+	nftAvailable := IsCommandAvailable("nft")
+	iptAvailable := IsCommandAvailable("iptables")
 	nftTproxyAvailable := isOpkgPackageInstalled("kmod-nft-tproxy") && nftAvailable
 	nftNfqueueAvailable := isOpkgPackageInstalled("kmod-nft-queue") && nftAvailable
 	tproxyNeeded := cfg.ServerMode == config.ServerModeTProxy
@@ -334,7 +336,7 @@ func getLocalIPv4CIDRs() ([]string, error) {
 	return cidrs, nil
 }
 
-func isCommandAvailable(cmd string) bool {
+func IsCommandAvailable(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
 }
@@ -429,4 +431,68 @@ func initLanCidrs() {
 		return
 	}
 	LAN_CIDRS = append(LAN_CIDRS, localCIDRs...)
+}
+
+func GetLanDevice() (string, error) {
+	out, err := exec.Command("ubus", "call", "network.interface.lan", "status").Output()
+	if err != nil {
+		return "", err
+	}
+	var lanInterface struct {
+		Device string `json:"device"`
+	}
+	if err := json.Unmarshal(out, &lanInterface); err != nil {
+		return "", err
+	}
+	if lanInterface.Device == "" {
+		return "", errors.New("no device found for lan interface")
+	}
+	// get real device if it's a bridge
+	out, err = exec.Command("ubus", "call", "network.device", "status").Output()
+	if err != nil {
+		return "", err
+	}
+	var devices map[string]struct {
+		Type    string   `json:"type"`
+		Bridges []string `json:"bridge-members"`
+	}
+	if err := json.Unmarshal(out, &devices); err != nil {
+		return "", err
+	}
+	dev, ok := devices[lanInterface.Device]
+	if !ok {
+		return "", fmt.Errorf("device %s not found", lanInterface.Device)
+	}
+	if dev.Type != "bridge" {
+		return lanInterface.Device, nil
+	}
+	if len(dev.Bridges) == 0 {
+		return "", fmt.Errorf("bridge %s has no members", lanInterface.Device)
+	}
+	return dev.Bridges[0], nil
+}
+
+func FlowOffloadEnabled() bool {
+	cmd := exec.Command("nft", "list", "chain", string(knftables.InetFamily), "fw4", "forward")
+	if output, err := cmd.CombinedOutput(); err == nil {
+		if strings.Contains(string(output), "flow add") {
+			return true
+		}
+	}
+
+	ipt, err := iptables.New()
+	if err != nil {
+		return false
+	}
+
+	rules, err := ipt.List("filter", "forward")
+	if err != nil {
+		return false
+	}
+	for _, rule := range rules {
+		if strings.Contains(rule, "FLOWOFFLOAD") {
+			return true
+		}
+	}
+	return false
 }

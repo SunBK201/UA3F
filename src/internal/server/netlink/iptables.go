@@ -3,10 +3,13 @@
 package netlink
 
 import (
+	"context"
+	"errors"
 	"strconv"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"sigs.k8s.io/knftables"
 )
 
 const (
@@ -51,6 +54,12 @@ func (s *Server) iptSetup() error {
 		if err != nil {
 			return err
 		}
+		if netfilter.FlowOffloadEnabled() {
+			err = s.IptSetTTLIngress(ipt)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
 		err = s.IptDelTCPTS(ipt)
@@ -75,6 +84,9 @@ func (s *Server) iptCleanup() error {
 	_ = ipt.DeleteIfExists(table, chain, RuleTTL...)
 	_ = ipt.DeleteIfExists(table, chain, RuleIP...)
 	_ = ipt.DeleteIfExists(table, chain, RuleDelTCPTS...)
+	if s.cfg.SetTTL {
+		_ = s.NftCleanup()
+	}
 	return nil
 }
 
@@ -100,4 +112,27 @@ func (s *Server) IptSetIP(ipt *iptables.IPTables) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) IptSetTTLIngress(ipt *iptables.IPTables) error {
+	if !netfilter.IsCommandAvailable("nft") {
+		return errors.New("nft command not available")
+	}
+
+	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
+	if err != nil {
+		return err
+	}
+
+	tx := nft.NewTransaction()
+	tx.Add(s.Nftable)
+	if err := nft.Run(context.TODO(), tx); err != nil {
+		return err
+	}
+
+	lanDev, err := netfilter.GetLanDevice()
+	if err != nil {
+		return err
+	}
+	return s.NftSetTTLIngress(nft, s.Nftable, lanDev)
 }
