@@ -10,7 +10,6 @@ local Value = cbi.Value
 local ListValue = cbi.ListValue
 local DummyValue = cbi.DummyValue
 local TextValue = cbi.TextValue
-local Button = cbi.Button
 
 -- Status Section Fields
 function M.add_status_fields(section)
@@ -127,6 +126,7 @@ function M.add_log_fields(section)
         luci.http.write([[
             var textarea = document.getElementById('cbid.ua3f.main.log');
             if (textarea) {
+                textarea.removeAttribute('name');
                 textarea.scrollTop = textarea.scrollHeight;
             }
         ]])
