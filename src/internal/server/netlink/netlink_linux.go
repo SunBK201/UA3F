@@ -52,12 +52,10 @@ func (s *Server) Start() (err error) {
 	return nil
 }
 
-func (s *Server) Close() (err error) {
-	err = s.Firewall.Cleanup()
-	if err != nil {
-		return err
-	}
-	return nil
+func (s *Server) Close() error {
+	err := s.Firewall.Cleanup()
+	s.nfqServer.Close()
+	return err
 }
 
 // handlePacket processes a single NFQUEUE packet
