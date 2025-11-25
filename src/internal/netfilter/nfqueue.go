@@ -38,7 +38,7 @@ func (s *NfqueueServer) Start() error {
 		return fmt.Errorf("NfqueueServer.Handler is nil")
 	}
 	if s.MaxQueueLen <= 0 {
-		s.MaxQueueLen = 2000
+		s.MaxQueueLen = 4000
 	}
 	if s.MaxPacketLen <= 0 {
 		s.MaxPacketLen = 1600
