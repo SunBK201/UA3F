@@ -66,8 +66,9 @@ func (s *Server) Start() (err error) {
 	return s.nfqServer.Start()
 }
 
-func (s *Server) Close() (err error) {
-	err = s.Firewall.Cleanup()
+func (s *Server) Close() error {
+	err := s.Firewall.Cleanup()
+	s.nfqServer.Close()
 	return err
 }
 
