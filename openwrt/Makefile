@@ -28,7 +28,7 @@ define Package/ua3f
 	SUBMENU:=Web Servers/Proxies
 	TITLE:=Advanced HTTP Header Rewriting Tool
 	URL:=https://github.com/SunBK201/UA3F
-	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat +ipset +iptables +iptables-mod-tproxy +iptables-mod-extra +iptables-mod-nat-extra +kmod-ipt-conntrack +iptables-mod-ipopt +iptables-mod-nfqueue +iptables-mod-conntrack-extra +kmod-nf-conntrack-netlink
+	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat +ipset +iptables +iptables-mod-tproxy +iptables-mod-extra +iptables-mod-ipopt +iptables-mod-nfqueue +iptables-mod-conntrack-extra +kmod-nf-conntrack-netlink
 endef
 
 define Package/ua3f/description
