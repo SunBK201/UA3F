@@ -16,7 +16,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
-const version = "1.8.8"
+var appVersion = "Development"
 
 func main() {
 	cfg, showVer := config.Parse()
@@ -24,11 +24,11 @@ func main() {
 	log.SetLogConf(cfg.LogLevel)
 
 	if showVer {
-		fmt.Printf("UA3F version %s\n", version)
+		fmt.Printf("UA3F version %s\n", appVersion)
 		return
 	}
 
-	log.LogHeader(version, cfg)
+	log.LogHeader(appVersion, cfg)
 
 	rw, err := rewrite.New(cfg)
 	if err != nil {

@@ -17,7 +17,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/sunbk201/ua3f
-GO_PKG_LDFLAGS_X:= main.version=$(PKG_VERSION)
+GO_PKG_LDFLAGS_X:=main.appVersion=v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
