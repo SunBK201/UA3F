@@ -141,7 +141,7 @@ function M.add_log_fields(section)
     log_level:value("ERROR")
     log_level.default = "WARN"
     log_level.description = translate(
-        "Sets the logging level. Do not keep the log level set to DEBUG/INFO for an extended period of time.")
+        "Sets the logging level. Do not keep the log level set to DEBUG for an extended period of time.")
 
     -- Log Lines
     local logLines = section:taboption("log", Value, "log_lines", translate("Display Lines"))
