@@ -59,18 +59,6 @@ UA3F supports LuCI Web interface. Navigate to Services -> UA3F for configuration
 
 For detailed tutorial, please visit: [UA3F User Guide](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
 
-> [!NOTE]
-> Configuration Details:
->
-> - **Server Mode**: Supports `HTTP`, `SOCKS5`, `TPROXY`, `REDIRECT`, `NFQUEUE`. Default: `SOCKS5`
-> - **Port**: Default `1080`
-> - **Bind Address**: Default `0.0.0.0`
-> - **Log Level**: Default `error`. Set to `debug` for troubleshooting
-> - **Rewrite Mode**: Default `GLOBAL`. Supports `GLOBAL`, `DIRECT`, `RULES`
-> - **User-Agent**: Custom User-Agent for rewriting. Default: `FFF`
-> - **User-Agent Regex**: Only rewrite User-Agents matching this regex. If empty, all User-Agents will be rewritten
-> - **Partial Replace**: Only replace the matched portion of the regex. This option only takes effect when User-Agent regex is not empty
-
 Device and system information regex reference:
 
 ```regex
