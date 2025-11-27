@@ -110,13 +110,13 @@ sudo -u shellcrash /usr/bin/ua3f
 
 UA3F 支持 5 种不同的服务模式，各模式的特点和使用场景如下：
 
-| 服务模式     | 工作原理           | 是否依赖 Clash 等 | 兼容性 | 效能 | 能否与 Clash 等伴生运行 |
+| 服务模式     | 工作原理           | 是否依赖 Clash 等 | 兼容性 | 性能 | 能否与 Clash 等伴生运行 |
 | ------------ | ------------------ | ----------------- | ------ | ---- | ----------------------- |
 | **HTTP**     | HTTP 代理          | 是                | 高     | 低   | 能                      |
 | **SOCKS5**   | SOCKS5 代理        | 是                | 高     | 低   | 能                      |
 | **TPROXY**   | netfilter TPROXY   | 否                | 中     | 中   | 能                      |
 | **REDIRECT** | netfilter REDIRECT | 否                | 中     | 中   | 能                      |
-| **NFQUEUE**  | netfilter NFQUEUE  | 否                | 中     | 高   | 能                      |
+| **NFQUEUE**  | netfilter NFQUEUE  | 否                | 低     | 高   | 能                      |
 
 ### 重写策略说明
 
