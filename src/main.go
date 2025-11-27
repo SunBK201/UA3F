@@ -14,6 +14,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/server"
 	"github.com/sunbk201/ua3f/internal/server/netlink"
 	"github.com/sunbk201/ua3f/internal/statistics"
+	"github.com/sunbk201/ua3f/internal/usergroup"
 )
 
 var appVersion = "Development"
@@ -29,6 +30,11 @@ func main() {
 	}
 
 	log.LogHeader(appVersion, cfg)
+
+	if err := usergroup.SetUserGroup(cfg); err != nil {
+		slog.Error("usergroup.SetUserGroup", slog.Any("error", err))
+		return
+	}
 
 	rw, err := rewrite.New(cfg)
 	if err != nil {
