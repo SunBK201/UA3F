@@ -124,9 +124,6 @@ func (s *NfqueueServer) Start() error {
 	if err != nil {
 		return fmt.Errorf("nf.RegisterWithErrorFunc: %w", err)
 	}
-
-	<-ctx.Done()
-
 	return nil
 }
 

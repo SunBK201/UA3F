@@ -45,9 +45,9 @@ func (s *Server) Start() (err error) {
 		slog.Error("Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	if s.cfg.SetTTL || s.cfg.DelTCPTimestamp || s.cfg.SetIPID {
+	if s.cfg.DelTCPTimestamp || s.cfg.SetIPID {
 		slog.Info("Packet modification features enabled")
-		go s.nfqServer.Start()
+		return s.nfqServer.Start()
 	}
 	return nil
 }
