@@ -63,20 +63,24 @@ func (s *Server) Start() (err error) {
 	if s.listener, err = net.Listen("tcp", s.Cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
-	var client net.Conn
-	for {
-		if client, err = s.listener.Accept(); err != nil {
-			if errors.Is(err, syscall.EMFILE) {
-				time.Sleep(time.Second)
-			} else if errors.Is(err, net.ErrClosed) {
-				return nil
+
+	go func() {
+		var client net.Conn
+		for {
+			if client, err = s.listener.Accept(); err != nil {
+				if errors.Is(err, syscall.EMFILE) {
+					time.Sleep(time.Second)
+				} else if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				slog.Error("s.listener.Accept", slog.Any("error", err))
+				continue
 			}
-			slog.Error("s.listener.Accept", slog.Any("error", err))
-			continue
+			slog.Debug("Accept connection", slog.String("addr", client.RemoteAddr().String()))
+			go s.HandleClient(client)
 		}
-		slog.Debug("Accept connection", slog.String("addr", client.RemoteAddr().String()))
-		go s.HandleClient(client)
-	}
+	}()
+	return nil
 }
 
 // handleClient performs SOCKS5 negotiation and dispatches TCP/UDP handling.

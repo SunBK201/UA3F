@@ -44,7 +44,12 @@ func (s *Server) Start() (err error) {
 			}
 		}),
 	}
-	return server.ListenAndServe()
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server.ListenAndServe", slog.Any("error", err))
+		}
+	}()
+	return nil
 }
 
 func (s *Server) Close() (err error) {

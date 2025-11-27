@@ -64,7 +64,7 @@ func (s *Server) Start() error {
 
 	err = s.Firewall.Setup(s.Cfg)
 	if err != nil {
-		slog.Error(fmt.Sprintf("s.Firewall.Setup: %v", err))
+		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
 	lc := net.ListenConfig{
@@ -87,20 +87,24 @@ func (s *Server) Start() error {
 	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.Cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
-	var client net.Conn
-	for {
-		if client, err = s.listener.Accept(); err != nil {
-			if errors.Is(err, syscall.EMFILE) {
-				time.Sleep(time.Second)
-			} else if errors.Is(err, net.ErrClosed) {
-				return nil
+
+	go func() {
+		var client net.Conn
+		for {
+			if client, err = s.listener.Accept(); err != nil {
+				if errors.Is(err, syscall.EMFILE) {
+					time.Sleep(time.Second)
+				} else if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				slog.Error(fmt.Sprintf("s.listener.Accept: %v", err))
+				continue
 			}
-			slog.Error(fmt.Sprintf("s.listener.Accept: %v", err))
-			continue
+			slog.Debug(fmt.Sprintf("Accept connection from %s", client.RemoteAddr().String()))
+			go s.HandleClient(client)
 		}
-		slog.Debug(fmt.Sprintf("Accept connection from %s", client.RemoteAddr().String()))
-		go s.HandleClient(client)
-	}
+	}()
+	return nil
 }
 
 func (s *Server) Close() error {

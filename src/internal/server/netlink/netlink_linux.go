@@ -42,7 +42,7 @@ func New(cfg *config.Config) *Server {
 func (s *Server) Start() (err error) {
 	err = s.Firewall.Setup(s.cfg)
 	if err != nil {
-		slog.Error("Firewall.Setup", slog.Any("error", err))
+		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
 	if s.cfg.DelTCPTimestamp || s.cfg.SetIPID {

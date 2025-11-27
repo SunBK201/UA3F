@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -57,34 +56,36 @@ func main() {
 		return
 	}
 
-	cleanup := make(chan os.Signal, 1)
-	signal.Notify(cleanup, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
-
-	var shutdownOnce sync.Once
 	shutdown := func() {
-		shutdownOnce.Do(func() {
-			if err := helper.Close(); err != nil {
-				slog.Error("helper.Close", slog.Any("error", err))
-			}
-			if err := srv.Close(); err != nil {
-				slog.Error("srv.Close", slog.Any("error", err))
-			}
-			slog.Info("UA3F exited gracefully")
-		})
+		if err := helper.Close(); err != nil {
+			slog.Error("helper.Close", slog.Any("error", err))
+		}
+		if err := srv.Close(); err != nil {
+			slog.Error("srv.Close", slog.Any("error", err))
+		}
+		slog.Info("UA3F exit")
 	}
 
 	go statistics.StartRecorder()
 
-	go func() {
-		<-cleanup
-		shutdown()
-		os.Exit(0)
-	}()
-
-	defer shutdown()
-
 	if err := srv.Start(); err != nil {
 		slog.Error("srv.Start", slog.Any("error", err))
+		shutdown()
 		return
+	}
+
+	cleanup := make(chan os.Signal, 1)
+	signal.Notify(cleanup, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+	for {
+		s := <-cleanup
+		slog.Info("Received signal", slog.String("signal", s.String()))
+		switch s {
+		case syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM:
+			shutdown()
+			return
+		case syscall.SIGHUP:
+		default:
+			return
+		}
 	}
 }
