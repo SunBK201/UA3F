@@ -37,8 +37,6 @@ start_service() {
     [ "$del_tcpts" -eq "1" ] && others="${others}tcpts,"
     [ "$set_ttl" -eq "1" ] && others="${others}ttl,"
 
-    set_ua3f_group
-
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
     procd_append_param command -m "$server_mode"
