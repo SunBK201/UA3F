@@ -1,0 +1,143 @@
+# UA3F
+
+![Release](https://img.shields.io/github/v/release/SunBK201/UA3F?display_name=tag&label=UA3F&link=https%3A%2F%2Fgithub.com%2FSunBK201%2FUA3F%2Freleases%2Flatest)
+[![CodeQL](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql)
+[![License](https://img.shields.io/github/license/SunBK201/UA3F)](https://github.com/SunBK201/UA3F/blob/master/LICENSE)
+
+English | [简体中文](README.md)
+
+UA3F is an HTTP Header rewriting tool that transparently rewrites HTTP request headers (such as User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
+
+## Features
+
+- Multiple server modes: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
+- Highly flexible rewriting rule system with multiple rule types and rewriting strategies
+- Real-time statistics dashboard with traffic modification monitoring and analysis
+- Multiple deployment options: opkg installation, compilation, and Docker deployment
+- Supports OpenWrt 17.01 and above
+- Compatible with Clash Fake-IP & Redir-Host modes for coexistence
+- Supports TTL, TCP Timestamp, and IP ID obfuscation
+
+<table>
+  <tr>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci160.png" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
+  </tr>
+</table>
+
+![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-160.png)
+
+## Deployment
+
+Three deployment methods are available:
+
+- **IPK Package Installation:**
+
+  Pre-compiled versions for common architectures are available on the [Release](https://github.com/SunBK201/UA3F/releases) page. Download the appropriate version for your device architecture and install it on OpenWrt using `opkg install`.
+
+- **OpenWrt Compilation:**
+
+  ```sh
+  git clone https://github.com/openwrt/openwrt.git && cd openwrt
+  git checkout openwrt-24.10
+  ./scripts/feeds update -a && ./scripts/feeds install -a
+  git clone https://github.com/SunBK201/UA3F.git package/UA3F
+  make menuconfig # Select Network->Web Servers/Proxies->ua3f
+  make download -j$(nproc) V=s
+  make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # Compile single package
+  ```
+
+- **Docker Deployment:**
+
+  ```sh
+  docker run -p 1080:1080 sunbk201/ua3f -f FFF
+  ```
+
+## Usage
+
+UA3F supports LuCI Web interface. Navigate to Services -> UA3F for configuration.
+
+For detailed tutorial, please visit: [UA3F User Guide](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
+
+> [!NOTE]
+> Configuration Details:
+>
+> - **Server Mode**: Supports `HTTP`, `SOCKS5`, `TPROXY`, `REDIRECT`, `NFQUEUE`. Default: `SOCKS5`
+> - **Port**: Default `1080`
+> - **Bind Address**: Default `0.0.0.0`
+> - **Log Level**: Default `error`. Set to `debug` for troubleshooting
+> - **Rewrite Mode**: Default `GLOBAL`. Supports `GLOBAL`, `DIRECT`, `RULES`
+> - **User-Agent**: Custom User-Agent for rewriting. Default: `FFF`
+> - **User-Agent Regex**: Only rewrite User-Agents matching this regex. If empty, all User-Agents will be rewritten
+> - **Partial Replace**: Only replace the matched portion of the regex. This option only takes effect when User-Agent regex is not empty
+
+Device and system information regex reference:
+
+```regex
+(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)
+```
+
+<details>
+<summary>Manual Command Line Launch</summary>
+
+```sh
+opkg install sudo
+sudo -u nobody /usr/bin/ua3f
+```
+
+For shellclash/shellcrash users, use the following command:
+
+```sh
+sudo -u shellclash /usr/bin/ua3f
+# If the above command fails, use this one
+sudo -u shellcrash /usr/bin/ua3f
+```
+
+Command line parameters:
+
+- `-m <mode>`: Server mode. Supports HTTP, SOCKS5, TPROXY, REDIRECT. Default: SOCKS5
+- `-b <bind addr>`: Custom bind address. Default: 127.0.0.1
+- `-p <port>`: Port number. Default: 1080
+- `-l <log level>`: Log level. Default: info. Options: debug. Default log location: `/var/log/ua3f.log`
+- `-x`: Rewrite mode. Supports GLOBAL, DIRECT, RULES. Default: GLOBAL
+- `-f <UA>`: Custom User-Agent. Default: FFF
+- `-r <regex>`: Custom regex to match User-Agent. Default: empty (all User-Agents will be rewritten)
+- `-s`: Partial replacement, only replace the regex matched portion
+- `-z`: Rewrite rules in JSON string format. Only effective in RULES rewrite mode
+- `-o ttl,tcpts,ipid`: Enable TTL, TCP Timestamp, and IP ID obfuscation
+
+</details>
+
+### Server Mode Description
+
+UA3F supports 5 different server modes, each with unique characteristics:
+
+| Server Mode  | Working Principle  | Clash Dependency | Compatibility | Performance | Coexist with Clash |
+| ------------ | ------------------ | ---------------- | ------------- | ----------- | ------------------ |
+| **HTTP**     | HTTP Proxy         | Yes              | High          | Low         | Yes                |
+| **SOCKS5**   | SOCKS5 Proxy       | Yes              | High          | Low         | Yes                |
+| **TPROXY**   | netfilter TPROXY   | No               | Medium        | Medium      | Yes                |
+| **REDIRECT** | netfilter REDIRECT | No               | Medium        | Medium      | Yes                |
+| **NFQUEUE**  | netfilter NFQUEUE  | No               | Low           | High        | Yes                |
+
+### Rewrite Strategy Description
+
+UA3F supports 3 different rewrite strategies:
+
+| Rewrite Strategy | Rewrite Behavior                  | Rewrite Headers | Applicable Modes           |
+| ---------------- | --------------------------------- | --------------- | -------------------------- |
+| **GLOBAL**       | Rewrite all requests              | User-Agent      | All server modes           |
+| **DIRECT**       | No rewriting, pure forwarding     | None            | All server modes           |
+| **RULES**        | Rewrite based on rewriting rules  | Customizable    | HTTP/SOCKS5/TPROXY/REDIRECT|
+
+## Clash Configuration
+
+See [Clash Configuration](docs/Clash.md)
+
+## References & Thanks
+
+- [UA2F](https://github.com/Zxilly/UA2F)
+- [uaProxy](https://github.com/huhu415/uaProxy)
+- [xmurp-ua](https://github.com/CHN-beta/xmurp-ua)
+- [Clash](https://github.com/Dreamacro/clash)
+- [mihomo](https://github.com/MetaCubeX/mihomo)
