@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -132,12 +131,12 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			req = s.Rewriter.Rewrite(req, c.LAddr, c.RAddr, decision)
 		}
 
-		if err = ForwardHTTP(c.RConn, req); err != nil {
-			err = fmt.Errorf("ForwardHTTP: %w", err)
-			return
+		if err := req.Write(c.RConn); err != nil {
+			return fmt.Errorf("req.Write: %w", err)
 		}
+
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
-			c.LogInfo("websocket upgrade detected, switch to direct proxy")
+			c.LogInfo("websocket upgrade detected, switch to direct forward")
 			statistics.AddConnection(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  c.LAddr,
@@ -146,15 +145,4 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			return
 		}
 	}
-}
-
-func ForwardHTTP(dst net.Conn, req *http.Request) error {
-	if err := req.Write(dst); err != nil {
-		return fmt.Errorf("req.Write: %w", err)
-	}
-	err := req.Body.Close()
-	if err != nil {
-		return fmt.Errorf("req.Body.Close: %w", err)
-	}
-	return nil
 }

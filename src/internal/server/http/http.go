@@ -123,9 +123,8 @@ func (s *Server) rewriteAndForward(target net.Conn, req *http.Request, dstAddr, 
 	if decision.ShouldRewrite() {
 		req = s.Rewriter.Rewrite(req, srcAddr, dstAddr, decision)
 	}
-	if err = base.ForwardHTTP(target, req); err != nil {
-		err = fmt.Errorf("base.ForwardHTTP: %w", err)
-		return
+	if err := req.Write(target); err != nil {
+		return fmt.Errorf("req.Write: %w", err)
 	}
 	return nil
 }
