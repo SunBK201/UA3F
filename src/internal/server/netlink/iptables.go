@@ -22,7 +22,7 @@ var RuleTTL = []string{
 	"--ttl-set", "64",
 }
 
-var RuleDelTCPTS = []string{
+var RuleHookTCPSyn = []string{
 	"-p", "tcp",
 	"--tcp-flags", "SYN", "SYN",
 	"-j", "NFQUEUE",
@@ -61,8 +61,8 @@ func (s *Server) iptSetup() error {
 			}
 		}
 	}
-	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		err = s.IptDelTCPTS(ipt)
+	if (s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow) && !s.cfg.SetIPID {
+		err = s.IptHookTCPSyn(ipt)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (s *Server) iptCleanup() error {
 	}
 	_ = ipt.DeleteIfExists(table, chain, RuleTTL...)
 	_ = ipt.DeleteIfExists(table, chain, RuleIP...)
-	_ = ipt.DeleteIfExists(table, chain, RuleDelTCPTS...)
+	_ = ipt.DeleteIfExists(table, chain, RuleHookTCPSyn...)
 	if s.cfg.SetTTL {
 		_ = s.NftCleanup()
 	}
@@ -98,8 +98,8 @@ func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
 	return nil
 }
 
-func (s *Server) IptDelTCPTS(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleDelTCPTS...)
+func (s *Server) IptHookTCPSyn(ipt *iptables.IPTables) error {
+	err := ipt.Append(table, chain, RuleHookTCPSyn...)
 	if err != nil {
 		return err
 	}

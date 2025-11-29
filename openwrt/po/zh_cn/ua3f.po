@@ -126,7 +126,7 @@ msgid "Set TTL"
 msgstr "固定 TTL"
 
 msgid "Set the TTL 64 for packets"
-msgstr "固定数据包的 TTL"
+msgstr "固定数据包的 TTL 为 64"
 
 msgid "Connection Statistics"
 msgstr "连接实时统计"
@@ -256,6 +256,12 @@ msgstr "删除 TCP 时间戳"
 
 msgid "Remove TCP Timestamp option"
 msgstr "移除 TCP 时间戳选项"
+
+msgid "Set TCP Initial Window"
+msgstr "固定 TCP 初始接收窗口"
+
+msgid "Set the TCP Initial Window to 65535 for SYN packets"
+msgstr "固定 TCP SYN 的 TCP 初始接收窗口设置为 65535"
 
 msgid "Set IP ID"
 msgstr "固定 IP ID"

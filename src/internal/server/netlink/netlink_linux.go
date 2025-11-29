@@ -45,8 +45,8 @@ func (s *Server) Start() (err error) {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.SetTTL), slog.Bool("tcpts", s.cfg.DelTCPTimestamp), slog.Bool("ipid", s.cfg.SetIPID))
-	if s.cfg.DelTCPTimestamp || s.cfg.SetIPID {
+	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.SetTTL), slog.Bool("tcpts", s.cfg.DelTCPTimestamp), slog.Bool("ipid", s.cfg.SetIPID), slog.Bool("tcp_init_window", s.cfg.SetTCPInitialWindow))
+	if s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow || s.cfg.SetIPID {
 		return s.nfqServer.Start()
 	}
 	return nil
@@ -63,8 +63,13 @@ func (s *Server) handlePacket(packet *netfilter.Packet) {
 	nf := s.nfqServer.Nf
 
 	modified := false
-	if s.cfg.DelTCPTimestamp && packet.TCP != nil {
-		modified = s.clearTCPTimestamp(packet.TCP) || modified
+	if packet.TCP != nil {
+		if s.cfg.DelTCPTimestamp {
+			modified = s.clearTCPTimestamp(packet.TCP) || modified
+		}
+		if s.cfg.SetTCPInitialWindow {
+			modified = s.setInitialTCPWindow(packet.TCP) || modified
+		}
 	}
 	if s.cfg.SetIPID {
 		modified = s.zeroIPID(packet) || modified
@@ -108,6 +113,18 @@ func (s *Server) clearTCPTimestamp(tcp *layers.TCP) bool {
 		tcp.Options = newOptions
 	}
 	return modified
+}
+
+// setInitialTCPWindow sets the TCP initial window size to 65535 for SYN packets
+func (s *Server) setInitialTCPWindow(tcp *layers.TCP) bool {
+	if !(tcp.SYN && !tcp.ACK) {
+		return false
+	}
+	if tcp.Window == uint16(65535) {
+		return false
+	}
+	tcp.Window = uint16(65535)
+	return true
 }
 
 // zeroIPID sets the IP ID field to zero for IPv4 packets

@@ -213,6 +213,10 @@ function M.add_others_fields(section)
     local tcpts = section:taboption("others", Flag, "del_tcpts", translate("Delete TCP Timestamps"))
     tcpts.description = translate("Remove TCP Timestamp option")
 
+    -- TCP Initial Window
+    local tcp_init_window = section:taboption("others", Flag, "set_tcp_init_window", translate("Set TCP Initial Window"))
+    tcp_init_window.description = translate("Set the TCP Initial Window to 65535 for SYN packets")
+
     -- IP ID Setting
     local ipid = section:taboption("others", Flag, "set_ipid", translate("Set IP ID"))
     ipid.description = translate("Set the IP ID to 0 for packets")

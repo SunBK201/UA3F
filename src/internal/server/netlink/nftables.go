@@ -28,8 +28,8 @@ func (s *Server) nftSetup() error {
 	if s.cfg.SetTTL {
 		s.NftSetTTL(tx, s.Nftable)
 	}
-	if s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
-		s.NftDelTCPTS(tx, s.Nftable)
+	if (s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow) && !s.cfg.SetIPID {
+		s.NftHookTCPSyn(tx, s.Nftable)
 	}
 	if s.cfg.SetIPID {
 		s.NftSetIP(tx, s.Nftable)
@@ -112,9 +112,9 @@ func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Tabl
 	return nil
 }
 
-func (s *Server) NftDelTCPTS(tx *knftables.Transaction, table *knftables.Table) {
+func (s *Server) NftHookTCPSyn(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
-		Name:     "DEL_TCPTS",
+		Name:     "HOOK_TCP_SYN",
 		Table:    table.Name,
 		Type:     knftables.PtrTo(knftables.FilterType),
 		Hook:     knftables.PtrTo(knftables.PostroutingHook),

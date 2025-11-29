@@ -27,19 +27,20 @@ const (
 )
 
 type Config struct {
-	ServerMode      ServerMode
-	BindAddr        string
-	Port            int
-	ListenAddr      string
-	LogLevel        string
-	RewriteMode     RewriteMode
-	Rules           string
-	PayloadUA       string
-	UARegex         string
-	PartialReplace  bool
-	SetTTL          bool
-	SetIPID         bool
-	DelTCPTimestamp bool
+	ServerMode          ServerMode
+	BindAddr            string
+	Port                int
+	ListenAddr          string
+	LogLevel            string
+	RewriteMode         RewriteMode
+	Rules               string
+	PayloadUA           string
+	UARegex             string
+	PartialReplace      bool
+	SetTTL              bool
+	SetIPID             bool
+	DelTCPTimestamp     bool
+	SetTCPInitialWindow bool
 }
 
 func Parse() (*Config, bool) {
@@ -96,6 +97,9 @@ func Parse() (*Config, bool) {
 	}
 	if os.Getenv("UA3F_IPID") == "1" {
 		cfg.SetIPID = true
+	}
+	if os.Getenv("UA3F_TCP_INIT_WINDOW") == "1" {
+		cfg.SetTCPInitialWindow = true
 	}
 
 	// Parse other options from -o flag
