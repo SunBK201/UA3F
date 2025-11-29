@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 )
 
@@ -86,7 +87,18 @@ func Parse() (*Config, bool) {
 		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
 	}
 
-	// Parse other options
+	// Parse other options from environment variables
+	if os.Getenv("UA3F_TCPTS") == "1" {
+		cfg.DelTCPTimestamp = true
+	}
+	if os.Getenv("UA3F_TTL") == "1" {
+		cfg.SetTTL = true
+	}
+	if os.Getenv("UA3F_IPID") == "1" {
+		cfg.SetIPID = true
+	}
+
+	// Parse other options from -o flag
 	opts := strings.Split(others, ",")
 	for _, opt := range opts {
 		switch strings.ToLower(strings.TrimSpace(opt)) {
