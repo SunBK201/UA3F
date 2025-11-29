@@ -53,6 +53,7 @@ start_service() {
     procd_set_param stdout 1
     procd_set_param stderr 1
     procd_set_param limits nproc="unlimited" as="unlimited" memlock="unlimited" nofile="65535 65535"
+    procd_set_param pidfile "/var/run/$NAME.pid"
 
     procd_close_instance
 }
