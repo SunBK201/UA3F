@@ -47,7 +47,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
 	s.Firewall = netfilter.Firewall{
 		Nftable: &knftables.Table{
 			Name:   "UA3F",
-			Family: knftables.IPv4Family,
+			Family: knftables.InetFamily,
 		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,

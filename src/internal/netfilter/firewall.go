@@ -50,6 +50,17 @@ var LAN_CIDRS = []string{
 	"240.0.0.0/4",
 }
 
+var LAN6_CIDRS = []string{
+	"::/128",
+	"::1/128",
+	"::ffff:0:0/96",
+	"64:ff9b::/96",
+	"2001:db8::/32",
+	"fc00::/7",
+	"fe80::/10",
+	"ff00::/8",
+}
+
 var (
 	IptRuleIgnoreBrLAN = []string{
 		"!", "-i", "br-lan",
@@ -87,6 +98,10 @@ var (
 	)
 	NftRuleIgnoreLAN = knftables.Concat(
 		fmt.Sprintf("ip daddr @%s", LANSET),
+		"return",
+	)
+	NftRuleIgnoreLAN6 = knftables.Concat(
+		fmt.Sprintf("ip6 daddr @%s", LANSET+"_6"),
 		"return",
 	)
 	NftRuleIgnorePorts = knftables.Concat(
@@ -191,6 +206,30 @@ func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table
 			Key:    []string{cidr},
 		}
 		tx.Add(iplan)
+	}
+}
+
+func (f *Firewall) NftSetLanIP6(tx *knftables.Transaction, table *knftables.Table) {
+	ipset := &knftables.Set{
+		Name:   LANSET + "_6",
+		Table:  table.Name,
+		Family: table.Family,
+		Type:   "ipv6_addr",
+		Flags: []knftables.SetFlag{
+			knftables.IntervalFlag,
+		},
+		AutoMerge: knftables.PtrTo(true),
+	}
+	tx.Add(ipset)
+
+	for _, cidr := range LAN6_CIDRS {
+		ip6lan := &knftables.Element{
+			Table:  table.Name,
+			Family: table.Family,
+			Set:    ipset.Name,
+			Key:    []string{cidr},
+		}
+		tx.Add(ip6lan)
 	}
 }
 
