@@ -32,11 +32,6 @@ start_service() {
     config_get_bool set_ipid "main" "set_ipid" 0
     config_get_bool del_tcpts "main" "del_tcpts" 0
 
-    local others=","
-    [ "$set_ipid" -eq "1" ] && others="${others}ipid,"
-    [ "$del_tcpts" -eq "1" ] && others="${others}tcpts,"
-    [ "$set_ttl" -eq "1" ] && others="${others}ttl,"
-
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
     procd_append_param command -m "$server_mode"
@@ -47,8 +42,10 @@ start_service() {
     procd_append_param command -l "$log_level"
     procd_append_param command -x "$rewrite_mode"
     procd_append_param command -z "$rewrite_rules"
-    procd_append_param command -o "$others"
     [ "$partial_replace" = "1" ] && procd_append_param command -s
+    procd_append_param env UA3F_TTL="$set_ttl"
+    procd_append_param env UA3F_IPID="$set_ipid"
+    procd_append_param env UA3F_TCPTS="$del_tcpts"
 
     procd_set_param respawn
     procd_set_param stdout 1
