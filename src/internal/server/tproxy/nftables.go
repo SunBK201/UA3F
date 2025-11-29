@@ -26,6 +26,7 @@ func (s *Server) nftSetup() error {
 	tx.Add(s.Nftable)
 
 	s.NftSetLanIP(tx, s.Nftable)
+	s.NftSetLanIP6(tx, s.Nftable)
 	s.NftSetTproxy(tx, s.Nftable)
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -66,7 +67,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 				"meta l4proto tcp",
 				"mark", s.tproxyFwMark,
 				"mark set 7894",
-				fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
+				fmt.Sprintf("tproxy ip to 127.0.0.1:%d", s.Cfg.Port),
 				"counter accept",
 			),
 		})
@@ -103,6 +104,11 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 
 	tx.Add(&knftables.Rule{
 		Chain: prerouting.Name,
+		Rule:  netfilter.NftRuleIgnoreLAN6,
+	})
+
+	tx.Add(&knftables.Rule{
+		Chain: prerouting.Name,
 		Rule:  netfilter.NftRuleIgnorePorts,
 	})
 
@@ -130,7 +136,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule: knftables.Concat(
 			"meta l4proto tcp",
 			"mark", s.tproxyFwMark,
-			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
+			fmt.Sprintf("tproxy ip to 127.0.0.1:%d", s.Cfg.Port),
 			"counter accept",
 		),
 	})
@@ -141,7 +147,7 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule: knftables.Concat(
 			"meta l4proto tcp",
 			"mark set", s.tproxyFwMark,
-			fmt.Sprintf("tproxy to 127.0.0.1:%d", s.Cfg.Port),
+			fmt.Sprintf("tproxy ip to 127.0.0.1:%d", s.Cfg.Port),
 			"counter accept",
 		),
 	})
@@ -173,6 +179,11 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 	tx.Add(&knftables.Rule{
 		Chain: output.Name,
 		Rule:  netfilter.NftRuleIgnoreLAN,
+	})
+
+	tx.Add(&knftables.Rule{
+		Chain: output.Name,
+		Rule:  netfilter.NftRuleIgnoreLAN6,
 	})
 
 	tx.Add(&knftables.Rule{

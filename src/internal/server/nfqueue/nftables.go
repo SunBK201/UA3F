@@ -20,6 +20,7 @@ func (s *Server) nftSetup() error {
 	tx.Add(s.Nftable)
 
 	s.NftSetLanIP(tx, s.Nftable)
+	s.NftSetLanIP6(tx, s.Nftable)
 	s.NftSetNfqueue(tx, s.Nftable)
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -66,6 +67,11 @@ func (s *Server) NftSetNfqueue(tx *knftables.Transaction, table *knftables.Table
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnoreLAN,
+	})
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule:  netfilter.NftRuleIgnoreLAN6,
 	})
 
 	tx.Add(&knftables.Rule{
