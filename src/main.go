@@ -11,12 +11,16 @@ import (
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server"
+	"github.com/sunbk201/ua3f/internal/server/desync"
 	"github.com/sunbk201/ua3f/internal/server/netlink"
 	"github.com/sunbk201/ua3f/internal/statistics"
 	"github.com/sunbk201/ua3f/internal/usergroup"
 )
 
-var appVersion = "Development"
+var (
+	appVersion    = "Development"
+	shutdownChain []func() error
+)
 
 func main() {
 	cfg, showVer := config.Parse()
@@ -41,33 +45,32 @@ func main() {
 		return
 	}
 
+	helper := netlink.New(cfg)
+	addShutdown("helper.Close", helper.Close)
+	if err := helper.Start(); err != nil {
+		slog.Error("helper.Start", slog.Any("error", err))
+		shutdown()
+		return
+	}
+
+	if cfg.TCPDesync.Enabled {
+		desync := desync.New(cfg)
+		addShutdown("desync.Close", desync.Close)
+		if err := desync.Start(); err != nil {
+			slog.Error("desync.Start", slog.Any("error", err))
+			shutdown()
+			return
+		}
+	}
+
 	srv, err := server.NewServer(cfg, rw)
 	if err != nil {
 		slog.Error("server.NewServer", slog.Any("error", err))
+		shutdown()
 		return
 	}
-
-	helper := netlink.New(cfg)
-	if err := helper.Start(); err != nil {
-		slog.Error("helper.Start", slog.Any("error", err))
-		if err := srv.Close(); err != nil {
-			slog.Error("srv.Close", slog.Any("error", err))
-		}
-		return
-	}
-
-	shutdown := func() {
-		if err := helper.Close(); err != nil {
-			slog.Error("helper.Close", slog.Any("error", err))
-		}
-		if err := srv.Close(); err != nil {
-			slog.Error("srv.Close", slog.Any("error", err))
-		}
-		slog.Info("UA3F exit")
-	}
-
 	go statistics.StartRecorder()
-
+	addShutdown("srv.Close", srv.Close)
 	if err := srv.Start(); err != nil {
 		slog.Error("srv.Start", slog.Any("error", err))
 		shutdown()
@@ -88,4 +91,21 @@ func main() {
 			return
 		}
 	}
+}
+
+func addShutdown(name string, fn func() error) {
+	shutdownChain = append(shutdownChain, func() error {
+		if err := fn(); err != nil {
+			slog.Error(name, slog.Any("error", err))
+			return err
+		}
+		return nil
+	})
+}
+
+func shutdown() {
+	for i := len(shutdownChain) - 1; i >= 0; i-- {
+		_ = shutdownChain[i]()
+	}
+	slog.Info("UA3F exit")
 }

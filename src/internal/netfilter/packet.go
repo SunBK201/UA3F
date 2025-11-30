@@ -102,6 +102,57 @@ func (p *Packet) Serialize() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+// SerializeWithDesync splits the TCP payload into 2 fragments,
+// discards the first fragment, keeps only the second fragment,
+// and serializes the packet with the updated sequence number.
+func (p *Packet) SerializeWithDesync() ([]byte, error) {
+	var err error
+
+	networkLayer := p.NetworkLayer
+	tcp := p.TCP
+	isIPv6 := p.IsIPv6
+	payload := tcp.Payload
+
+	// If payload is empty or too small to split, just serialize normally
+	if len(payload) <= 1 {
+		return p.Serialize()
+	}
+
+	// Split payload into 2 fragments, discard first, keep second
+	splitPoint := len(payload) / 2
+	secondFragment := payload[splitPoint:]
+
+	buffer := gopacket.NewSerializeBuffer()
+	serOpts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	// Update TCP sequence number to account for the discarded first fragment
+	tcp.Seq = tcp.Seq + uint32(splitPoint)
+	tcp.Checksum = 0
+	tcp.Payload = nil
+	err = tcp.SetNetworkLayerForChecksum(networkLayer)
+	if err != nil {
+		return nil, err
+	}
+
+	if isIPv6 {
+		ip6 := networkLayer.(*layers.IPv6)
+		ip6.NextHeader = layers.IPProtocolTCP
+		err = gopacket.SerializeLayers(buffer, serOpts, ip6, tcp, gopacket.Payload(secondFragment))
+	} else {
+		ip4 := networkLayer.(*layers.IPv4)
+		ip4.Checksum = 0
+		err = gopacket.SerializeLayers(buffer, serOpts, ip4, tcp, gopacket.Payload(secondFragment))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
 func (p *Packet) GetCtMark() (uint32, bool) {
 	if p.A.Ct == nil || len(*p.A.Ct) == 0 {
 		return 0, false

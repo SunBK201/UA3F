@@ -203,6 +203,26 @@ function M.add_log_fields(section)
     return log
 end
 
+function M.add_desync_fields(section)
+    -- Enable TCP Desync
+    local desync_enabled = section:taboption("desync", Flag, "desync_enabled", translate("Enable TCP Desync"))
+    desync_enabled.description = translate("Enable TCP Desynchronization to evade DPI")
+
+    -- CT Byte Setting
+    local ct_byte = section:taboption("desync", Value, "desync_ct_bytes", translate("Desync Bytes"))
+    ct_byte.placeholder = "1500"
+    ct_byte.datatype = "uinteger"
+    ct_byte.description = translate("Number of bytes for fragmented random emission")
+    ct_byte:depends("desync_enabled", "1")
+
+    -- CT Packets Setting
+    local ct_packets = section:taboption("desync", Value, "desync_ct_packets", translate("Desync Packets"))
+    ct_packets.placeholder = "8"
+    ct_packets.datatype = "uinteger"
+    ct_packets.description = translate("Number of packets for fragmented random emission")
+    ct_packets:depends("desync_enabled", "1")
+end
+
 -- Others Tab Fields
 function M.add_others_fields(section)
     -- TTL Setting

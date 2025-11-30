@@ -33,6 +33,13 @@ start_service() {
     config_get_bool del_tcpts "main" "del_tcpts" 0
     config_get_bool set_tcp_init_window "main" "set_tcp_init_window" 0
 
+    local desync_enabled desync_ct_bytes desync_ct_packets
+    config_get_bool desync_enabled "main" "desync_enabled" 0
+    if [ "$desync_enabled" -eq "1" ]; then
+        config_get desync_ct_bytes "main" "desync_ct_bytes" "1500"
+        config_get desync_ct_packets "main" "desync_ct_packets" "8"
+    fi
+
     procd_open_instance "$NAME"
     procd_set_param command "$PROG"
     procd_append_param command -m "$server_mode"
@@ -48,6 +55,9 @@ start_service() {
     procd_append_param env UA3F_IPID="$set_ipid"
     procd_append_param env UA3F_TCPTS="$del_tcpts"
     procd_append_param env UA3F_TCP_INIT_WINDOW="$set_tcp_init_window"
+    procd_append_param env UA3F_DESYNC="$desync_enabled"
+    procd_append_param env UA3F_DESYNC_BYTES="$desync_ct_bytes"
+    procd_append_param env UA3F_DESYNC_PACKETS="$desync_ct_packets"
 
     procd_set_param respawn
     procd_set_param stdout 1
@@ -59,8 +69,8 @@ start_service() {
 }
 
 reload_service() {
-	stop
-	start
+    stop
+    start
 }
 
 service_triggers() {

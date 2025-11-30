@@ -274,3 +274,24 @@ msgstr "问题反馈"
 
 msgid "Log Management"
 msgstr "日志管理"
+
+msgid "Desync Settings"
+msgstr "Desync 设置"
+
+msgid "Enable TCP Desync"
+msgstr "启用 TCP 分片乱序发射"
+
+msgid "Desync Bytes"
+msgstr "Desync 字节"
+
+msgid "Desync Packets"
+msgstr "Desync 数据包"
+
+msgid "Number of bytes for fragmented random emission"
+msgstr "乱序发射的字节数，谨慎设置过大"
+
+msgid "Number of packets for fragmented random emission"
+msgstr "乱序发射的数据包数，谨慎设置过大"
+
+msgid "Enable TCP Desynchronization to evade DPI"
+msgstr "启用 TCP 分片乱序发射，可以用于规避 DPI 检测"
