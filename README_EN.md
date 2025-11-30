@@ -14,9 +14,9 @@ UA3F is an HTTP Header rewriting tool that transparently rewrites HTTP request h
 - Highly flexible rewriting rule system with multiple rule types and rewriting strategies
 - Real-time statistics dashboard with traffic modification monitoring and analysis
 - Multiple deployment options: opkg installation, compilation, and Docker deployment
-- Supports OpenWrt 17.01 and above
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
 - Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
+- Supports TCP Desync fragment reordering to evade Deep Packet Inspection (DPI)
 
 <table>
   <tr>

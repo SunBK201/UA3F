@@ -14,9 +14,9 @@ UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、
 - 高度灵活的重写规则系统，支持多种规则类型与重写策略
 - 实时统计面板，支持流量修改监控与分析
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
-- 支持 OpenWrt 17.01 及以上版本
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
+- 支持 TCP Desync 分片乱序发射，用于对抗部分深度包检测（DPI）
 
 <table>
   <tr>
