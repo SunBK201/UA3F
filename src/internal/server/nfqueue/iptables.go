@@ -111,10 +111,14 @@ func (s *Server) detectNfqueue(ipt *iptables.IPTables) (pos int, exists bool) {
 	if err != nil {
 		return 0, false
 	}
+	lastIndex := -1
 	for i, rule := range rules {
 		if strings.Contains(rule, "NFQUEUE") {
-			return i + 1, true
+			lastIndex = max(lastIndex, i)
+		}
+		if strings.Contains(rule, "DESYNC") {
+			lastIndex = max(lastIndex, i)
 		}
 	}
-	return 0, false
+	return lastIndex + 1, lastIndex != -1
 }
