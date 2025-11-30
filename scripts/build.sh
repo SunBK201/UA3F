@@ -8,7 +8,7 @@
 set -e
 
 project_name="ua3f"
-release_version="1.9.0"
+release_version="1.9.1"
 target=main.go
 
 LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
