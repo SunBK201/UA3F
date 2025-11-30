@@ -11,6 +11,12 @@ local ListValue = cbi.ListValue
 local DummyValue = cbi.DummyValue
 local TextValue = cbi.TextValue
 
+function nfqueue_exists()
+    local opkg = sys.call("opkg list-installed kmod-nft-queue | grep -q kmod-nft-queue") == 0
+    local apk = sys.call("apk info | grep -q kmod-nft-queue") == 0
+    return opkg or apk
+end
+
 -- Status Section Fields
 function M.add_status_fields(section)
     -- Enabled Flag
@@ -207,6 +213,10 @@ function M.add_desync_fields(section)
     -- Enable TCP Desync
     local desync_enabled = section:taboption("desync", Flag, "desync_enabled", translate("Enable TCP Desync"))
     desync_enabled.description = translate("Enable TCP Desynchronization to evade DPI")
+    if not nfqueue_exists() then
+        desync_enabled.description = translate(
+            "Enable TCP Desynchronization to evade DPI. <strong style='color:red;'><%:Recommend install kmod-nft-queue package%></strong>")
+    end
 
     -- CT Byte Setting
     local ct_byte = section:taboption("desync", Value, "desync_ct_bytes", translate("Desync Bytes"))
