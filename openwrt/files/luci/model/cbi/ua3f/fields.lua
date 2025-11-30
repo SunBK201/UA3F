@@ -17,6 +17,12 @@ function nfqueue_exists()
     return opkg or apk
 end
 
+function tproxy_exists()
+    local opkg = sys.call("opkg list-installed kmod-nft-tproxy | grep -q kmod-nft-tproxy") == 0
+    local apk = sys.call("apk info | grep -q kmod-nft-tproxy") == 0
+    return opkg or apk
+end
+
 -- Status Section Fields
 function M.add_status_fields(section)
     -- Enabled Flag
@@ -46,7 +52,27 @@ function M.add_general_fields(section)
     server_mode:value("TPROXY", "TPROXY")
     server_mode:value("REDIRECT", "REDIRECT")
     server_mode:value("NFQUEUE", "NFQUEUE")
-    server_mode.default = "SOCKS5"
+    server_mode.default = "TPROXY"
+
+    if not tproxy_exists() then
+        local tproxy_warning = section:taboption("general", DummyValue, "_tproxy_warning", " ")
+        tproxy_warning.rawhtml = true
+        tproxy_warning:depends("server_mode", "TPROXY")
+        function tproxy_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate("Recommend install kmod-nft-tproxy package for TPROXY mode") .. "</strong>"
+        end
+    end
+
+    if not nfqueue_exists() then
+        local nfqueue_warning = section:taboption("general", DummyValue, "_nfqueue_warning", " ")
+        nfqueue_warning.rawhtml = true
+        nfqueue_warning:depends("server_mode", "NFQUEUE")
+        function nfqueue_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+        end
+    end
 
     -- Bind Address
     local bind = section:taboption("general", Value, "bind", translate("Bind Address"))
@@ -213,9 +239,15 @@ function M.add_desync_fields(section)
     -- Enable TCP Desync
     local desync_enabled = section:taboption("desync", Flag, "desync_enabled", translate("Enable TCP Desync"))
     desync_enabled.description = translate("Enable TCP Desynchronization to evade DPI")
+
     if not nfqueue_exists() then
-        desync_enabled.description = translate(
-            "Enable TCP Desynchronization to evade DPI. <strong style='color:red;'><%:Recommend install kmod-nft-queue package%></strong>")
+        local nfqueue_warning = section:taboption("desync", DummyValue, "_desync_nfqueue_warning", " ")
+        nfqueue_warning.rawhtml = true
+        nfqueue_warning:depends("desync_enabled", 1)
+        function nfqueue_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+        end
     end
 
     -- CT Byte Setting
@@ -250,6 +282,18 @@ function M.add_others_fields(section)
     -- IP ID Setting
     local ipid = section:taboption("others", Flag, "set_ipid", translate("Set IP ID"))
     ipid.description = translate("Set the IP ID to 0 for packets")
+
+    if not nfqueue_exists() then
+        local nfqueue_warning = section:taboption("others", DummyValue, "_others_nfqueue_warning", " ")
+        nfqueue_warning.rawhtml = true
+        nfqueue_warning:depends("del_tcpts", 1)
+        nfqueue_warning:depends("set_tcp_init_window", 1)
+        nfqueue_warning:depends("set_ipid", 1)
+        function nfqueue_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+        end
+    end
 end
 
 return M
