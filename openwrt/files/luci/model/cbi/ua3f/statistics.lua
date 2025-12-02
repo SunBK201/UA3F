@@ -1,5 +1,13 @@
--- UA3F Statistics Data Module
 local M = {}
+
+local cbi = require("luci.cbi")
+
+local DummyValue = cbi.DummyValue
+
+function M.add_statistics_fields(section)
+    local stats = section:taboption("statistics", DummyValue, "")
+    stats.template = "ua3f/statistics"
+end
 
 -- Read rewrite statistics from file
 function M.read_rewrite_stats()

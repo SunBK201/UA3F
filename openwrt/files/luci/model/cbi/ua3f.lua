@@ -11,7 +11,13 @@ local ua3f = cbi.Map("ua3f",
         Across the Campus we can reach every corner in the world.
     ]]
 )
-local fields = require("luci.model.cbi.ua3f.fields")
+local status = require("luci.model.cbi.ua3f.status")
+local general = require("luci.model.cbi.ua3f.general")
+local rule = require("luci.model.cbi.ua3f.rule")
+local desync = require("luci.model.cbi.ua3f.desync")
+local others = require("luci.model.cbi.ua3f.others")
+local statistics = require("luci.model.cbi.ua3f.statistics")
+local log = require("luci.model.cbi.ua3f.log")
 
 function create_sections(map)
     local sections = {}
@@ -22,10 +28,10 @@ function create_sections(map)
     -- General Section with tabs
     sections.general = map:section(NamedSection, "main", "ua3f", translate("General"))
     sections.general:tab("general", translate("Settings"))
-    sections.general:tab("rewrite", translate("Rewrite Rules"))
+    sections.general:tab("rules", translate("Rewrite Rules"))
     sections.general:tab("desync", translate("Desync Settings"))
     sections.general:tab("others", translate("Others Settings"))
-    sections.general:tab("stats", translate("Statistics"))
+    sections.general:tab("statistics", translate("Statistics"))
     sections.general:tab("log", translate("Log"))
 
     return sections
@@ -33,12 +39,12 @@ end
 
 local sections = create_sections(ua3f)
 
-fields.add_status_fields(sections.status)
-fields.add_general_fields(sections.general)
-fields.add_rewrite_fields(sections.general)
-fields.add_desync_fields(sections.general)
-fields.add_others_fields(sections.general)
-fields.add_stats_fields(sections.general)
-fields.add_log_fields(sections.general)
+status.add_status_fields(sections.status)
+general.add_general_fields(sections.general)
+rule.add_rule_fields(sections.general)
+desync.add_desync_fields(sections.general)
+others.add_others_fields(sections.general)
+statistics.add_statistics_fields(sections.general)
+log.add_log_fields(sections.general)
 
 return ua3f
