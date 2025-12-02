@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"os"
 	"os/exec"
 	"os/user"
 	"strings"
@@ -297,6 +298,10 @@ func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
+	isOpenwrt := isOpenWrt()
+	if isOpenwrt {
+		slog.Info("Detected OpenWrt environment")
+	}
 	nftAvailable := IsCommandAvailable("nft")
 	iptAvailable := IsCommandAvailable("iptables")
 	nftTproxyAvailable := isOpkgPackageInstalled("kmod-nft-tproxy") && nftAvailable
@@ -307,6 +312,9 @@ func detectFirewallBackend(cfg *config.Config) string {
 	selectNFT := func() bool {
 		if !nftAvailable {
 			return false
+		}
+		if !isOpenwrt {
+			return true
 		}
 		if nfqueueNeeded && !nftNfqueueAvailable {
 			return false
@@ -374,6 +382,36 @@ func getLocalIPv4CIDRs() ([]string, error) {
 	}
 
 	return cidrs, nil
+}
+
+func isOpenWrt() bool {
+	checkFiles := []string{
+		"/etc/openwrt_release",
+	}
+	for _, f := range checkFiles {
+		if _, err := os.Stat(f); err == nil {
+			return true
+		}
+	}
+
+	data, err := os.ReadFile("/etc/os-release")
+	if err == nil && strings.Contains(string(data), "OpenWrt") {
+		return true
+	}
+
+	if _, err := user.Lookup("uci"); err == nil {
+		return true
+	}
+
+	if _, err := exec.LookPath("opkg"); err == nil {
+		return true
+	}
+
+	if _, err := user.Lookup("apk"); err == nil {
+		return true
+	}
+
+	return false
 }
 
 func IsCommandAvailable(cmd string) bool {
