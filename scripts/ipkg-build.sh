@@ -17,11 +17,11 @@ TAR="$(command -v gtar 2>/dev/null || command -v tar)"
 
 # try to use fixed source epoch
 if [ -n "$PKG_SOURCE_DATE_EPOCH" ]; then
-	TIMESTAMP=$(date --date="@$PKG_SOURCE_DATE_EPOCH" 2>/dev/null || date -r "$PKG_SOURCE_DATE_EPOCH")
+	TIMESTAMP=$(date -u -j -f "%s" "$PKG_SOURCE_DATE_EPOCH" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -u -r "$PKG_SOURCE_DATE_EPOCH" "+%Y-%m-%d %H:%M:%S")
 elif [ -n "$SOURCE_DATE_EPOCH" ]; then
-	TIMESTAMP=$(date --date="@$SOURCE_DATE_EPOCH" 2>/dev/null || date -r "$SOURCE_DATE_EPOCH")
+	TIMESTAMP=$(date -u -j -f "%s" "$SOURCE_DATE_EPOCH" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -u -r "$SOURCE_DATE_EPOCH" "+%Y-%m-%d %H:%M:%S")
 else
-	TIMESTAMP=$(date)
+	TIMESTAMP=$(date -u "+%Y-%m-%d %H:%M:%S")
 fi
 
 ipkg_extract_value() {
