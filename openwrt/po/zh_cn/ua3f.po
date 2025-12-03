@@ -294,10 +294,16 @@ msgid "Number of packets for fragmented random emission"
 msgstr "乱序发射的数据包数，谨慎设置过大"
 
 msgid "Enable TCP Desynchronization to evade DPI"
-msgstr "启用 TCP 分片乱序发射，可以用于规避 DPI 检测"
+msgstr "启用 TCP 分片乱序发射，用于对抗 DPI 检测"
 
 msgid "Recommend install kmod-nft-tproxy package for TPROXY mode"
 msgstr "建议安装 kmod-nft-tproxy 软件包以增强兼容性"
 
 msgid "Recommend install kmod-nft-queue package for NFQUEUE mode"
 msgstr "建议安装 kmod-nft-queue 软件包以增强兼容性"
+
+msgid "Flow Offloading is enabled in firewall settings, it may cause NFQUEUE mode to not work properly"
+msgstr "防火墙设置中启用了流量卸载，可能导致 NFQUEUE 模式无法正常工作"
+
+msgid "Flow Offloading is enabled in firewall settings, it may cause TCP Desync to not work properly"
+msgstr "防火墙设置中启用了流量卸载，可能导致 TCP Desync 无法正常工作"

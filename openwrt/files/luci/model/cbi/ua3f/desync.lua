@@ -24,6 +24,18 @@ function M.add_desync_fields(section)
         end
     end
 
+    if utils.offloading_enabled() then
+        local offloading_warning = section:taboption("desync", DummyValue, "_desync_offloading_warning", " ")
+        offloading_warning.rawhtml = true
+        offloading_warning:depends("desync_enabled", 1)
+        function offloading_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate(
+                    "Flow Offloading is enabled in firewall settings, it may cause TCP Desync to not work properly") ..
+                "</strong>"
+        end
+    end
+
     -- CT Byte Setting
     local ct_byte = section:taboption("desync", Value, "desync_ct_bytes", translate("Desync Bytes"))
     ct_byte.placeholder = "1500"

@@ -40,6 +40,18 @@ function M.add_general_fields(section)
         end
     end
 
+    if utils.offloading_enabled() then
+        local offloading_warning = section:taboption("general", DummyValue, "_offloading_warning", " ")
+        offloading_warning.rawhtml = true
+        offloading_warning:depends("server_mode", "NFQUEUE")
+        function offloading_warning.cfgvalue(self, section)
+            return "<strong style='color:red;'>" ..
+                translate(
+                "Flow Offloading is enabled in firewall settings, it may cause NFQUEUE mode to not work properly") ..
+                "</strong>"
+        end
+    end
+
     -- Bind Address
     local bind = section:taboption("general", Value, "bind", translate("Bind Address"))
     bind:value("127.0.0.1")

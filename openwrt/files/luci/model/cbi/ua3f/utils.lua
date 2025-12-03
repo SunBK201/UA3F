@@ -18,4 +18,11 @@ function M.tproxy_exists()
     return opkg or apk
 end
 
+function M.offloading_enabled()
+    -- uci get firewall.@defaults[0].flow_offloading
+    local uci = require("luci.model.uci").cursor()
+    local flow_offloading = uci:get("firewall", "@defaults[0]", "flow_offloading")
+    return flow_offloading == "1"
+end
+
 return M
