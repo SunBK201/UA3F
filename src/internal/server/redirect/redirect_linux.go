@@ -88,7 +88,7 @@ func (s *Server) HandleClient(client net.Conn) {
 	addr, err := base.GetOriginalDstAddr(client)
 	if err != nil {
 		_ = client.Close()
-		slog.Error("base.GetOriginalDstAddr", slog.Any("error", err))
+		slog.Error("base.GetOriginalDstAddr", slog.Any("error", err), slog.String("client", client.RemoteAddr().String()))
 		return
 	}
 
