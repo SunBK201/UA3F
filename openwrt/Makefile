@@ -55,6 +55,8 @@ define Package/ua3f/install
 	$(INSTALL_BIN) ./files/ua3f.init $(1)/etc/init.d/ua3f
 	$(INSTALL_DIR) $(1)/etc/config/
 	$(INSTALL_CONF) ./files/ua3f.uci $(1)/etc/config/ua3f
+	$(INSTALL_DIR) $(1)/etc/uci-defaults/
+	$(INSTALL_BIN) ./files/uci-defaults $(1)/etc/uci-defaults/luci-ua3f
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 	$(CP) $(PKG_BUILD_DIR)/files/luci/* $(1)/usr/lib/lua/luci/
@@ -62,8 +64,12 @@ endef
 
 define Package/ua3f/postrm
 #!/bin/sh
-uci set ua3f.enabled.enabled='0' > /dev/null 2>&1
-uci commit ua3f > /dev/null 2>&1
+uci -q set ua3f.enabled.enabled=0
+uci -q commit ua3f
+[ -f "/etc/config/ucitrack" ] && {
+	uci -q delete ucitrack.ua3f
+	uci -q commit ucitrack
+}
 rm -rf /var/log/ua3f >/dev/null 2>&1
 rm -rf /usr/lib/lua/luci/model/cbi/ua3f >/dev/null 2>&1
 rm -rf /usr/lib/lua/luci/model/cbi/ua3f.lua >/dev/null 2>&1

@@ -1,6 +1,10 @@
 #!/bin/sh
-uci set ua3f.enabled.enabled='0' > /dev/null 2>&1
-uci commit ua3f > /dev/null 2>&1
+uci -q set ua3f.enabled.enabled=0
+uci -q commit ua3f
+[ -f "/etc/config/ucitrack" ] && {
+	uci -q delete ucitrack.ua3f
+	uci -q commit ucitrack
+}
 rm -rf /var/log/ua3f >/dev/null 2>&1
 rm -rf /usr/lib/lua/luci/model/cbi/ua3f >/dev/null 2>&1
 rm -rf /usr/lib/lua/luci/model/cbi/ua3f.lua >/dev/null 2>&1

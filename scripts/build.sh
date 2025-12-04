@@ -104,10 +104,12 @@ mkdir -p \
     $opkg_template/usr/lib/lua/luci/view/ua3f \
     $opkg_template/usr/lib/lua/luci/i18n \
     $opkg_template/etc/init.d \
-    $opkg_template/etc/config
+    $opkg_template/etc/config \
+    $opkg_template/etc/uci-defaults
 
 cp openwrt/files/ua3f.init $opkg_template/etc/init.d/ua3f
 cp openwrt/files/ua3f.uci $opkg_template/etc/config/ua3f
+cp openwrt/files/uci-defaults $opkg_template/etc/uci-defaults/luci-ua3f
 cp -r openwrt/files/luci/* $opkg_template/usr/lib/lua/luci/
 po2lmo openwrt/po/zh_cn/ua3f.po $opkg_template/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
 
