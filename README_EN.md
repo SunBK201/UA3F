@@ -20,14 +20,16 @@ UA3F is an HTTP Header rewriting tool that transparently rewrites HTTP request h
 - Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
 - Supports TCP Desync fragment reordering to evade Deep Packet Inspection (DPI)
 
+<div align="center">
+<img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" style="width:40%;">
+</div>
+
 <table>
   <tr>
     <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci160.png" alt="UA3F-LuCI"></td>
     <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
   </tr>
 </table>
-
-![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-160.png)
 
 ## Deployment
 

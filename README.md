@@ -10,15 +10,26 @@
 
 UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 请求 Header (例如 User-Agent) 进行透明重写。
 
-## 特性
-
-- 多种服务模式：HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
-- 高度灵活的重写规则系统，支持多种规则类型与重写策略
-- 实时统计面板，支持流量修改监控与分析
-- 支持 opkg 安装、编译安装、Docker 部署多种方式
-- 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
-- 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
-- 支持 TCP Desync 分片乱序发射，用于对抗部分深度包检测（DPI）
+<table>
+  <tr>
+    <td>
+      <ul>
+        <li>应用层服务模式：HTTP、SOCKS5</li>
+        <li>传输层服务模式：TPROXY、REDIRECT</li>
+        <li>网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)</li>
+        <li>高度灵活的重写规则系统，支持多种规则类型与重写策略</li>
+        <li>实时统计面板，支持流量修改监控与分析</li>
+        <li>支持 opkg 安装、编译安装、Docker 部署多种方式</li>
+        <li>兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行</li>
+        <li>支持 TTL，TCP Timestamp，TCP Window，IPID 伪装</li>
+        <li>支持 TCP Desync 分片乱序发射，用于对抗深度包检测（DPI）</li>
+      </ul>
+    </td>
+    <td>
+      <img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" width="300">
+    </td>
+  </tr>
+</table>
 
 <table>
   <tr>
@@ -26,8 +37,6 @@ UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、
     <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
   </tr>
 </table>
-
-![UA3F](https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-160.png)
 
 ## 部署
 
