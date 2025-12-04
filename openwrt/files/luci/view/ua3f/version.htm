@@ -1,0 +1,59 @@
+<span style="display: inline-flex;">
+    <a href="https://github.com/SunBK201/UA3F" target="_blank">
+        Version: <span id="ua3f-current-version">2.0.0</span>
+    </a>
+    <span id="ua3f-update-status" style="margin-left: 10px;"></span>
+</span>
+<br>
+Across the Campus we can reach every corner in the world.
+
+<script type="text/javascript">
+    (function () {
+        var CURRENT_VERSION = document.getElementById('ua3f-current-version').textContent;
+
+        function compareVersions(v1, v2) {
+            var parts1 = v1.replace(/^v/, '').split('.').map(Number);
+            var parts2 = v2.replace(/^v/, '').split('.').map(Number);
+            for (var i = 0; i < 3; i++) {
+                var p1 = parts1[i] || 0;
+                var p2 = parts2[i] || 0;
+                if (p1 < p2) return -1;
+                if (p1 > p2) return 1;
+            }
+            return 0;
+        }
+
+        function checkUpdate() {
+            var statusEl = document.getElementById('ua3f-update-status');
+            if (!statusEl) return;
+
+            fetch('https://api.github.com/repos/SunBK201/UA3F/releases/latest')
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Network error');
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data && data.tag_name) {
+                        var latestVersion = data.tag_name.replace(/^v/, '');
+                        var hasUpdate = compareVersions(CURRENT_VERSION, latestVersion) < 0;
+                        var releaseUrl = data.html_url || 'https://github.com/SunBK201/UA3F/releases/latest';
+
+                        if (hasUpdate) {
+                            statusEl.innerHTML = '<a href="' + releaseUrl + '" target="_blank" style="color: #ff6600; font-weight: bold;">New version available: ' + latestVersion + '</a>';
+                        }
+                    } else {
+                        statusEl.innerHTML = '';
+                    }
+                })
+                .catch(function (err) {
+                    statusEl.innerHTML = '';
+                });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkUpdate);
+        } else {
+            checkUpdate();
+        }
+    })();
+</script>

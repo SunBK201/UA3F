@@ -3,14 +3,22 @@ local i18n = require("luci.i18n")
 local translate = i18n.translate
 local NamedSection = cbi.NamedSection
 
-local ua3f = cbi.Map("ua3f",
-    "UA3F",
-    [[
-        <a href="https://github.com/SunBK201/UA3F" target="_blank">Version: 2.0.0</a>
+local function load_version_desc()
+    local fs = require("nixio.fs")
+    local content = fs.readfile("/usr/lib/lua/luci/view/ua3f/version.htm")
+    if content then
+        return content
+    end
+    -- Fallback if file not found
+    return [[
+        <a href="https://github.com/SunBK201/UA3F" target="_blank">GitHub</a>
         <br>
         Across the Campus we can reach every corner in the world.
     ]]
-)
+end
+
+local ua3f = cbi.Map("ua3f", "UA3F", load_version_desc())
+
 local status = require("luci.model.cbi.ua3f.status")
 local general = require("luci.model.cbi.ua3f.general")
 local rule = require("luci.model.cbi.ua3f.rule")
