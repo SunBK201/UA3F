@@ -2,6 +2,7 @@ module("luci.controller.ua3f", package.seeall)
 
 function index()
     entry({ "admin", "services", "ua3f" }, cbi("ua3f"), _("UA3F"), 1)
+    entry({ "admin", "services", "ua3f", "status" }, call("get_status")).leaf = true
     entry({ "admin", "services", "ua3f", "download_log" }, call("action_download_log")).leaf = true
     entry({ "admin", "services", "ua3f", "clear_log" }, call("clear_log")).leaf = true
     entry({ "admin", "services", "ua3f", "get_rules" }, call("get_rules")).leaf = true
@@ -9,6 +10,22 @@ function index()
 end
 
 local fs = require("nixio.fs")
+
+function get_status()
+    local http = require("luci.http")
+    local sys = require("luci.sys")
+    local json = require("luci.jsonc")
+
+    http.prepare_content("application/json")
+
+    local pid = sys.exec("pidof ua3f")
+    local running = (pid ~= nil and pid ~= "")
+
+    http.write(json.stringify({
+        running = running,
+        pid = running and pid:gsub("%s+", "") or nil
+    }))
+end
 
 function create_log_archive()
     local tmpfile = "/tmp/ua3f_logs.tar.gz"

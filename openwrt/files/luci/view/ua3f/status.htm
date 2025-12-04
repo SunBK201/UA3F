@@ -1,0 +1,58 @@
+<div class="cbi-value">
+    <label class="cbi-value-title">
+        <%:Status%>
+    </label>
+    <div id="ua3f-status" class="cbi-value-field">
+        <input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-neutral"
+            value="<%:Loading%>" />
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function () {
+        var statusContainer = document.getElementById('ua3f-status');
+        var updateInterval = 5000; // 5 seconds
+        var statusUrl = '<%=luci.dispatcher.build_url("admin/services/ua3f/status")%>';
+
+        function updateStatus() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', statusUrl, true);
+            xhr.timeout = 4000;
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            if (data.running) {
+                                statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-add" value="<%:Running%>" />';
+                            } else {
+                                statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-reset" value="<%:Stop%>" />';
+                            }
+                        } catch (e) {
+                            statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-neutral" value="<%:Error%>" />';
+                        }
+                    } else {
+                        statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-neutral" value="<%:Error%>" />';
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-neutral" value="<%:Error%>" />';
+            };
+
+            xhr.ontimeout = function () {
+                statusContainer.innerHTML = '<input disabled type="button" style="opacity: 1;" class="btn cbi-button cbi-button-neutral" value="<%:Timeout%>" />';
+            };
+
+            xhr.send();
+        }
+
+        // Initial update
+        updateStatus();
+
+        // Set up periodic updates
+        setInterval(updateStatus, updateInterval);
+    })();
+</script>
