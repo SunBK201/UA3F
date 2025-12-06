@@ -9,19 +9,20 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
 type Server struct {
 	netfilter.Firewall
 	cfg       *config.Config
-	nfqServer *netfilter.NfqueueServer
+	nfqServer *base.NfqueueServer
 }
 
 func New(cfg *config.Config) *Server {
 	s := &Server{
 		cfg: cfg,
-		nfqServer: &netfilter.NfqueueServer{
+		nfqServer: &base.NfqueueServer{
 			QueueNum: netfilter.HELPER_QUEUE,
 		},
 	}
@@ -59,7 +60,7 @@ func (s *Server) Close() error {
 }
 
 // handlePacket processes a single NFQUEUE packet
-func (s *Server) handlePacket(packet *netfilter.Packet) {
+func (s *Server) handlePacket(packet *base.Packet) {
 	nf := s.nfqServer.Nf
 
 	modified := false
@@ -129,7 +130,7 @@ func (s *Server) setInitialTCPWindow(tcp *layers.TCP) bool {
 
 // zeroIPID sets the IP ID field to zero for IPv4 packets
 // Returns true if the packet was modified
-func (s *Server) zeroIPID(packet *netfilter.Packet) bool {
+func (s *Server) zeroIPID(packet *base.Packet) bool {
 	if packet.IsIPv6 {
 		return false
 	}

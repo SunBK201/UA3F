@@ -22,7 +22,7 @@ import (
 type Server struct {
 	base.Server
 	netfilter.Firewall
-	nfqServer        *netfilter.NfqueueServer
+	nfqServer        *base.NfqueueServer
 	SniffCtMarkLower uint32
 	SniffCtMarkUpper uint32
 	HTTPCtMark       uint32
@@ -41,7 +41,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 		SniffCtMarkUpper: 10216,
 		NotHTTPCtMark:    201,
 		HTTPCtMark:       202,
-		nfqServer: &netfilter.NfqueueServer{
+		nfqServer: &base.NfqueueServer{
 			QueueNum: 10201,
 		},
 	}
@@ -76,7 +76,7 @@ func (s *Server) Close() error {
 }
 
 // handlePacket processes a single NFQUEUE packet
-func (s *Server) handlePacket(packet *netfilter.Packet) {
+func (s *Server) handlePacket(packet *base.Packet) {
 	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil || len(packet.TCP.Payload) == 0 {
 		_ = s.nfqServer.Nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 		return
@@ -90,7 +90,7 @@ func (s *Server) handlePacket(packet *netfilter.Packet) {
 	s.sendVerdict(packet, result)
 }
 
-func (s *Server) sendVerdict(packet *netfilter.Packet, result *rewrite.RewriteResult) {
+func (s *Server) sendVerdict(packet *base.Packet, result *rewrite.RewriteResult) {
 	nf := s.nfqServer.Nf
 	id := *packet.A.PacketID
 	setMark, nextMark := s.getNextMark(packet, result)
@@ -129,7 +129,7 @@ func (s *Server) sendVerdict(packet *netfilter.Packet, result *rewrite.RewriteRe
 	}
 }
 
-func (s *Server) getNextMark(packet *netfilter.Packet, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
+func (s *Server) getNextMark(packet *base.Packet, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
 	mark, found := packet.GetCtMark()
 	if !found {
 		return true, s.SniffCtMarkLower

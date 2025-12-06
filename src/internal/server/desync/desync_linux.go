@@ -8,13 +8,14 @@ import (
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
 type Server struct {
 	netfilter.Firewall
 	cfg       *config.Config
-	nfqServer *netfilter.NfqueueServer
+	nfqServer *base.NfqueueServer
 	CtByte    uint32
 	CtPackets uint32
 }
@@ -22,7 +23,7 @@ type Server struct {
 func New(cfg *config.Config) *Server {
 	s := &Server{
 		cfg: cfg,
-		nfqServer: &netfilter.NfqueueServer{
+		nfqServer: &base.NfqueueServer{
 			QueueNum: netfilter.DESYNC_QUEUE,
 		},
 		CtByte:    1500,
@@ -68,7 +69,7 @@ func (s *Server) Close() error {
 	return err
 }
 
-func (s *Server) HandlePacket(frame *netfilter.Packet) {
+func (s *Server) HandlePacket(frame *base.Packet) {
 	fragment := s.cfg.TCPDesync.Enabled
 	if frame.TCP == nil || len(frame.TCP.Payload) <= 1 || frame.TCP.FIN {
 		fragment = false
@@ -76,7 +77,7 @@ func (s *Server) HandlePacket(frame *netfilter.Packet) {
 	s.sendVerdict(frame, fragment)
 }
 
-func (s *Server) sendVerdict(packet *netfilter.Packet, fragment bool) {
+func (s *Server) sendVerdict(packet *base.Packet, fragment bool) {
 	nf := s.nfqServer.Nf
 	id := *packet.A.PacketID
 
