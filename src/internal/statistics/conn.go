@@ -62,11 +62,15 @@ func (l *ConnectionRecordList) Add(record *ConnectionRecord) {
 	if r, exists := l.records[key]; exists {
 		r.Protocol = record.Protocol
 	} else {
+		startTime := record.StartTime
+		if startTime.IsZero() {
+			startTime = time.Now()
+		}
 		l.records[key] = &ConnectionRecord{
 			Protocol:  record.Protocol,
 			SrcAddr:   record.SrcAddr,
 			DestAddr:  record.DestAddr,
-			StartTime: record.StartTime,
+			StartTime: startTime,
 		}
 	}
 }
