@@ -16,6 +16,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type Server struct {
@@ -28,11 +29,12 @@ type Server struct {
 	NotHTTPCtMark    uint32
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
+func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:      cfg,
 			Rewriter: rw,
+			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
 		SniffCtMarkLower: 10201,
@@ -63,6 +65,7 @@ func (s *Server) Start() (err error) {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
+	s.Recorder.Start()
 	return s.nfqServer.Start()
 }
 

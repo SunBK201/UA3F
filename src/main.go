@@ -9,11 +9,9 @@ import (
 
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
-	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server"
 	"github.com/sunbk201/ua3f/internal/server/desync"
 	"github.com/sunbk201/ua3f/internal/server/netlink"
-	"github.com/sunbk201/ua3f/internal/statistics"
 	"github.com/sunbk201/ua3f/internal/usergroup"
 )
 
@@ -39,12 +37,6 @@ func main() {
 		return
 	}
 
-	rw, err := rewrite.New(cfg)
-	if err != nil {
-		slog.Error("rewrite.New", slog.Any("error", err))
-		return
-	}
-
 	helper := netlink.New(cfg)
 	addShutdown("helper.Close", helper.Close)
 	if err := helper.Start(); err != nil {
@@ -63,13 +55,12 @@ func main() {
 		}
 	}
 
-	srv, err := server.NewServer(cfg, rw)
+	srv, err := server.NewServer(cfg)
 	if err != nil {
 		slog.Error("server.NewServer", slog.Any("error", err))
 		shutdown()
 		return
 	}
-	go statistics.StartRecorder()
 	addShutdown("srv.Close", srv.Close)
 	if err := srv.Start(); err != nil {
 		slog.Error("srv.Start", slog.Any("error", err))

@@ -11,7 +11,13 @@ import (
 	"github.com/sunbk201/ua3f/internal/sniff"
 )
 
-const connStatsFile = "/var/log/ua3f/conn_stats"
+type ConnectionRecordList struct {
+	recordAddChan    chan *ConnectionRecord
+	recordRemoveChan chan *ConnectionRecord
+	records          map[string]*ConnectionRecord
+	mu               sync.RWMutex
+	dumpFile         string
+}
 
 type ConnectionRecord struct {
 	Protocol  sniff.Protocol
@@ -20,42 +26,61 @@ type ConnectionRecord struct {
 	StartTime time.Time
 }
 
-type ConnectionAction struct {
-	Action Action
-	Key    string
-	Record ConnectionRecord
-}
-
-var (
-	connectionRecords   = make(map[string]*ConnectionRecord)
-	connectionRecordsMu sync.RWMutex
-)
-
-// AddConnection adds or updates a connection record
-func AddConnection(record *ConnectionRecord) {
-	select {
-	case connectionActionChan <- ConnectionAction{
-		Action: Add,
-		Key:    fmt.Sprintf("%s-%s", record.SrcAddr, record.DestAddr),
-		Record: *record,
-	}:
-	default:
+func NewConnectionRecordList(dumpFile string) *ConnectionRecordList {
+	return &ConnectionRecordList{
+		recordAddChan:    make(chan *ConnectionRecord, 500),
+		recordRemoveChan: make(chan *ConnectionRecord, 500),
+		records:          make(map[string]*ConnectionRecord, 500),
+		mu:               sync.RWMutex{},
+		dumpFile:         dumpFile,
 	}
 }
 
-// RemoveConnection removes a connection record
-func RemoveConnection(srcAddr, destAddr string) {
-	select {
-	case connectionActionChan <- ConnectionAction{
-		Action: Remove,
-		Key:    fmt.Sprintf("%s-%s", srcAddr, destAddr),
-	}:
-	default:
+func (l *ConnectionRecordList) Run() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case record := <-l.recordAddChan:
+				l.Add(record)
+			case record := <-l.recordRemoveChan:
+				l.Remove(record)
+			case <-ticker.C:
+				l.Dump()
+			}
+		}
+	}()
+}
+
+func (l *ConnectionRecordList) Add(record *ConnectionRecord) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	key := fmt.Sprintf("%s-%s", record.SrcAddr, record.DestAddr)
+	if r, exists := l.records[key]; exists {
+		r.Protocol = record.Protocol
+	} else {
+		l.records[key] = &ConnectionRecord{
+			Protocol:  record.Protocol,
+			SrcAddr:   record.SrcAddr,
+			DestAddr:  record.DestAddr,
+			StartTime: record.StartTime,
+		}
 	}
 }
 
-func dumpConnectionRecords() {
-	f, err := os.Create(connStatsFile)
+func (l *ConnectionRecordList) Remove(record *ConnectionRecord) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	key := fmt.Sprintf("%s-%s", record.SrcAddr, record.DestAddr)
+	delete(l.records, key)
+}
+
+func (l *ConnectionRecordList) Dump() {
+	f, err := os.Create(l.dumpFile)
 	if err != nil {
 		slog.Error("os.Create", slog.Any("error", err))
 		return
@@ -66,12 +91,12 @@ func dumpConnectionRecords() {
 		}
 	}()
 
-	connectionRecordsMu.RLock()
+	l.mu.RLock()
 	var statList []ConnectionRecord
-	for _, record := range connectionRecords {
+	for _, record := range l.records {
 		statList = append(statList, *record)
 	}
-	connectionRecordsMu.RUnlock()
+	l.mu.RUnlock()
 
 	// Sort by start time (newest first)
 	sort.SliceStable(statList, func(i, j int) bool {

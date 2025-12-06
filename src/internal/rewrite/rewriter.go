@@ -23,6 +23,8 @@ type Rewriter struct {
 	uaRegex    *regexp2.Regexp
 	ruleEngine *rule.Engine
 	whitelist  []string
+
+	Recorder *statistics.Recorder
 }
 
 type RewriteDecision struct {
@@ -41,7 +43,7 @@ func (d *RewriteDecision) ShouldRewrite() bool {
 }
 
 // New constructs a Rewriter from config. Compiles regex and allocates cache.
-func New(cfg *config.Config) (*Rewriter, error) {
+func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	// UA pattern is compiled with case-insensitive prefix (?i)
 	pattern := "(?i)" + cfg.UARegex
 	uaRegex, err := regexp2.Compile(pattern, regexp2.None)
@@ -71,6 +73,7 @@ func New(cfg *config.Config) (*Rewriter, error) {
 			"Go-http-client/1.1",
 			"ByteDancePcdn",
 		},
+		Recorder: recorder,
 	}, nil
 }
 
@@ -110,7 +113,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 	// DIRECT
 	if r.rewriteMode == config.RewriteModeDirect {
 		log.LogDebugWithAddr(srcAddr, destAddr, "Direct forward mode, skip rewriting")
-		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+		r.Recorder.AddRecord(&statistics.PassThroughRecord{
 			SrcAddr:  srcAddr,
 			DestAddr: destAddr,
 			UA:       originalUA,
@@ -127,7 +130,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		// no match rule, direct forward
 		if matchedRule == nil {
 			log.LogDebugWithAddr(srcAddr, destAddr, "No rule matched, direct forward")
-			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+			r.Recorder.AddRecord(&statistics.PassThroughRecord{
 				SrcAddr:  srcAddr,
 				DestAddr: destAddr,
 				UA:       originalUA,
@@ -149,7 +152,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		// DIRECT
 		if matchedRule.Action == rule.ActionDirect {
 			log.LogDebugWithAddr(srcAddr, destAddr, "Rule matched: DIRECT action, skip rewriting")
-			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+			r.Recorder.AddRecord(&statistics.PassThroughRecord{
 				SrcAddr:  srcAddr,
 				DestAddr: destAddr,
 				UA:       originalUA,
@@ -195,7 +198,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 
 	hit := !isWhitelist && matches
 	if !hit {
-		statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+		r.Recorder.AddRecord(&statistics.PassThroughRecord{
 			SrcAddr:  srcAddr,
 			DestAddr: destAddr,
 			UA:       originalUA,
@@ -233,7 +236,7 @@ func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, d
 
 	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite %s from (%s) to (%s)", headerName, originalValue, rewritedValue))
 
-	statistics.AddRewriteRecord(&statistics.RewriteRecord{
+	r.Recorder.AddRecord(&statistics.RewriteRecord{
 		Host:       destAddr,
 		OriginalUA: originalValue,
 		MockedUA:   rewritedValue,

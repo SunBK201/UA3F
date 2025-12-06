@@ -21,17 +21,19 @@ type Server struct {
 	base.Server
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
+func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
 			Rewriter: rw,
+			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
 	}
 }
 
 func (s *Server) Start() (err error) {
+	s.Recorder.Start()
 	server := &http.Server{
 		Addr: s.Cfg.ListenAddr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -60,13 +62,15 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		destPort = "80"
 	}
 	destAddr := fmt.Sprintf("%s:%s", req.URL.Hostname(), destPort)
-	statistics.AddConnection(&statistics.ConnectionRecord{
+
+	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.HTTP,
 		SrcAddr:   req.RemoteAddr,
 		DestAddr:  destAddr,
 		StartTime: time.Now(),
-	})
-	defer statistics.RemoveConnection(req.RemoteAddr, destAddr)
+	}
+	s.Recorder.AddRecord(record)
+	defer s.Recorder.RemoveRecord(record)
 
 	slog.Info("HTTP proxy request", slog.String("srcAddr", req.RemoteAddr), slog.String("destAddr", destAddr))
 

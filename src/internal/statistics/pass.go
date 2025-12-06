@@ -5,10 +5,17 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"strings"
 	"sync"
+	"time"
 )
 
-const passthroughStatsFile = "/var/log/ua3f/pass_stats"
+type PassThroughRecordList struct {
+	recordAddChan chan *PassThroughRecord
+	records       map[string]*PassThroughRecord
+	mu            sync.RWMutex
+	dumpFile      string
+}
 
 type PassThroughRecord struct {
 	SrcAddr  string
@@ -17,20 +24,55 @@ type PassThroughRecord struct {
 	Count    int
 }
 
-var (
-	passThroughRecords   = make(map[string]*PassThroughRecord)
-	passThroughRecordsMu sync.RWMutex
-)
-
-func AddPassThroughRecord(record *PassThroughRecord) {
-	select {
-	case passThroughRecordChan <- *record:
-	default:
+func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {
+	return &PassThroughRecordList{
+		recordAddChan: make(chan *PassThroughRecord, 500),
+		records:       make(map[string]*PassThroughRecord, 500),
+		mu:            sync.RWMutex{},
+		dumpFile:      dumpFile,
 	}
 }
 
-func dumpPassThroughRecords() {
-	f, err := os.Create(passthroughStatsFile)
+func (l *PassThroughRecordList) Run() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case record := <-l.recordAddChan:
+				l.Add(record)
+			case <-ticker.C:
+				l.Dump()
+			}
+		}
+	}()
+}
+
+func (l *PassThroughRecordList) Add(record *PassThroughRecord) {
+	if strings.HasPrefix(record.UA, "curl/") {
+		record.UA = "curl/*"
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if r, exists := l.records[record.UA]; exists {
+		r.Count++
+		r.SrcAddr = record.SrcAddr
+		r.DestAddr = record.DestAddr
+	} else {
+		l.records[record.UA] = &PassThroughRecord{
+			SrcAddr:  record.SrcAddr,
+			DestAddr: record.DestAddr,
+			UA:       record.UA,
+			Count:    1,
+		}
+	}
+}
+
+func (l *PassThroughRecordList) Dump() {
+	f, err := os.Create(l.dumpFile)
 	if err != nil {
 		slog.Error("os.Create", slog.Any("error", err))
 		return
@@ -41,12 +83,12 @@ func dumpPassThroughRecords() {
 		}
 	}()
 
-	passThroughRecordsMu.RLock()
+	l.mu.RLock()
 	var statList []PassThroughRecord
-	for _, record := range passThroughRecords {
+	for _, record := range l.records {
 		statList = append(statList, *record)
 	}
-	passThroughRecordsMu.RUnlock()
+	l.mu.RUnlock()
 
 	sort.SliceStable(statList, func(i, j int) bool {
 		return statList[i].Count > statList[j].Count

@@ -43,7 +43,7 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 	newUA := r.buildUserAgent(originalUA)
 
 	log.LogInfoWithAddr(srcAddr, dstAddr, fmt.Sprintf("Rewritten User-Agent: %s", newUA))
-	statistics.AddRewriteRecord(&statistics.RewriteRecord{
+	r.Recorder.AddRecord(&statistics.RewriteRecord{
 		Host:       dstAddr,
 		OriginalUA: originalUA,
 		MockedUA:   newUA,
@@ -95,7 +95,7 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 
 		// Check if should rewrite
 		if !r.shouldRewriteUA(srcAddr, dstAddr, originalUA) {
-			statistics.AddPassThroughRecord(&statistics.PassThroughRecord{
+			r.Recorder.AddRecord(&statistics.PassThroughRecord{
 				SrcAddr:  srcAddr,
 				DestAddr: dstAddr,
 				UA:       originalUA,

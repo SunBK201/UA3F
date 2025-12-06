@@ -15,6 +15,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
+	"github.com/sunbk201/ua3f/internal/statistics"
 	"sigs.k8s.io/knftables"
 )
 
@@ -25,11 +26,12 @@ type Server struct {
 	so_mark  int
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter) *Server {
+func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:      cfg,
 			Rewriter: rw,
+			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
 		so_mark: netfilter.SO_MARK,
@@ -56,6 +58,8 @@ func (s *Server) Start() (err error) {
 	if s.listener, err = net.Listen("tcp", s.Cfg.ListenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
+
+	s.Recorder.Start()
 
 	go func() {
 		var client net.Conn

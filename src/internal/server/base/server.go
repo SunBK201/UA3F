@@ -20,18 +20,20 @@ import (
 type Server struct {
 	Cfg      *config.Config
 	Rewriter *rewrite.Rewriter
+	Recorder *statistics.Recorder
 	Cache    *expirable.LRU[string, struct{}]
 }
 
 func (s *Server) ServeConnLink(connLink *ConnLink) {
 	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
-	statistics.AddConnection(&statistics.ConnectionRecord{
+	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
 		SrcAddr:   connLink.LAddr,
 		DestAddr:  connLink.RAddr,
 		StartTime: time.Now(),
-	})
-	defer statistics.RemoveConnection(connLink.LAddr, connLink.RAddr)
+	}
+	s.Recorder.AddRecord(record)
+	defer s.Recorder.RemoveRecord(record)
 	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 
 	go connLink.CopyRL()
@@ -60,7 +62,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
 			s.Cache.Add(c.RAddr, struct{}{})
 			c.LogInfo("TLS client hello detected")
-			statistics.AddConnection(&statistics.ConnectionRecord{
+			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.HTTPS,
 				SrcAddr:  c.LAddr,
 				DestAddr: c.RAddr,
@@ -79,7 +81,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		s.Cache.Add(c.RAddr, struct{}{})
 		c.LogInfo("Sniff first request is not http, switch to direct forward")
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
-			statistics.AddConnection(&statistics.ConnectionRecord{
+			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.TLS,
 				SrcAddr:  c.LAddr,
 				DestAddr: c.RAddr,
@@ -88,7 +90,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		return
 	}
 
-	statistics.AddConnection(&statistics.ConnectionRecord{
+	s.Recorder.AddRecord(&statistics.ConnectionRecord{
 		Protocol: sniff.HTTP,
 		SrcAddr:  c.LAddr,
 		DestAddr: c.RAddr,
@@ -99,7 +101,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
 			err = fmt.Errorf("sniff.SniffHTTPFast: %w", err)
-			statistics.AddConnection(
+			s.Recorder.AddRecord(
 				&statistics.ConnectionRecord{
 					Protocol: sniff.TCP,
 					SrcAddr:  c.LAddr,
@@ -137,7 +139,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
 			c.LogInfo("websocket upgrade detected, switch to direct forward")
-			statistics.AddConnection(&statistics.ConnectionRecord{
+			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  c.LAddr,
 				DestAddr: c.RAddr,
