@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -18,10 +19,11 @@ import (
 )
 
 type Server struct {
-	Cfg      *config.Config
-	Rewriter *rewrite.Rewriter
-	Recorder *statistics.Recorder
-	Cache    *expirable.LRU[string, struct{}]
+	Cfg        *config.Config
+	Rewriter   *rewrite.Rewriter
+	Recorder   *statistics.Recorder
+	Cache      *expirable.LRU[string, struct{}]
+	SkipIpChan chan *net.IP
 }
 
 func (s *Server) ServeConnLink(connLink *ConnLink) {
@@ -51,6 +53,10 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 	defer func() {
 		if err != nil {
 			c.LogDebugf("ProcessLR: %s", err.Error())
+		}
+		if c.Skipped {
+			_ = c.CloseLR()
+			return
 		}
 		if _, err = io.CopyBuffer(c.RConn, reader, one); err != nil {
 			c.LogWarnf("Process io.CopyBuffer: %v", err)
@@ -114,6 +120,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			c.LogWarn("sniff subsequent request is not http, switch to direct forward")
 			return
 		}
+
 		if req, err = http.ReadRequest(reader); err != nil {
 			err = fmt.Errorf("http.ReadRequest: %w", err)
 			return
@@ -127,6 +134,13 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		}
 		if decision.NeedCache {
 			s.Cache.Add(c.RAddr, struct{}{})
+		}
+		if !c.Skipped && decision.NeedSkip && s.SkipIpChan != nil {
+			select {
+			case s.SkipIpChan <- &c.RConn.RemoteAddr().(*net.TCPAddr).IP:
+				c.Skipped = true
+			default:
+			}
 		}
 
 		if decision.ShouldRewrite() {
@@ -144,6 +158,10 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 				SrcAddr:  c.LAddr,
 				DestAddr: c.RAddr,
 			})
+			return
+		}
+
+		if c.Skipped {
 			return
 		}
 	}

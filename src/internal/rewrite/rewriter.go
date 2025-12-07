@@ -31,10 +31,11 @@ type RewriteDecision struct {
 	Action      rule.Action
 	MatchedRule *rule.Rule
 	NeedCache   bool
+	NeedSkip    bool
 }
 
 func (d *RewriteDecision) ShouldRewrite() bool {
-	if d.NeedCache {
+	if d.NeedCache || d.NeedSkip {
 		return false
 	}
 	return d.Action == rule.ActionReplace ||
@@ -191,6 +192,9 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 	if isWhitelist {
 		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", originalUA))
 		decision.NeedCache = true
+		if originalUA == "Valve/Steam HTTP Client 1.0" {
+			decision.NeedSkip = true
+		}
 	}
 	if !matches {
 		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not hit User-Agent regex: %s", originalUA))

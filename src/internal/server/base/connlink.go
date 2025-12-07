@@ -10,10 +10,11 @@ import (
 var one = make([]byte, 1)
 
 type ConnLink struct {
-	LConn net.Conn
-	RConn net.Conn
-	LAddr string
-	RAddr string
+	LConn   net.Conn
+	RConn   net.Conn
+	LAddr   string
+	RAddr   string
+	Skipped bool
 }
 
 func (c *ConnLink) CopyLR() {

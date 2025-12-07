@@ -13,6 +13,7 @@ type RewriteResult struct {
 	Modified bool // Whether the packet was modified
 	HasUA    bool // Whether User-Agent was found
 	InCache  bool // Whether destination address is in cache
+	NeedSkip bool
 }
 
 // shouldRewriteUA determines if the User-Agent should be rewritten
@@ -66,18 +67,18 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 
 // RewritePacketUserAgent rewrites User-Agent in a raw packet payload in-place
 // Returns metadata about the operation
-func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (hasUA, modified bool) {
+func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (hasUA, modified, skip bool) {
 	// Find all User-Agent positions
 	positions, unterm := findUserAgentInPayload(payload)
 
 	if unterm {
 		log.LogInfoWithAddr(srcAddr, dstAddr, "Unterminated User-Agent found, not rewriting")
-		return true, false
+		return true, false, false
 	}
 
 	if len(positions) == 0 {
 		log.LogDebugWithAddr(srcAddr, dstAddr, "No User-Agent found in payload")
-		return false, false
+		return false, false, false
 	}
 
 	// Replace each User-Agent value in-place
@@ -93,6 +94,10 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 
 		log.LogInfoWithAddr(srcAddr, dstAddr, fmt.Sprintf("Original User-Agent: %s", originalUA))
 
+		if originalUA == "Valve/Steam HTTP Client 1.0" {
+			return true, false, true
+		}
+
 		// Check if should rewrite
 		if !r.shouldRewriteUA(srcAddr, dstAddr, originalUA) {
 			r.Recorder.AddRecord(&statistics.PassThroughRecord{
@@ -100,7 +105,7 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 				DestAddr: dstAddr,
 				UA:       originalUA,
 			})
-			return true, false
+			return true, false, false
 		}
 
 		// Build replacement with regex matching
@@ -110,14 +115,15 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 			modified = true
 		}
 	}
-	return true, modified
+	return true, modified, false
 }
 
 // RewriteTCP rewrites the TCP packet's User-Agent if applicable
 func (r *Rewriter) RewriteTCP(tcp *layers.TCP, srcAddr, dstAddr string) *RewriteResult {
-	hasUA, modified := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
+	hasUA, modified, skip := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
 	return &RewriteResult{
 		Modified: modified,
 		HasUA:    hasUA,
+		NeedSkip: skip,
 	}
 }

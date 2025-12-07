@@ -29,10 +29,11 @@ type Server struct {
 func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
-			Cfg:      cfg,
-			Rewriter: rw,
-			Recorder: rc,
-			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+			Cfg:        cfg,
+			Rewriter:   rw,
+			Recorder:   rc,
+			Cache:      expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+			SkipIpChan: make(chan *net.IP, 512),
 		},
 		so_mark: netfilter.SO_MARK,
 	}
@@ -43,8 +44,10 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
+		NftWatch:   s.NftWatch,
 		IptSetup:   s.iptSetup,
 		IptCleanup: s.iptCleanup,
+		IptWatch:   s.IptWatch,
 	}
 	return s
 }

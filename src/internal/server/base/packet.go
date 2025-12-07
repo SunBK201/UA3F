@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log/slog"
+	"net"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket"
@@ -17,6 +18,7 @@ type Packet struct {
 	TCP          *layers.TCP
 	SrcAddr      string
 	DstAddr      string
+	DstIP        net.IP
 	IsIPv6       bool
 }
 
@@ -57,10 +59,12 @@ func NewPacket(a *nfq.Attribute) (packet *Packet, err error) {
 		ip6 := packet.NetworkLayer.(*layers.IPv6)
 		packet.SrcAddr = fmt.Sprintf("%s:%d", ip6.SrcIP.String(), packet.TCP.SrcPort)
 		packet.DstAddr = fmt.Sprintf("%s:%d", ip6.DstIP.String(), packet.TCP.DstPort)
+		packet.DstIP = ip6.DstIP
 	} else {
 		ip4 := packet.NetworkLayer.(*layers.IPv4)
 		packet.SrcAddr = fmt.Sprintf("%s:%d", ip4.SrcIP.String(), packet.TCP.SrcPort)
 		packet.DstAddr = fmt.Sprintf("%s:%d", ip4.DstIP.String(), packet.TCP.DstPort)
+		packet.DstIP = ip4.DstIP
 	}
 	return
 }

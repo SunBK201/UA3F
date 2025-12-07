@@ -5,6 +5,7 @@ package nfqueue
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
@@ -28,6 +29,10 @@ func (s *Server) iptSetup() error {
 	}
 
 	err = s.IptSetLanIP()
+	if err != nil {
+		return err
+	}
+	err = s.IptSetSkipIP()
 	if err != nil {
 		return err
 	}
@@ -63,7 +68,24 @@ func (s *Server) iptCleanup() error {
 	ipt.Delete(table, jumpPoint, JumpChain...)
 	ipt.ClearAndDeleteChain(table, chain)
 	s.IptDeleteLanIP()
+	s.IptDeleteSkipIP()
 	return nil
+}
+
+func (s *Server) IptWatch() {
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				s.IptAddSkipDomains()
+			case ip := <-s.SkipIpChan:
+				s.IptAddSkipIP(ip.String())
+			}
+		}
+	}()
 }
 
 func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
@@ -72,6 +94,10 @@ func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
 		return err
 	}
 	err = ipt.Append(table, chain, netfilter.IptRuleIgnoreLAN...)
+	if err != nil {
+		return err
+	}
+	err = ipt.Append(table, chain, netfilter.IptRuleIgnoreIP...)
 	if err != nil {
 		return err
 	}

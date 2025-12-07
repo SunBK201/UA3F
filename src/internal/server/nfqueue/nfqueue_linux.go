@@ -5,6 +5,7 @@ package nfqueue
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"time"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
@@ -32,10 +33,11 @@ type Server struct {
 func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
-			Cfg:      cfg,
-			Rewriter: rw,
-			Recorder: rc,
-			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+			Cfg:        cfg,
+			Rewriter:   rw,
+			Recorder:   rc,
+			Cache:      expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+			SkipIpChan: make(chan *net.IP, 512),
 		},
 		SniffCtMarkLower: 10201,
 		SniffCtMarkUpper: 10216,
@@ -53,8 +55,10 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
+		NftWatch:   s.NftWatch,
 		IptSetup:   s.iptSetup,
 		IptCleanup: s.iptCleanup,
+		IptWatch:   s.IptWatch,
 	}
 	return s
 }
@@ -87,6 +91,12 @@ func (s *Server) handlePacket(packet *base.Packet) {
 		return
 	}
 	result := s.Rewriter.RewriteTCP(packet.TCP, packet.SrcAddr, packet.DstAddr)
+	if result.NeedSkip {
+		select {
+		case s.SkipIpChan <- &packet.DstIP:
+		default:
+		}
+	}
 	s.sendVerdict(packet, result)
 }
 
@@ -130,6 +140,10 @@ func (s *Server) sendVerdict(packet *base.Packet, result *rewrite.RewriteResult)
 }
 
 func (s *Server) getNextMark(packet *base.Packet, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
+	if result.NeedSkip {
+		return true, s.NotHTTPCtMark
+	}
+
 	mark, found := packet.GetCtMark()
 	if !found {
 		return true, s.SniffCtMarkLower

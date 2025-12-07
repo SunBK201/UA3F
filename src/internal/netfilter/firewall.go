@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
-	"github.com/gonetx/ipset"
 	"github.com/sunbk201/ua3f/internal/config"
 	"sigs.k8s.io/knftables"
 )
@@ -25,6 +24,7 @@ const (
 
 const (
 	LANSET       = "UA3F_LAN"
+	SKIP_IPSET   = "UA3F_SKIP_IPSET"
 	SKIP_PORTS   = "22,51080,51090"
 	FAKEIP_RANGE = "198.18.0.0/16,198.18.0.1/15,28.0.0.1/8"
 	HELPER_QUEUE = 10301
@@ -63,58 +63,18 @@ var LAN6_CIDRS = []string{
 	"ff00::/8",
 }
 
-var (
-	IptRuleIgnoreBrLAN = []string{
-		"!", "-i", "br-lan",
-		"-j", "RETURN",
-	}
-	IptRuleIgnoreReply = []string{
-		"-m", "conntrack",
-		"--ctdir", "REPLY",
-		"-j", "RETURN",
-	}
-	IptRuleIgnoreLAN = []string{
-		"-m", "set",
-		"--match-set", LANSET, "dst",
-		"-j", "RETURN",
-	}
-	IptRuleIgnorePorts = []string{
-		"-p", "tcp",
-		"-m", "multiport",
-		"--dports", SKIP_PORTS,
-		"-j", "RETURN",
-	}
-)
-var (
-	NftRuleIgnoreNotTCP = knftables.Concat(
-		"meta l4proto != tcp",
-		"return",
-	)
-	NftRuleIgnoreNotBrLAN = knftables.Concat(
-		"iifname != \"br-lan\"",
-		"return",
-	)
-	NftRuleIgnoreReply = knftables.Concat(
-		"ct direction reply",
-		"return",
-	)
-	NftRuleIgnoreLAN = knftables.Concat(
-		fmt.Sprintf("ip daddr @%s", LANSET),
-		"return",
-	)
-	NftRuleIgnoreLAN6 = knftables.Concat(
-		fmt.Sprintf("ip6 daddr @%s", LANSET+"_6"),
-		"return",
-	)
-	NftRuleIgnorePorts = knftables.Concat(
-		fmt.Sprintf("tcp dport { %s }", SKIP_PORTS),
-		"return",
-	)
-	NftRuleIgnoreFakeIP = knftables.Concat(
-		fmt.Sprintf("ip daddr { %s }", FAKEIP_RANGE),
-		"return",
-	)
-)
+var SKIP_DOMAINS = []string{
+	"st.dl.eccdnx.com",
+	"st.dl.bscstorage.net",
+	"st.dl.pinyuncloud.com",
+	"dl.steam.clngaa.com",
+	"cdn-ws.content.steamchina.com",
+	"cdn-qc.content.steamchina.com",
+	"cdn-ali.content.steamchina.com",
+	"xz.pphimalayanrt.com",
+	"lv.queniujq.cn",
+	"alibaba.cdn.steampipe.steamcontent.com",
+}
 
 func init() {
 	initSkipGids()
@@ -125,8 +85,10 @@ type Firewall struct {
 	Nftable    *knftables.Table
 	NftSetup   func() error
 	NftCleanup func() error
+	NftWatch   func()
 	IptSetup   func() error
 	IptCleanup func() error
+	IptWatch   func()
 }
 
 func (f *Firewall) Setup(cfg *config.Config) (err error) {
@@ -140,11 +102,17 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 			return fmt.Errorf("nftables setup function is nil")
 		}
 		err = f.NftSetup()
+		if f.NftWatch != nil {
+			f.NftWatch()
+		}
 	case IPT:
 		if f.IptSetup == nil {
 			return fmt.Errorf("iptables setup function is nil")
 		}
 		err = f.IptSetup()
+		if f.IptWatch != nil {
+			f.IptWatch()
+		}
 	default:
 		err = fmt.Errorf("unsupported or no firewall backend: %s", backend)
 	}
@@ -164,102 +132,6 @@ func (f *Firewall) Cleanup() error {
 		_ = f.IptCleanup()
 	}
 	return nil
-}
-
-func (f *Firewall) DumpNFTables() {
-	cmd := exec.Command("nft", "--handle", "list", "ruleset")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return
-	}
-	slog.Info("nftables ruleset:\n" + string(output))
-}
-
-func (f *Firewall) DumpIPTables() {
-	var tables = []string{"filter", "nat", "mangle", "raw"}
-	for _, table := range tables {
-		cmd := exec.Command("iptables", "-t", table, "-L", "-v", "-n", "--line-numbers")
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			continue
-		}
-		slog.Debug(fmt.Sprintf("iptables table(%s):\n%s", table, string(output)))
-	}
-}
-
-func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table) {
-	ipset := &knftables.Set{
-		Name:   LANSET,
-		Table:  table.Name,
-		Family: table.Family,
-		Type:   "ipv4_addr",
-		Flags: []knftables.SetFlag{
-			knftables.IntervalFlag,
-		},
-		AutoMerge: knftables.PtrTo(true),
-	}
-	tx.Add(ipset)
-
-	for _, cidr := range LAN_CIDRS {
-		iplan := &knftables.Element{
-			Table:  table.Name,
-			Family: table.Family,
-			Set:    ipset.Name,
-			Key:    []string{cidr},
-		}
-		tx.Add(iplan)
-	}
-}
-
-func (f *Firewall) NftSetLanIP6(tx *knftables.Transaction, table *knftables.Table) {
-	ipset := &knftables.Set{
-		Name:   LANSET + "_6",
-		Table:  table.Name,
-		Family: table.Family,
-		Type:   "ipv6_addr",
-		Flags: []knftables.SetFlag{
-			knftables.IntervalFlag,
-		},
-		AutoMerge: knftables.PtrTo(true),
-	}
-	tx.Add(ipset)
-
-	for _, cidr := range LAN6_CIDRS {
-		ip6lan := &knftables.Element{
-			Table:  table.Name,
-			Family: table.Family,
-			Set:    ipset.Name,
-			Key:    []string{cidr},
-		}
-		tx.Add(ip6lan)
-	}
-}
-
-func (f *Firewall) IptSetLanIP() error {
-	if err := ipset.Check(); err != nil {
-		return err
-	}
-	set, err := ipset.New(
-		LANSET,
-		ipset.HashNet,
-		ipset.Exist(false),
-		ipset.Family(ipset.Inet),
-	)
-	if err != nil {
-		return err
-	}
-
-	for _, cidr := range LAN_CIDRS {
-		err := set.Add(cidr)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (f *Firewall) IptDeleteLanIP() error {
-	return ipset.Destroy(LANSET)
 }
 
 func (f *Firewall) AddTproxyRoute(fwmark, routeTable string) error {
@@ -338,6 +210,27 @@ func detectFirewallBackend(cfg *config.Config) string {
 		slog.Warn("No firewall backend detected")
 		return ""
 	}
+}
+
+func (f *Firewall) resolveDomains(domains []string) (v4 []string, v6 []string) {
+	var ipv4Addrs []string
+	var ipv6Addrs []string
+
+	for _, domain := range domains {
+		ips, err := net.LookupIP(domain)
+		if err != nil {
+			slog.Warn("net.LookupIP", slog.String("domain", domain), slog.Any("error", err))
+			continue
+		}
+		for _, ip := range ips {
+			if ipv4 := ip.To4(); ipv4 != nil {
+				ipv4Addrs = append(ipv4Addrs, ipv4.String())
+			} else if ipv6 := ip.To16(); ipv6 != nil {
+				ipv6Addrs = append(ipv6Addrs, ipv6.String())
+			}
+		}
+	}
+	return ipv4Addrs, ipv6Addrs
 }
 
 func getWanNexthops() ([]string, error) {
