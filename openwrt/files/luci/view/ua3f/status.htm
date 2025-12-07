@@ -17,7 +17,7 @@
         function updateStatus() {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', statusUrl, true);
-            xhr.timeout = 4000;
+            xhr.timeout = 5000;
 
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
