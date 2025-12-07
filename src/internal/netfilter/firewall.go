@@ -29,7 +29,6 @@ const (
 	FAKEIP_RANGE = "198.18.0.0/16,198.18.0.1/15,28.0.0.1/8"
 	HELPER_QUEUE = 10301
 	DESYNC_QUEUE = 10901
-	SO_MARK      = 0xc9
 )
 
 const (

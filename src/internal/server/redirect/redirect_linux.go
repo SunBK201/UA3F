@@ -35,7 +35,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 			Cache:      expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 			SkipIpChan: make(chan *net.IP, 512),
 		},
-		so_mark: netfilter.SO_MARK,
+		so_mark: base.SO_MARK,
 	}
 	s.Firewall = netfilter.Firewall{
 		Nftable: &knftables.Table{

@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const SO_MARK = 0xc9
+
 // Connect dials the target address with SO_MARK set and returns the connection.
 func Connect(addr string, mark int) (target net.Conn, err error) {
 	dialer := net.Dialer{
