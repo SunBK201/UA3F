@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -19,6 +20,7 @@ import (
 
 type Server struct {
 	base.Server
+	so_mark int
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
@@ -29,6 +31,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
+		so_mark: netfilter.SO_MARK,
 	}
 }
 
@@ -116,7 +119,7 @@ func (s *Server) rewrite(req *http.Request, srcAddr, dstAddr string) (*http.Requ
 func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 	slog.Info("HTTP CONNECT request", slog.String("host", req.Host))
 	destAddr := req.Host
-	dest, err := base.Connect(destAddr)
+	dest, err := base.Connect(destAddr, s.so_mark)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return

@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/luyuhuang/subsocks/socks"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
 	"github.com/sunbk201/ua3f/internal/statistics"
@@ -20,6 +21,7 @@ import (
 type Server struct {
 	base.Server
 	listener net.Listener
+	so_mark  int
 }
 
 func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
@@ -30,6 +32,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
 		},
+		so_mark: netfilter.SO_MARK,
 	}
 }
 
@@ -135,12 +138,12 @@ func (s *Server) handleConnect(src net.Conn, req *socks.Request) error {
 	srcAddr := src.RemoteAddr().String()
 	destAddr := req.Addr.String()
 
-	dest, err := net.Dial("tcp", destAddr)
+	dest, err := base.Connect(destAddr, s.so_mark)
 	if err != nil {
 		if err := socks.NewReply(socks.HostUnreachable, nil).Write(src); err != nil {
 			slog.Error("socks.NewReply.Write", slog.String("srcAddr", srcAddr), slog.Any("error", err))
 		}
-		return fmt.Errorf("net.Dial: %w, dest: %s", err, destAddr)
+		return fmt.Errorf("base.Connect: %w, dest: %s", err, destAddr)
 	}
 
 	if err := socks.NewReply(socks.Succeeded, nil).Write(src); err != nil {

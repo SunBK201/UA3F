@@ -3,6 +3,7 @@
 package base
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"syscall"
@@ -10,10 +11,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const SO_MARK = 0xc9
-
-// ConnectWithMark dials the target address with SO_MARK set and returns the connection.
-func ConnectWithMark(addr string, mark int) (target net.Conn, err error) {
+// Connect dials the target address with SO_MARK set and returns the connection.
+func Connect(addr string, mark int) (target net.Conn, err error) {
 	dialer := net.Dialer{
 		Control: func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
@@ -24,7 +23,7 @@ func ConnectWithMark(addr string, mark int) (target net.Conn, err error) {
 
 	conn, err := dialer.Dial("tcp", addr)
 	if err != nil {
-		return nil, fmt.Errorf("ConnectWithMark dialer.Dial SO_MARK(%d): %v", mark, err)
+		return nil, fmt.Errorf("Connect dialer.Dial SO_MARK(%d): %v", mark, err)
 	}
 	return conn, nil
 }
@@ -43,4 +42,17 @@ func GetOriginalDstAddr(conn net.Conn) (addr string, err error) {
 	ip := net.IPv4(raw.Multiaddr[4], raw.Multiaddr[5], raw.Multiaddr[6], raw.Multiaddr[7])
 	port := uint16(raw.Multiaddr[2])<<8 + uint16(raw.Multiaddr[3])
 	return fmt.Sprintf("%s:%d", ip.String(), port), nil
+}
+
+func GetConnFD(conn net.Conn) (fd int, err error) {
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		return 0, errors.New("GetConnFD connection is not *net.TCPConn")
+	}
+	file, err := tcpConn.File()
+	if err != nil {
+		return 0, fmt.Errorf("tcpConn.File: %v", err)
+	}
+
+	return int(file.Fd()), nil
 }

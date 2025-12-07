@@ -130,10 +130,10 @@ func (s *Server) HandleClient(client net.Conn) {
 		return
 	}
 
-	target, err := base.ConnectWithMark(addr, s.so_mark)
+	target, err := base.Connect(addr, s.so_mark)
 	if err != nil {
 		_ = client.Close()
-		slog.Warn("base.ConnectWithMark", slog.String("addr", addr), slog.Any("error", err))
+		slog.Warn("base.Connect", slog.String("addr", addr), slog.Any("error", err))
 		return
 	}
 
