@@ -103,8 +103,7 @@ func (s *Server) clearTCPTimestamp(tcp *layers.TCP) bool {
 	newOptions := make([]layers.TCPOption, 0, len(tcp.Options))
 
 	for _, opt := range tcp.Options {
-		// TCP Timestamp option kind is 8
-		if opt.OptionType == 8 {
+		if opt.OptionType == layers.TCPOptionKindTimestamps {
 			modified = true
 			continue
 		}
