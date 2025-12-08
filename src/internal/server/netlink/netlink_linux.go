@@ -107,6 +107,9 @@ func (s *Server) clearTCPTimestamp(tcp *layers.TCP) bool {
 			modified = true
 			continue
 		}
+		if opt.OptionType == layers.TCPOptionKindNop || opt.OptionType == layers.TCPOptionKindEndList {
+			continue
+		}
 		newOptions = append(newOptions, opt)
 	}
 	if modified {
