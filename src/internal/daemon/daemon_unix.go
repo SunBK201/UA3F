@@ -1,6 +1,6 @@
 //go:build linux
 
-package usergroup
+package daemon
 
 import (
 	"bufio"
@@ -14,6 +14,21 @@ import (
 
 	"github.com/sunbk201/ua3f/internal/config"
 )
+
+func SetOOMScoreAdj(value int) error {
+	if value < -1000 || value > 1000 {
+		return fmt.Errorf("OOM score adj value %d out of range (-1000 to 1000)", value)
+	}
+	f, err := os.OpenFile("/proc/self/oom_score_adj", os.O_WRONLY, 0)
+	if err != nil {
+		return fmt.Errorf("failed to open /proc/self/oom_score_adj: %w", err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(strconv.Itoa(value)); err != nil {
+		return fmt.Errorf("failed to write to /proc/self/oom_score_adj: %w", err)
+	}
+	return nil
+}
 
 func SetUserGroup(cfg *config.Config) error {
 	groupName := determineGroup(cfg.ServerMode)

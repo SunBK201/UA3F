@@ -8,11 +8,11 @@ import (
 	"syscall"
 
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/daemon"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/server"
 	"github.com/sunbk201/ua3f/internal/server/desync"
 	"github.com/sunbk201/ua3f/internal/server/netlink"
-	"github.com/sunbk201/ua3f/internal/usergroup"
 )
 
 var (
@@ -32,9 +32,12 @@ func main() {
 
 	log.LogHeader(appVersion, cfg)
 
-	if err := usergroup.SetUserGroup(cfg); err != nil {
-		slog.Error("usergroup.SetUserGroup", slog.Any("error", err))
+	if err := daemon.SetUserGroup(cfg); err != nil {
+		slog.Error("daemon.SetUserGroup", slog.Any("error", err))
 		return
+	}
+	if err := daemon.SetOOMScoreAdj(-800); err != nil {
+		slog.Warn("daemon.SetOOMScoreAdj", slog.Any("error", err))
 	}
 
 	helper := netlink.New(cfg)
