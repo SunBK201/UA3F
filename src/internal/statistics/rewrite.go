@@ -25,8 +25,8 @@ type RewriteRecord struct {
 
 func NewRewriteRecordList(dumpFile string) *RewriteRecordList {
 	return &RewriteRecordList{
-		recordAddChan: make(chan *RewriteRecord, 500),
-		records:       make(map[string]*RewriteRecord, 500),
+		recordAddChan: make(chan *RewriteRecord, 100),
+		records:       make(map[string]*RewriteRecord, 100),
 		mu:            sync.RWMutex{},
 		dumpFile:      dumpFile,
 	}

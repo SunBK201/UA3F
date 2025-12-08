@@ -28,8 +28,8 @@ type ConnectionRecord struct {
 
 func NewConnectionRecordList(dumpFile string) *ConnectionRecordList {
 	return &ConnectionRecordList{
-		recordAddChan:    make(chan *ConnectionRecord, 500),
-		recordRemoveChan: make(chan *ConnectionRecord, 500),
+		recordAddChan:    make(chan *ConnectionRecord, 100),
+		recordRemoveChan: make(chan *ConnectionRecord, 100),
 		records:          make(map[string]*ConnectionRecord, 500),
 		mu:               sync.RWMutex{},
 		dumpFile:         dumpFile,

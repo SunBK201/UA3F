@@ -26,8 +26,8 @@ type PassThroughRecord struct {
 
 func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {
 	return &PassThroughRecordList{
-		recordAddChan: make(chan *PassThroughRecord, 500),
-		records:       make(map[string]*PassThroughRecord, 500),
+		recordAddChan: make(chan *PassThroughRecord, 100),
+		records:       make(map[string]*PassThroughRecord, 100),
 		mu:            sync.RWMutex{},
 		dumpFile:      dumpFile,
 	}

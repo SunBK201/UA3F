@@ -28,7 +28,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 			Cfg:      cfg,
 			Rewriter: rw,
 			Recorder: rc,
-			Cache:    expirable.NewLRU[string, struct{}](1024, nil, 30*time.Minute),
+			Cache:    expirable.NewLRU[string, struct{}](512, nil, 30*time.Minute),
 		},
 		so_mark: base.SO_MARK,
 	}
