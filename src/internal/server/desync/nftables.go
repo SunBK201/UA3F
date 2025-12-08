@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sunbk201/ua3f/internal/netfilter"
 	"sigs.k8s.io/knftables"
 )
 
@@ -49,7 +50,13 @@ func (s *Server) NftSetDesync(tx *knftables.Transaction, table *knftables.Table)
 		Hook:     knftables.PtrTo(knftables.PostroutingHook),
 		Priority: knftables.PtrTo(knftables.BaseChainPriority("mangle - 30")),
 	}
-	rule := &knftables.Rule{
+	tx.Add(chain)
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule:  netfilter.NftRuleIgnorePorts,
+	})
+	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
 			"ip length > 41",
@@ -60,7 +67,6 @@ func (s *Server) NftSetDesync(tx *knftables.Transaction, table *knftables.Table)
 			fmt.Sprintf("ct packets < %d", s.CtPackets),
 			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
-	}
-	tx.Add(chain)
-	tx.Add(rule)
+	})
+
 }

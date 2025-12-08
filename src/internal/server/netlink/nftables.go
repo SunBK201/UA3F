@@ -121,15 +121,18 @@ func (s *Server) NftHookTCPSyn(tx *knftables.Transaction, table *knftables.Table
 		Priority: knftables.PtrTo(knftables.ManglePriority),
 	}
 	tx.Add(chain)
-	var rule *knftables.Rule
-	rule = &knftables.Rule{
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule:  netfilter.NftRuleIgnorePorts,
+	})
+	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
 			"tcp flags syn",
 			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
-	}
-	tx.Add(rule)
+	})
 }
 
 func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
