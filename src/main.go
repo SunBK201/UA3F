@@ -32,12 +32,9 @@ func main() {
 
 	log.LogHeader(appVersion, cfg)
 
-	if err := daemon.SetUserGroup(cfg); err != nil {
-		slog.Error("daemon.SetUserGroup", slog.Any("error", err))
+	if err := daemon.DaemonSetup(cfg); err != nil {
+		slog.Error("daemon.DaemonSetup", slog.Any("error", err))
 		return
-	}
-	if err := daemon.SetOOMScoreAdj(-800); err != nil {
-		slog.Warn("daemon.SetOOMScoreAdj", slog.Any("error", err))
 	}
 
 	helper := netlink.New(cfg)

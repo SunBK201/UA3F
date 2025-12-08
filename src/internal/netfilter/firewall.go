@@ -7,13 +7,13 @@ import (
 	"log"
 	"log/slog"
 	"net"
-	"os"
 	"os/exec"
 	"os/user"
 	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/daemon"
 	"sigs.k8s.io/knftables"
 )
 
@@ -169,7 +169,7 @@ func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
 }
 
 func detectFirewallBackend(cfg *config.Config) string {
-	isOpenwrt := isOpenWrt()
+	isOpenwrt := daemon.IsOpenWrt()
 	if isOpenwrt {
 		slog.Info("Detected OpenWrt environment")
 	}
@@ -274,36 +274,6 @@ func getLocalIPv4CIDRs() ([]string, error) {
 	}
 
 	return cidrs, nil
-}
-
-func isOpenWrt() bool {
-	checkFiles := []string{
-		"/etc/openwrt_release",
-	}
-	for _, f := range checkFiles {
-		if _, err := os.Stat(f); err == nil {
-			return true
-		}
-	}
-
-	data, err := os.ReadFile("/etc/os-release")
-	if err == nil && strings.Contains(string(data), "OpenWrt") {
-		return true
-	}
-
-	if _, err := user.Lookup("uci"); err == nil {
-		return true
-	}
-
-	if _, err := exec.LookPath("opkg"); err == nil {
-		return true
-	}
-
-	if _, err := user.Lookup("apk"); err == nil {
-		return true
-	}
-
-	return false
 }
 
 func IsCommandAvailable(cmd string) bool {
