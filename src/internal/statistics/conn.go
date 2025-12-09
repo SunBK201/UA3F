@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"bufio"
 	"fmt"
 	"log/slog"
 	"os"
@@ -96,24 +97,31 @@ func (l *ConnectionRecordList) Dump() {
 	}()
 
 	l.mu.RLock()
-	var statList []ConnectionRecord
-	for _, record := range l.records {
-		statList = append(statList, *record)
+	records := make([]*ConnectionRecord, 0, len(l.records))
+	for _, r := range l.records {
+		records = append(records, r)
 	}
 	l.mu.RUnlock()
 
 	// Sort by start time (newest first)
-	sort.SliceStable(statList, func(i, j int) bool {
-		return statList[i].StartTime.After(statList[j].StartTime)
+	sort.SliceStable(records, func(i, j int) bool {
+		return records[i].StartTime.After(records[j].StartTime)
 	})
 
-	for _, record := range statList {
-		duration := time.Since(record.StartTime)
-		line := fmt.Sprintf("%s %s %s %d\n",
+	w := bufio.NewWriter(f)
+	defer func() {
+		if err := w.Flush(); err != nil {
+			slog.Error("bufio.Writer.Flush", slog.Any("error", err))
+		}
+	}()
+
+	now := time.Now()
+	for _, record := range records {
+		duration := now.Sub(record.StartTime)
+		_, err := fmt.Fprintf(w, "%s %s %s %d\n",
 			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
-		if _, err := f.WriteString(line); err != nil {
-			slog.Error("os.File.WriteString", slog.Any("error", err))
-			return
+		if err != nil {
+			slog.Error("Dump fmt.Fprintf", slog.Any("error", err))
 		}
 	}
 }

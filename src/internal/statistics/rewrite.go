@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"bufio"
 	"fmt"
 	"log/slog"
 	"os"
@@ -79,20 +80,28 @@ func (l *RewriteRecordList) Dump() {
 	}()
 
 	l.mu.RLock()
-	var statList []RewriteRecord
+	records := make([]*RewriteRecord, 0, len(l.records))
 	for _, record := range l.records {
-		statList = append(statList, *record)
+		records = append(records, record)
 	}
 	l.mu.RUnlock()
 
-	sort.SliceStable(statList, func(i, j int) bool {
-		return statList[i].Count > statList[j].Count
+	sort.SliceStable(records, func(i, j int) bool {
+		return records[i].Count > records[j].Count
 	})
 
-	for _, record := range statList {
-		line := fmt.Sprintf("%s %d %sSEQSEQ%s\n", record.Host, record.Count, record.OriginalUA, record.MockedUA)
-		if _, err := f.WriteString(line); err != nil {
-			slog.Error("os.File.WriteString", slog.Any("error", err))
+	w := bufio.NewWriter(f)
+	defer func() {
+		if err := w.Flush(); err != nil {
+			slog.Error("bufio.Writer.Flush", slog.Any("error", err))
+		}
+	}()
+
+	for _, record := range records {
+		_, err := fmt.Fprintf(w, "%s %d %sSEQSEQ%s\n",
+			record.Host, record.Count, record.OriginalUA, record.MockedUA)
+		if err != nil {
+			slog.Error("Dump fmt.Fprintf", slog.Any("error", err))
 		}
 	}
 }
