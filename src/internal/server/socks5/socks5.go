@@ -1,11 +1,13 @@
 package socks5
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
+	"sync"
 	"syscall"
 	"time"
 
@@ -30,6 +32,11 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 			Rewriter: rw,
 			Recorder: rc,
 			Cache:    expirable.NewLRU[string, struct{}](512, nil, 30*time.Minute),
+			BufioReaderPool: sync.Pool{
+				New: func() interface{} {
+					return bufio.NewReaderSize(nil, 16*1024)
+				},
+			},
 		},
 		so_mark: base.SO_MARK,
 	}

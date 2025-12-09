@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -19,11 +20,12 @@ import (
 )
 
 type Server struct {
-	Cfg        *config.Config
-	Rewriter   *rewrite.Rewriter
-	Recorder   *statistics.Recorder
-	Cache      *expirable.LRU[string, struct{}]
-	SkipIpChan chan *net.IP
+	Cfg             *config.Config
+	Rewriter        *rewrite.Rewriter
+	Recorder        *statistics.Recorder
+	Cache           *expirable.LRU[string, struct{}]
+	SkipIpChan      chan *net.IP
+	BufioReaderPool sync.Pool
 }
 
 func (s *Server) ServeConnLink(connLink *ConnLink) {
@@ -48,7 +50,12 @@ func (s *Server) ServeConnLink(connLink *ConnLink) {
 }
 
 func (s *Server) ProcessLR(c *ConnLink) (err error) {
-	reader := bufio.NewReaderSize(c.LConn, 64*1024)
+	reader := s.BufioReaderPool.Get().(*bufio.Reader)
+	reader.Reset(c.LConn)
+	defer func() {
+		reader.Reset(nil)
+		s.BufioReaderPool.Put(reader)
+	}()
 
 	defer func() {
 		if err != nil {
