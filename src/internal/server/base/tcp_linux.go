@@ -55,6 +55,7 @@ func GetConnFD(conn net.Conn) (fd int, err error) {
 	if err != nil {
 		return 0, fmt.Errorf("tcpConn.File: %v", err)
 	}
+	defer file.Close()
 
 	return int(file.Fd()), nil
 }
