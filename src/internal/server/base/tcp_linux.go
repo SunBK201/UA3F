@@ -3,10 +3,13 @@
 package base
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"syscall"
+	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -37,18 +40,43 @@ func GetOriginalDstAddr(conn net.Conn) (addr string, err error) {
 		return "", errors.New("GetConnFD connection is not *net.TCPConn")
 	}
 
-	file, err := tcpConn.File()
+	rawConn, err := tcpConn.SyscallConn()
 	if err != nil {
-		return "", fmt.Errorf("tcpConn.File: %v", err)
-	}
-	defer file.Close()
-
-	raw, err := unix.GetsockoptIPv6Mreq(int(file.Fd()), unix.SOL_IP, unix.SO_ORIGINAL_DST)
-	if err != nil {
-		return "", fmt.Errorf("unix.GetsockoptIPv6Mreq: %v", err)
+		return "", fmt.Errorf("SyscallConn: %v", err)
 	}
 
-	ip := net.IPv4(raw.Multiaddr[4], raw.Multiaddr[5], raw.Multiaddr[6], raw.Multiaddr[7])
-	port := uint16(raw.Multiaddr[2])<<8 + uint16(raw.Multiaddr[3])
-	return fmt.Sprintf("%s:%d", ip.String(), port), nil
+	var originalAddr string
+	err = rawConn.Control(func(fd uintptr) {
+		level := syscall.IPPROTO_IP
+		if conn.RemoteAddr().String()[0] == '[' {
+			level = syscall.IPPROTO_IPV6
+		}
+
+		addr, err := syscall.GetsockoptIPv6MTUInfo(int(fd), level, unix.SO_ORIGINAL_DST)
+		if err != nil {
+			slog.Warn("unix.GetsockoptIPv6MTUInfo", "error", err)
+			return
+		}
+
+		var ip net.IP
+		if level == syscall.IPPROTO_IPV6 {
+			ip = net.IP(addr.Addr.Addr[:])
+		} else {
+			ipBytes := (*[4]byte)(unsafe.Pointer(&addr.Addr.Flowinfo))[:4]
+			ip = net.IPv4(ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3])
+		}
+
+		port := binary.BigEndian.Uint16((*[2]byte)(unsafe.Pointer(&addr.Addr.Port))[:2])
+
+		if level == syscall.IPPROTO_IPV6 {
+			originalAddr = fmt.Sprintf("[%s]:%d", ip.String(), port)
+		} else {
+			originalAddr = fmt.Sprintf("%s:%d", ip.String(), port)
+		}
+	})
+	if err != nil {
+		return "", fmt.Errorf("rawConn.Control: %v", err)
+	}
+
+	return originalAddr, nil
 }

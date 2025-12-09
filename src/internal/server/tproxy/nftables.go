@@ -96,6 +96,16 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 				"counter accept",
 			),
 		})
+		tx.Add(&knftables.Rule{
+			Chain: sidecar.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				"mark", s.tproxyFwMark,
+				"mark set 7894",
+				fmt.Sprintf("tproxy ip6 to [::1]:%d", s.Cfg.Port),
+				"counter accept",
+			),
+		})
 	}
 
 	prerouting := &knftables.Chain{
@@ -175,6 +185,15 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 			"counter accept",
 		),
 	})
+	tx.Add(&knftables.Rule{
+		Chain: prerouting.Name,
+		Rule: knftables.Concat(
+			"meta l4proto tcp",
+			"mark", s.tproxyFwMark,
+			fmt.Sprintf("tproxy ip6 to [::1]:%d", s.Cfg.Port),
+			"counter accept",
+		),
+	})
 
 	// default less hit. sc.
 	tx.Add(&knftables.Rule{
@@ -183,6 +202,15 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 			"meta l4proto tcp",
 			"mark set", s.tproxyFwMark,
 			fmt.Sprintf("tproxy ip to 127.0.0.1:%d", s.Cfg.Port),
+			"counter accept",
+		),
+	})
+	tx.Add(&knftables.Rule{
+		Chain: prerouting.Name,
+		Rule: knftables.Concat(
+			"meta l4proto tcp",
+			"mark set", s.tproxyFwMark,
+			fmt.Sprintf("tproxy ip6 to [::1]:%d", s.Cfg.Port),
 			"counter accept",
 		),
 	})

@@ -155,6 +155,16 @@ func (f *Firewall) AddTproxyRoute(fwmark, routeTable string) error {
 		return fmt.Errorf("cmd.Run: %w", err)
 	}
 
+	cmd = exec.Command("ip", "-6", "rule", "add", "fwmark", fwmark, "table", routeTable)
+	if err := cmd.Run(); err != nil {
+		slog.Warn("ip -6 rule add", slog.String("error", err.Error()))
+	}
+
+	cmd = exec.Command("ip", "-6", "route", "add", "local", "::/0", "dev", "lo", "table", routeTable)
+	if err := cmd.Run(); err != nil {
+		slog.Warn("ip -6 route add", slog.String("error", err.Error()))
+	}
+
 	return nil
 }
 
@@ -163,6 +173,12 @@ func (f *Firewall) DeleteTproxyRoute(fwmark, routeTable string) error {
 	_ = cmd.Run()
 
 	cmd = exec.Command("ip", "route", "flush", "table", routeTable)
+	_ = cmd.Run()
+
+	cmd = exec.Command("ip", "-6", "rule", "del", "fwmark", fwmark, "table", routeTable)
+	_ = cmd.Run()
+
+	cmd = exec.Command("ip", "-6", "route", "flush", "table", routeTable)
 	_ = cmd.Run()
 
 	return nil
