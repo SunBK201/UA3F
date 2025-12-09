@@ -174,9 +174,14 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 	// GLOBAL
 	var err error
 	matches := false
-	isWhitelist := r.inWhitelist(originalUA)
 	decision := &RewriteDecision{}
 
+	if originalUA == "" {
+		decision.Action = rule.ActionDirect
+		return decision
+	}
+
+	isWhitelist := r.inWhitelist(originalUA)
 	if !isWhitelist {
 		if r.pattern == "" {
 			matches = true
