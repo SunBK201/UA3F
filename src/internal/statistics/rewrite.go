@@ -15,6 +15,7 @@ type RewriteRecordList struct {
 	records       map[string]*RewriteRecord
 	mu            sync.RWMutex
 	dumpFile      string
+	dumpWriter    *bufio.Writer
 }
 
 type RewriteRecord struct {
@@ -30,6 +31,7 @@ func NewRewriteRecordList(dumpFile string) *RewriteRecordList {
 		records:       make(map[string]*RewriteRecord, 100),
 		mu:            sync.RWMutex{},
 		dumpFile:      dumpFile,
+		dumpWriter:    bufio.NewWriter(nil),
 	}
 }
 
@@ -90,15 +92,15 @@ func (l *RewriteRecordList) Dump() {
 		return records[i].Count > records[j].Count
 	})
 
-	w := bufio.NewWriter(f)
+	l.dumpWriter.Reset(f)
 	defer func() {
-		if err := w.Flush(); err != nil {
+		if err := l.dumpWriter.Flush(); err != nil {
 			slog.Error("bufio.Writer.Flush", slog.Any("error", err))
 		}
 	}()
 
 	for _, record := range records {
-		_, err := fmt.Fprintf(w, "%s %d %sSEQSEQ%s\n",
+		_, err := fmt.Fprintf(l.dumpWriter, "%s %d %sSEQSEQ%s\n",
 			record.Host, record.Count, record.OriginalUA, record.MockedUA)
 		if err != nil {
 			slog.Error("Dump fmt.Fprintf", slog.Any("error", err))

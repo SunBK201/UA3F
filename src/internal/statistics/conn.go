@@ -18,6 +18,7 @@ type ConnectionRecordList struct {
 	records          map[string]*ConnectionRecord
 	mu               sync.RWMutex
 	dumpFile         string
+	dumpWriter       *bufio.Writer
 }
 
 type ConnectionRecord struct {
@@ -34,6 +35,7 @@ func NewConnectionRecordList(dumpFile string) *ConnectionRecordList {
 		records:          make(map[string]*ConnectionRecord, 500),
 		mu:               sync.RWMutex{},
 		dumpFile:         dumpFile,
+		dumpWriter:       bufio.NewWriter(nil),
 	}
 }
 
@@ -108,9 +110,9 @@ func (l *ConnectionRecordList) Dump() {
 		return records[i].StartTime.After(records[j].StartTime)
 	})
 
-	w := bufio.NewWriter(f)
+	l.dumpWriter.Reset(f)
 	defer func() {
-		if err := w.Flush(); err != nil {
+		if err := l.dumpWriter.Flush(); err != nil {
 			slog.Error("bufio.Writer.Flush", slog.Any("error", err))
 		}
 	}()
@@ -118,7 +120,7 @@ func (l *ConnectionRecordList) Dump() {
 	now := time.Now()
 	for _, record := range records {
 		duration := now.Sub(record.StartTime)
-		_, err := fmt.Fprintf(w, "%s %s %s %d\n",
+		_, err := fmt.Fprintf(l.dumpWriter, "%s %s %s %d\n",
 			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
 		if err != nil {
 			slog.Error("Dump fmt.Fprintf", slog.Any("error", err))

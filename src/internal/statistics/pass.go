@@ -16,6 +16,7 @@ type PassThroughRecordList struct {
 	records       map[string]*PassThroughRecord
 	mu            sync.RWMutex
 	dumpFile      string
+	dumpWriter    *bufio.Writer
 }
 
 type PassThroughRecord struct {
@@ -31,6 +32,7 @@ func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {
 		records:       make(map[string]*PassThroughRecord, 100),
 		mu:            sync.RWMutex{},
 		dumpFile:      dumpFile,
+		dumpWriter:    bufio.NewWriter(nil),
 	}
 }
 
@@ -95,15 +97,15 @@ func (l *PassThroughRecordList) Dump() {
 		return records[i].Count > records[j].Count
 	})
 
-	w := bufio.NewWriter(f)
+	l.dumpWriter.Reset(f)
 	defer func() {
-		if err := w.Flush(); err != nil {
+		if err := l.dumpWriter.Flush(); err != nil {
 			slog.Error("bufio.Writer.Flush", slog.Any("error", err))
 		}
 	}()
 
 	for _, record := range records {
-		_, err := fmt.Fprintf(w, "%s %s %d %s\n",
+		_, err := fmt.Fprintf(l.dumpWriter, "%s %s %d %s\n",
 			record.SrcAddr, record.DestAddr, record.Count, record.UA)
 		if err != nil {
 			slog.Error("Dump fmt.Fprintf", slog.Any("error", err))
