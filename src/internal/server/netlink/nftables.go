@@ -32,7 +32,7 @@ func (s *Server) nftSetup() error {
 		s.NftHookTCPSyn(tx, s.Nftable)
 	}
 	if s.cfg.SetIPID {
-		s.NftSetIP(tx, s.Nftable)
+		s.NftHookIP(tx, s.Nftable)
 	}
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -135,7 +135,7 @@ func (s *Server) NftHookTCPSyn(tx *knftables.Transaction, table *knftables.Table
 	})
 }
 
-func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
+func (s *Server) NftHookIP(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
 		Name:     "HELPER_QUEUE",
 		Table:    table.Name,
@@ -143,15 +143,25 @@ func (s *Server) NftSetIP(tx *knftables.Transaction, table *knftables.Table) {
 		Hook:     knftables.PtrTo(knftables.PostroutingHook),
 		Priority: knftables.PtrTo(knftables.ManglePriority),
 	}
-	rule := &knftables.Rule{
+	tx.Add(chain)
+
+	if s.cfg.SetTCPInitialWindow || s.cfg.DelTCPTimestamp {
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"tcp flags syn",
+				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+			),
+		})
+	}
+	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
+			"ip id != 0",
 			"meta l4proto tcp",
 			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
 		),
-	}
-	tx.Add(chain)
-	tx.Add(rule)
+	})
 }
 
 // unused currently
