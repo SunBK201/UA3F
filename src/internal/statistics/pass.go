@@ -15,8 +15,10 @@ type PassThroughRecordList struct {
 	recordAddChan chan *PassThroughRecord
 	records       map[string]*PassThroughRecord
 	mu            sync.RWMutex
-	dumpFile      string
-	dumpWriter    *bufio.Writer
+
+	dumpRecords []*PassThroughRecord
+	dumpFile    string
+	dumpWriter  *bufio.Writer
 }
 
 type PassThroughRecord struct {
@@ -31,6 +33,7 @@ func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {
 		recordAddChan: make(chan *PassThroughRecord, 100),
 		records:       make(map[string]*PassThroughRecord, 100),
 		mu:            sync.RWMutex{},
+		dumpRecords:   make([]*PassThroughRecord, 0, 100),
 		dumpFile:      dumpFile,
 		dumpWriter:    bufio.NewWriter(nil),
 	}
@@ -86,15 +89,15 @@ func (l *PassThroughRecordList) Dump() {
 		}
 	}()
 
+	l.dumpRecords = l.dumpRecords[:0]
 	l.mu.RLock()
-	records := make([]*PassThroughRecord, 0, len(l.records))
 	for _, r := range l.records {
-		records = append(records, r)
+		l.dumpRecords = append(l.dumpRecords, r)
 	}
 	l.mu.RUnlock()
 
-	sort.SliceStable(records, func(i, j int) bool {
-		return records[i].Count > records[j].Count
+	sort.SliceStable(l.dumpRecords, func(i, j int) bool {
+		return l.dumpRecords[i].Count > l.dumpRecords[j].Count
 	})
 
 	l.dumpWriter.Reset(f)
@@ -104,7 +107,7 @@ func (l *PassThroughRecordList) Dump() {
 		}
 	}()
 
-	for _, record := range records {
+	for _, record := range l.dumpRecords {
 		_, err := fmt.Fprintf(l.dumpWriter, "%s %s %d %s\n",
 			record.SrcAddr, record.DestAddr, record.Count, record.UA)
 		if err != nil {

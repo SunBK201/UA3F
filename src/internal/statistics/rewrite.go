@@ -14,8 +14,10 @@ type RewriteRecordList struct {
 	recordAddChan chan *RewriteRecord
 	records       map[string]*RewriteRecord
 	mu            sync.RWMutex
-	dumpFile      string
-	dumpWriter    *bufio.Writer
+
+	dumpRecords []*RewriteRecord
+	dumpFile    string
+	dumpWriter  *bufio.Writer
 }
 
 type RewriteRecord struct {
@@ -28,8 +30,9 @@ type RewriteRecord struct {
 func NewRewriteRecordList(dumpFile string) *RewriteRecordList {
 	return &RewriteRecordList{
 		recordAddChan: make(chan *RewriteRecord, 100),
-		records:       make(map[string]*RewriteRecord, 100),
+		records:       make(map[string]*RewriteRecord, 300),
 		mu:            sync.RWMutex{},
+		dumpRecords:   make([]*RewriteRecord, 0, 300),
 		dumpFile:      dumpFile,
 		dumpWriter:    bufio.NewWriter(nil),
 	}
@@ -81,15 +84,15 @@ func (l *RewriteRecordList) Dump() {
 		}
 	}()
 
+	l.dumpRecords = l.dumpRecords[:0]
 	l.mu.RLock()
-	records := make([]*RewriteRecord, 0, len(l.records))
 	for _, record := range l.records {
-		records = append(records, record)
+		l.dumpRecords = append(l.dumpRecords, record)
 	}
 	l.mu.RUnlock()
 
-	sort.SliceStable(records, func(i, j int) bool {
-		return records[i].Count > records[j].Count
+	sort.SliceStable(l.dumpRecords, func(i, j int) bool {
+		return l.dumpRecords[i].Count > l.dumpRecords[j].Count
 	})
 
 	l.dumpWriter.Reset(f)
@@ -99,7 +102,7 @@ func (l *RewriteRecordList) Dump() {
 		}
 	}()
 
-	for _, record := range records {
+	for _, record := range l.dumpRecords {
 		_, err := fmt.Fprintf(l.dumpWriter, "%s %d %sSEQSEQ%s\n",
 			record.Host, record.Count, record.OriginalUA, record.MockedUA)
 		if err != nil {

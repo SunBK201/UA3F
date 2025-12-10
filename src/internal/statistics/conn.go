@@ -17,8 +17,10 @@ type ConnectionRecordList struct {
 	recordRemoveChan chan *ConnectionRecord
 	records          map[string]*ConnectionRecord
 	mu               sync.RWMutex
-	dumpFile         string
-	dumpWriter       *bufio.Writer
+
+	dumpRecords []*ConnectionRecord
+	dumpFile    string
+	dumpWriter  *bufio.Writer
 }
 
 type ConnectionRecord struct {
@@ -34,6 +36,7 @@ func NewConnectionRecordList(dumpFile string) *ConnectionRecordList {
 		recordRemoveChan: make(chan *ConnectionRecord, 100),
 		records:          make(map[string]*ConnectionRecord, 500),
 		mu:               sync.RWMutex{},
+		dumpRecords:      make([]*ConnectionRecord, 0, 500),
 		dumpFile:         dumpFile,
 		dumpWriter:       bufio.NewWriter(nil),
 	}
@@ -98,16 +101,16 @@ func (l *ConnectionRecordList) Dump() {
 		}
 	}()
 
+	l.dumpRecords = l.dumpRecords[:0]
 	l.mu.RLock()
-	records := make([]*ConnectionRecord, 0, len(l.records))
 	for _, r := range l.records {
-		records = append(records, r)
+		l.dumpRecords = append(l.dumpRecords, r)
 	}
 	l.mu.RUnlock()
 
 	// Sort by start time (newest first)
-	sort.SliceStable(records, func(i, j int) bool {
-		return records[i].StartTime.After(records[j].StartTime)
+	sort.SliceStable(l.dumpRecords, func(i, j int) bool {
+		return l.dumpRecords[i].StartTime.After(l.dumpRecords[j].StartTime)
 	})
 
 	l.dumpWriter.Reset(f)
@@ -118,7 +121,7 @@ func (l *ConnectionRecordList) Dump() {
 	}()
 
 	now := time.Now()
-	for _, record := range records {
+	for _, record := range l.dumpRecords {
 		duration := now.Sub(record.StartTime)
 		_, err := fmt.Fprintf(l.dumpWriter, "%s %s %s %d\n",
 			record.Protocol, record.SrcAddr, record.DestAddr, int(duration.Seconds()))
