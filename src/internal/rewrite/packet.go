@@ -120,6 +120,11 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 
 // RewriteTCP rewrites the TCP packet's User-Agent if applicable
 func (r *Rewriter) RewriteTCP(tcp *layers.TCP, srcAddr, dstAddr string) *RewriteResult {
+	if len(tcp.Payload) == 0 {
+		return &RewriteResult{
+			Modified: false,
+		}
+	}
 	hasUA, modified, skip := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
 	return &RewriteResult{
 		Modified: modified,

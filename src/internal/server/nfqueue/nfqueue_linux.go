@@ -81,7 +81,7 @@ func (s *Server) Close() error {
 
 // handlePacket processes a single NFQUEUE packet
 func (s *Server) handlePacket(packet *base.Packet) {
-	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil || len(packet.TCP.Payload) == 0 {
+	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil {
 		_ = s.nfqServer.Nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 		return
 	}
