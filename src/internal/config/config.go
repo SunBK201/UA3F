@@ -95,7 +95,35 @@ func Parse() (*Config, bool) {
 		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
 	}
 
-	// Parse other options from environment variables
+	if os.Getenv("UA3F_SERVER_MODE") != "" {
+		cfg.ServerMode = ServerMode(strings.ToUpper(os.Getenv("UA3F_SERVER_MODE")))
+	}
+
+	if os.Getenv("UA3F_PORT") != "" {
+		var p int
+		_, err := fmt.Sscanf(os.Getenv("UA3F_PORT"), "%d", &p)
+		if err == nil {
+			cfg.Port = p
+			cfg.ListenAddr = fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
+		}
+	}
+
+	if os.Getenv("UA3F_REWRITE_MODE") != "" {
+		cfg.RewriteMode = RewriteMode(strings.ToUpper(os.Getenv("UA3F_REWRITE_MODE")))
+	}
+
+	if os.Getenv("UA3F_PAYLOAD_UA") != "" {
+		cfg.PayloadUA = os.Getenv("UA3F_PAYLOAD_UA")
+	}
+
+	if os.Getenv("UA3F_UA_REGEX") != "" {
+		cfg.UARegex = os.Getenv("UA3F_UA_REGEX")
+	}
+
+	if os.Getenv("UA3F_PARTIAL_REPLACE") == "1" {
+		cfg.PartialReplace = true
+	}
+
 	if os.Getenv("UA3F_TCPTS") == "1" {
 		cfg.DelTCPTimestamp = true
 	}
