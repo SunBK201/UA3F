@@ -197,3 +197,42 @@ func (f *Firewall) NftAddSkipDomains() error {
 	}
 	return nil
 }
+
+func NftIHAvailable() bool {
+	const TestName = "UA3F_TEST_IH"
+	table := &knftables.Table{
+		Name:   TestName,
+		Family: knftables.InetFamily,
+	}
+	nft, err := knftables.New(table.Family, table.Name)
+	if err != nil {
+		slog.Error("NftIHAvailable knftables.New", slog.Any("error", err))
+		return false
+	}
+	tx := nft.NewTransaction()
+	chain := &knftables.Chain{
+		Name:     TestName,
+		Table:    table.Name,
+		Type:     knftables.PtrTo(knftables.FilterType),
+		Hook:     knftables.PtrTo(knftables.PostroutingHook),
+		Priority: knftables.PtrTo(knftables.ManglePriority),
+	}
+	rule := &knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			"meta l4proto tcp",
+			"ct direction original",
+			"ct state established",
+			"@ih,0,8 & 0 == 0",
+			"counter accept",
+		),
+	}
+	tx.Add(table)
+	tx.Add(chain)
+	tx.Add(rule)
+	err = nft.Check(context.TODO(), tx)
+	if err != nil {
+		slog.Info("@ih match not available", slog.Any("error", err))
+	}
+	return err == nil
+}

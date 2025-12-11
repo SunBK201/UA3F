@@ -56,17 +56,32 @@ func (s *Server) NftSetDesync(tx *knftables.Transaction, table *knftables.Table)
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnorePorts,
 	})
-	tx.Add(&knftables.Rule{
-		Chain: chain.Name,
-		Rule: knftables.Concat(
-			"ip length > 41",
-			"meta l4proto tcp",
-			"ct state established",
-			"ct direction original",
-			fmt.Sprintf("ct bytes < %d", s.CtByte),
-			fmt.Sprintf("ct packets < %d", s.CtPackets),
-			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
-		),
-	})
 
+	if netfilter.NftIHAvailable() {
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				"ct state established",
+				"ct direction original",
+				"@ih,0,8 & 0 == 0",
+				fmt.Sprintf("ct bytes < %d", s.CtByte),
+				fmt.Sprintf("ct packets < %d", s.CtPackets),
+				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+			),
+		})
+	} else {
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				"ct state established",
+				"ct direction original",
+				"ip length > 41",
+				fmt.Sprintf("ct bytes < %d", s.CtByte),
+				fmt.Sprintf("ct packets < %d", s.CtPackets),
+				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+			),
+		})
+	}
 }

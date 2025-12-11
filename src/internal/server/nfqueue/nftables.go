@@ -122,13 +122,27 @@ func (s *Server) NftSetNfqueue(tx *knftables.Transaction, table *knftables.Table
 		),
 	})
 
-	tx.Add(&knftables.Rule{
-		Chain: chain.Name,
-		Rule: knftables.Concat(
-			"ct direction original",
-			"ct state established",
-			"ip length > 40",
-			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
-		),
-	})
+	if netfilter.NftIHAvailable() {
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				"ct direction original",
+				"ct state established",
+				"@ih,0,8 & 0 == 0",
+				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+			),
+		})
+	} else {
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				"ct direction original",
+				"ct state established",
+				"ip length > 40",
+				fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+			),
+		})
+	}
 }
