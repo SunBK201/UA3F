@@ -380,13 +380,31 @@ func initLanCidrs() {
 		}
 	}
 
-	LAN_CIDRS = updatedCIDRs
-
+	// Add local CIDRs if not already covered by existing CIDRs
 	localCIDRs, err := getLocalIPv4CIDRs()
-	if err != nil {
-		return
+	if err == nil {
+		for _, localCIDR := range localCIDRs {
+			localIP, _, err := net.ParseCIDR(localCIDR)
+			if err != nil {
+				continue
+			}
+			covered := false
+			for i, lanNet := range lanRanges {
+				if _, ok := remove[i]; ok {
+					continue
+				}
+				if lanNet.Contains(localIP) {
+					covered = true
+					break
+				}
+			}
+			if !covered {
+				updatedCIDRs = append(updatedCIDRs, localCIDR)
+			}
+		}
 	}
-	LAN_CIDRS = append(LAN_CIDRS, localCIDRs...)
+
+	LAN_CIDRS = updatedCIDRs
 }
 
 func GetLanDevice() (string, error) {
