@@ -72,7 +72,7 @@ func (s *Server) iptCleanup() error {
 	return nil
 }
 
-func (s *Server) IptWatch() {
+func (s *Server) iptWatch() {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()

@@ -54,7 +54,7 @@ func (s *Server) nftCleanup() error {
 	return nil
 }
 
-func (s *Server) NftWatch() {
+func (s *Server) nftWatch() {
 	go func() {
 		_ = s.NftAddSkipDomains()
 

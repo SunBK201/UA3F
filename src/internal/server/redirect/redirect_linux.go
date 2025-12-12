@@ -51,10 +51,10 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 		},
 		NftSetup:   s.nftSetup,
 		NftCleanup: s.nftCleanup,
-		NftWatch:   s.NftWatch,
+		NftWatch:   s.nftWatch,
 		IptSetup:   s.iptSetup,
 		IptCleanup: s.iptCleanup,
-		IptWatch:   s.IptWatch,
+		IptWatch:   s.iptWatch,
 	}
 	return s
 }
