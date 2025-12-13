@@ -11,12 +11,10 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-const log_file = "/var/log/ua3f/ua3f.log"
-
 func SetLogConf(level string) {
 	writer2 := os.Stdout
 	writer3 := &lumberjack.Logger{
-		Filename:   log_file,
+		Filename:   GetLogFilePath(),
 		MaxSize:    5, // megabytes
 		MaxBackups: 5,
 		MaxAge:     7, // days
@@ -58,6 +56,7 @@ func SetLogConf(level string) {
 func LogHeader(version string, cfg *config.Config) {
 	slog.Info("UA3F started", "version", version, "", cfg)
 	slog.Info("OS Info", GetOSInfo()...)
+	slog.Info("Log file", "path", GetLogFilePath())
 }
 
 func LogDebugWithAddr(src string, dest string, msg string) {

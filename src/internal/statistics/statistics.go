@@ -1,5 +1,7 @@
 package statistics
 
+import "github.com/sunbk201/ua3f/internal/log"
+
 type Recorder struct {
 	RewriteRecordList     *RewriteRecordList
 	PassThroughRecordList *PassThroughRecordList
@@ -8,9 +10,9 @@ type Recorder struct {
 
 func New() *Recorder {
 	return &Recorder{
-		RewriteRecordList:     NewRewriteRecordList("/var/log/ua3f/rewrite_stats"),
-		PassThroughRecordList: NewPassThroughRecordList("/var/log/ua3f/pass_stats"),
-		ConnectionRecordList:  NewConnectionRecordList("/var/log/ua3f/conn_stats"),
+		RewriteRecordList:     NewRewriteRecordList(log.GetStatsFilePath("rewrite_stats")),
+		PassThroughRecordList: NewPassThroughRecordList(log.GetStatsFilePath("pass_stats")),
+		ConnectionRecordList:  NewConnectionRecordList(log.GetStatsFilePath("conn_stats")),
 	}
 }
 

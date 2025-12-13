@@ -10,8 +10,6 @@ PROG="/usr/bin/$NAME"
 start_service() {
     config_load "$NAME"
 
-    mkdir -p /var/log/ua3f && chmod o+w /var/log/ua3f
-
     local enabled
     config_get_bool enabled "enabled" "enabled" "0"
     [ "$enabled" -eq "1" ] || return 0
