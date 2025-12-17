@@ -5,7 +5,6 @@ package desync
 import (
 	"log/slog"
 
-	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -14,22 +13,22 @@ import (
 
 type Server struct {
 	netfilter.Firewall
-	cfg       *config.Config
-	nfqServer *base.NfqueueServer
-	CtByte    uint32
-	CtPackets uint32
+	cfg              *config.Config
+	ReorderNfqServer *base.NfqueueServer
+	CtByte           uint32
+	CtPackets        uint32
 }
 
 func New(cfg *config.Config) *Server {
 	s := &Server{
 		cfg: cfg,
-		nfqServer: &base.NfqueueServer{
+		ReorderNfqServer: &base.NfqueueServer{
 			QueueNum: netfilter.DESYNC_QUEUE,
 		},
 		CtByte:    1500,
 		CtPackets: 2 + 3*2,
 	}
-	s.nfqServer.HandlePacket = s.HandlePacket
+	s.ReorderNfqServer.HandlePacket = s.ReorderPacket
 	s.Firewall = netfilter.Firewall{
 		Nftable: &knftables.Table{
 			Name:   "UA3F_DESYNC",
@@ -55,7 +54,7 @@ func (s *Server) Start() (err error) {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	err = s.nfqServer.Start()
+	err = s.ReorderNfqServer.Start()
 	if err != nil {
 		return err
 	}
@@ -65,36 +64,6 @@ func (s *Server) Start() (err error) {
 
 func (s *Server) Close() error {
 	err := s.Firewall.Cleanup()
-	s.nfqServer.Close()
+	s.ReorderNfqServer.Close()
 	return err
-}
-
-func (s *Server) HandlePacket(frame *base.Packet) {
-	fragment := s.cfg.TCPDesync.Enabled
-	if frame.TCP == nil || len(frame.TCP.Payload) <= 1 || frame.TCP.FIN {
-		fragment = false
-	}
-	s.sendVerdict(frame, fragment)
-}
-
-func (s *Server) sendVerdict(packet *base.Packet, fragment bool) {
-	nf := s.nfqServer.Nf
-	id := *packet.A.PacketID
-
-	if !fragment {
-		_ = nf.SetVerdict(id, nfq.NfAccept)
-		return
-	}
-
-	newPacket, err := packet.SerializeWithDesync()
-	if err != nil {
-		_ = nf.SetVerdict(id, nfq.NfAccept)
-		slog.Error("packet.SerializeWithDesync", slog.Any("error", err))
-		return
-	}
-
-	if err := nf.SetVerdictWithOption(id, nfq.NfAccept, nfq.WithAlteredPacket(newPacket)); err != nil {
-		_ = nf.SetVerdict(id, nfq.NfAccept)
-		slog.Error("nf.SetVerdictWithOption", slog.Any("error", err))
-	}
 }
