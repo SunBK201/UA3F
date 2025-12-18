@@ -10,6 +10,7 @@ import (
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 )
 
 const (
@@ -244,6 +245,16 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 		return err
 	}
 	err = ipt.Append(table, chainOut, RuleIgnoreSOMark...)
+	if err != nil {
+		return err
+	}
+
+	var RuleIgnoreSOInjectMark = []string{
+		"-m", "mark",
+		"--mark", strconv.Itoa(base.SO_INJECT_MARK),
+		"-j", "RETURN",
+	}
+	err = ipt.Append(table, chainOut, RuleIgnoreSOInjectMark...)
 	if err != nil {
 		return err
 	}

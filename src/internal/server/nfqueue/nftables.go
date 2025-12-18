@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
@@ -112,6 +113,14 @@ func (s *Server) NftSetNfqueue(tx *knftables.Transaction, table *knftables.Table
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule:  netfilter.NftRuleIgnorePorts,
+	})
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			fmt.Sprintf("mark %d", base.SO_INJECT_MARK),
+			"counter return",
+		),
 	})
 
 	tx.Add(&knftables.Rule{

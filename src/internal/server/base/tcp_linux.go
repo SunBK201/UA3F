@@ -15,6 +15,7 @@ import (
 )
 
 const SO_MARK = 0xc9
+const SO_INJECT_MARK = 0xc91
 
 // Connect dials the target address with SO_MARK set and returns the connection.
 func Connect(addr string, mark int) (target net.Conn, err error) {

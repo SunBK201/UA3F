@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
@@ -76,14 +77,22 @@ func (s *Server) NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 		Hook:     knftables.PtrTo(knftables.PostroutingHook),
 		Priority: knftables.PtrTo(knftables.ManglePriority),
 	}
-	rule := &knftables.Rule{
+	tx.Add(chain)
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			fmt.Sprintf("mark %d", base.SO_INJECT_MARK),
+			"counter return",
+		),
+	})
+
+	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
 			"ip ttl set 64",
 		),
-	}
-	tx.Add(chain)
-	tx.Add(rule)
+	})
 }
 
 func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Table, device string) error {

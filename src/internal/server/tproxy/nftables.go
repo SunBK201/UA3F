@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
@@ -268,6 +269,14 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Chain: output.Name,
 		Rule: knftables.Concat(
 			fmt.Sprintf("mark %d", s.so_mark),
+			"counter return",
+		),
+	})
+
+	tx.Add(&knftables.Rule{
+		Chain: output.Name,
+		Rule: knftables.Concat(
+			fmt.Sprintf("mark %d", base.SO_INJECT_MARK),
 			"counter return",
 		),
 	})

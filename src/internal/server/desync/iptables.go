@@ -6,19 +6,26 @@ import (
 	"strconv"
 
 	"github.com/coreos/go-iptables/iptables"
-	"github.com/sunbk201/ua3f/internal/netfilter"
 )
 
 const (
-	table     = "mangle"
-	chain     = "UA3F_DESYNC"
-	jumpPoint = "POSTROUTING"
+	table           = "mangle"
+	reorderChain    = "UA3F_REORDER_DESYNC"
+	injectChain     = "UA3F_INJECT_DESYNC"
+	jumpPoint       = "POSTROUTING"
+	injectJumpPoint = "PREROUTING"
 )
 
-var JumpChain = []string{
-	"-p", "tcp",
-	"-j", chain,
-}
+var (
+	JumpReorderChain = []string{
+		"-p", "tcp",
+		"-j", reorderChain,
+	}
+	JumpInjectChain = []string{
+		"-p", "tcp",
+		"-j", injectChain,
+	}
+)
 
 func (s *Server) iptSetup() error {
 	ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
@@ -26,17 +33,35 @@ func (s *Server) iptSetup() error {
 		return err
 	}
 
-	err = ipt.NewChain(table, chain)
-	if err != nil {
-		return err
+	if s.cfg.TCPDesync.Reorder {
+		err = ipt.NewChain(table, reorderChain)
+		if err != nil {
+			return err
+		}
+		err = ipt.Append(table, jumpPoint, JumpReorderChain...)
+		if err != nil {
+			return err
+		}
+		err = s.IptSetDesyncReorder(ipt)
+		if err != nil {
+			return err
+		}
 	}
-
-	err = ipt.Append(table, jumpPoint, JumpChain...)
-	if err != nil {
-		return err
+	if s.cfg.TCPDesync.Inject {
+		err = ipt.NewChain(table, injectChain)
+		if err != nil {
+			return err
+		}
+		err = ipt.Append(table, injectJumpPoint, JumpInjectChain...)
+		if err != nil {
+			return err
+		}
+		err = s.IptSetDesyncInject(ipt)
+		if err != nil {
+			return err
+		}
 	}
-
-	return s.IptSetRuleDesync(ipt)
+	return nil
 }
 
 func (s *Server) iptCleanup() error {
@@ -44,12 +69,40 @@ func (s *Server) iptCleanup() error {
 	if err != nil {
 		return err
 	}
-	ipt.Delete(table, jumpPoint, JumpChain...)
-	ipt.ClearAndDeleteChain(table, chain)
+	ipt.Delete(table, jumpPoint, JumpReorderChain...)
+	ipt.Delete(table, injectJumpPoint, JumpInjectChain...)
+	ipt.ClearAndDeleteChain(table, injectChain)
+	ipt.ClearAndDeleteChain(table, reorderChain)
 	return nil
 }
 
-func (s *Server) IptSetRuleDesync(ipt *iptables.IPTables) error {
+func (s *Server) IptSetDesyncInject(ipt *iptables.IPTables) error {
+	var RuleDesync = []string{
+		"-p", "tcp",
+		"--tcp-flags", "SYN,ACK", "SYN,ACK",
+		"-m", "conntrack",
+		"--ctdir", "REPLY",
+		"-j", "NFQUEUE",
+		"--queue-num", strconv.Itoa(int(s.InjectNfqServer.QueueNum)),
+		"--queue-bypass",
+	}
+	err := ipt.Append(table, injectChain, RuleDesync...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) IptSetDesyncReorder(ipt *iptables.IPTables) error {
+	var RuleIgnoreSOMark = []string{
+		"-m", "mark",
+		"--mark", strconv.Itoa(s.InjectMark),
+		"-j", "RETURN",
+	}
+	err := ipt.Append(table, reorderChain, RuleIgnoreSOMark...)
+	if err != nil {
+		return err
+	}
 	var RuleDesync = []string{
 		"-p", "tcp",
 		"-m", "conntrack",
@@ -66,10 +119,10 @@ func (s *Server) IptSetRuleDesync(ipt *iptables.IPTables) error {
 		"-m", "length",
 		"--length", "41:0xffff",
 		"-j", "NFQUEUE",
-		"--queue-num", strconv.Itoa(netfilter.DESYNC_QUEUE),
+		"--queue-num", strconv.Itoa(int(s.ReorderNfqServer.QueueNum)),
 		"--queue-bypass",
 	}
-	err := ipt.Append(table, chain, RuleDesync...)
+	err = ipt.Append(table, reorderChain, RuleDesync...)
 	if err != nil {
 		return err
 	}

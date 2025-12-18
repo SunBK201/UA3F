@@ -48,6 +48,8 @@ type TCPDesyncConfig struct {
 	Reorder        bool
 	ReorderBytes   uint32
 	ReorderPackets uint32
+	Inject         bool
+	InjectTTL      uint8
 }
 
 func Parse() (*Config, bool) {
@@ -151,6 +153,17 @@ func Parse() (*Config, bool) {
 			_, err := fmt.Sscanf(val, "%d", &packets)
 			if err == nil {
 				cfg.TCPDesync.ReorderPackets = packets
+			}
+		}
+	}
+
+	if os.Getenv("UA3F_DESYNC_INJECT") == "1" {
+		cfg.TCPDesync.Inject = true
+		if val := os.Getenv("UA3F_DESYNC_INJECT_TTL"); val != "" {
+			var ttl uint8
+			_, err := fmt.Sscanf(val, "%d", &ttl)
+			if err == nil {
+				cfg.TCPDesync.InjectTTL = ttl
 			}
 		}
 	}

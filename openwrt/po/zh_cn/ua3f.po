@@ -279,13 +279,13 @@ msgid "Desync Settings"
 msgstr "Desync 设置"
 
 msgid "Enable TCP Desync Reordering"
-msgstr "启用 TCP 分片乱序发射"
+msgstr "TCP 分片乱序发射"
 
 msgid "Desync Reorder Bytes"
-msgstr "Desync 分片字节"
+msgstr "分片字节"
 
 msgid "Desync Reorder Packets"
-msgstr "Desync 分片数据包"
+msgstr "分片数据包"
 
 msgid "Number of bytes for fragmented random emission"
 msgstr "乱序发射的字节数，谨慎设置过大"
@@ -293,8 +293,8 @@ msgstr "乱序发射的字节数，谨慎设置过大"
 msgid "Number of packets for fragmented random emission"
 msgstr "乱序发射的数据包数，谨慎设置过大"
 
-msgid "Enable TCP Desynchronization to evade DPI"
-msgstr "启用 TCP 分片乱序发射，用于对抗 DPI 检测"
+msgid "Enable TCP Reordering to resist DPI"
+msgstr "TCP 分片乱序发射，用于对抗 DPI 检测"
 
 msgid "Recommend install kmod-nft-tproxy package for TPROXY mode"
 msgstr "建议安装 kmod-nft-tproxy 软件包以增强兼容性"
@@ -307,3 +307,15 @@ msgstr "防火墙设置中启用了流量卸载，可能导致 NFQUEUE 模式无
 
 msgid "Flow Offloading is enabled in firewall settings, it may cause TCP Desync to not work properly"
 msgstr "防火墙设置中启用了流量卸载，可能导致 TCP Desync 无法正常工作"
+
+msgid "Enable TCP Desync Injection"
+msgstr "TCP 混淆注入"
+
+msgid "Enable TCP Injection to resist DPI"
+msgstr "启用 TCP 混淆注入，用于对抗 DPI 检测"
+
+msgid "Desync Inject TTL"
+msgstr "混淆数据包的 TTL 值"
+
+msgid "TTL value for injected packets"
+msgstr "注入混淆数据包的 TTL 值，谨慎设置过大"

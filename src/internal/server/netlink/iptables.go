@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 	"sigs.k8s.io/knftables"
 )
 
@@ -18,6 +19,8 @@ const (
 )
 
 var RuleTTL = []string{
+	"-m", "mark",
+	"!", "--mark", strconv.Itoa(base.SO_INJECT_MARK),
 	"-j", "TTL",
 	"--ttl-set", "64",
 }

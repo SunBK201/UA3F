@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sunbk201/ua3f/internal/netfilter"
+	"github.com/sunbk201/ua3f/internal/server/base"
 )
 
 const (
@@ -102,6 +103,15 @@ func (s *Server) IptSetNfqueue(ipt *iptables.IPTables) error {
 		return err
 	}
 	err = ipt.Append(table, chain, netfilter.IptRuleIgnorePorts...)
+	if err != nil {
+		return err
+	}
+	var RuleIgnoreSOMark = []string{
+		"-m", "mark",
+		"--mark", strconv.Itoa(base.SO_INJECT_MARK),
+		"-j", "RETURN",
+	}
+	err = ipt.Append(table, chain, RuleIgnoreSOMark...)
 	if err != nil {
 		return err
 	}
