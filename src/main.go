@@ -45,7 +45,7 @@ func main() {
 		return
 	}
 
-	if cfg.TCPDesync.Enabled {
+	if cfg.TCPDesync.Reorder {
 		desync := desync.New(cfg)
 		addShutdown("desync.Close", desync.Close)
 		if err := desync.Start(); err != nil {

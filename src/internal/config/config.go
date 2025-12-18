@@ -45,9 +45,9 @@ type Config struct {
 }
 
 type TCPDesyncConfig struct {
-	Enabled bool
-	Bytes   uint32
-	Packets uint32
+	Reorder        bool
+	ReorderBytes   uint32
+	ReorderPackets uint32
 }
 
 func Parse() (*Config, bool) {
@@ -137,20 +137,20 @@ func Parse() (*Config, bool) {
 		cfg.SetTCPInitialWindow = true
 	}
 
-	if os.Getenv("UA3F_DESYNC") == "1" {
-		cfg.TCPDesync.Enabled = true
-		if val := os.Getenv("UA3F_DESYNC_BYTES"); val != "" {
+	if os.Getenv("UA3F_DESYNC_REORDER") == "1" {
+		cfg.TCPDesync.Reorder = true
+		if val := os.Getenv("UA3F_DESYNC_REORDER_BYTES"); val != "" {
 			var bytes uint32
 			_, err := fmt.Sscanf(val, "%d", &bytes)
 			if err == nil {
-				cfg.TCPDesync.Bytes = bytes
+				cfg.TCPDesync.ReorderBytes = bytes
 			}
 		}
-		if val := os.Getenv("UA3F_DESYNC_PACKETS"); val != "" {
+		if val := os.Getenv("UA3F_DESYNC_REORDER_PACKETS"); val != "" {
 			var packets uint32
 			_, err := fmt.Sscanf(val, "%d", &packets)
 			if err == nil {
-				cfg.TCPDesync.Packets = packets
+				cfg.TCPDesync.ReorderPackets = packets
 			}
 		}
 	}

@@ -64,8 +64,8 @@ func (s *Server) NftSetDesync(tx *knftables.Transaction, table *knftables.Table)
 			"ct state established",
 			"ct direction original",
 			"ip length > 41",
-			fmt.Sprintf("ct bytes < %d", s.CtByte),
-			fmt.Sprintf("ct packets < %d", s.CtPackets),
+			fmt.Sprintf("ct bytes < %d", s.ReorderByte),
+			fmt.Sprintf("ct packets < %d", s.ReorderPackets),
 			fmt.Sprintf("counter queue num %d bypass", s.ReorderNfqServer.QueueNum),
 		),
 	})

@@ -15,8 +15,8 @@ type Server struct {
 	netfilter.Firewall
 	cfg              *config.Config
 	ReorderNfqServer *base.NfqueueServer
-	CtByte           uint32
-	CtPackets        uint32
+	ReorderByte      uint32
+	ReorderPackets   uint32
 }
 
 func New(cfg *config.Config) *Server {
@@ -25,8 +25,8 @@ func New(cfg *config.Config) *Server {
 		ReorderNfqServer: &base.NfqueueServer{
 			QueueNum: netfilter.DESYNC_QUEUE,
 		},
-		CtByte:    1500,
-		CtPackets: 2 + 3*2,
+		ReorderByte:    1500,
+		ReorderPackets: 2 + 3*2,
 	}
 	s.ReorderNfqServer.HandlePacket = s.ReorderPacket
 	s.Firewall = netfilter.Firewall{
@@ -39,11 +39,11 @@ func New(cfg *config.Config) *Server {
 		IptSetup:   s.iptSetup,
 		IptCleanup: s.iptCleanup,
 	}
-	if s.cfg.TCPDesync.Bytes > 0 {
-		s.CtByte = s.cfg.TCPDesync.Bytes
+	if s.cfg.TCPDesync.ReorderBytes > 0 {
+		s.ReorderByte = s.cfg.TCPDesync.ReorderBytes
 	}
-	if s.cfg.TCPDesync.Packets > 0 {
-		s.CtPackets = s.cfg.TCPDesync.Packets
+	if s.cfg.TCPDesync.ReorderPackets > 0 {
+		s.ReorderPackets = s.cfg.TCPDesync.ReorderPackets
 	}
 	return s
 }
@@ -58,7 +58,7 @@ func (s *Server) Start() (err error) {
 	if err != nil {
 		return err
 	}
-	slog.Info("TCP Desync server started", slog.Int("ct_bytes", int(s.CtByte)), slog.Int("ct_packets", int(s.CtPackets)))
+	slog.Info("TCP Desync server started", slog.Int("reorder_bytes", int(s.ReorderByte)), slog.Int("reorder_packets", int(s.ReorderPackets)))
 	return
 }
 
