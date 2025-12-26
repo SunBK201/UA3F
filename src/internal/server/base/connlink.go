@@ -17,6 +17,20 @@ type ConnLink struct {
 	Skipped bool
 }
 
+func (c *ConnLink) LPort() string {
+	if tcpAddr, ok := c.LConn.RemoteAddr().(*net.TCPAddr); ok {
+		return fmt.Sprintf("%d", tcpAddr.Port)
+	}
+	return ""
+}
+
+func (c *ConnLink) RPort() string {
+	if tcpAddr, ok := c.RConn.RemoteAddr().(*net.TCPAddr); ok {
+		return fmt.Sprintf("%d", tcpAddr.Port)
+	}
+	return ""
+}
+
 func (c *ConnLink) CopyLR() {
 	defer func() {
 		if tc, ok := c.LConn.(*net.TCPConn); ok {

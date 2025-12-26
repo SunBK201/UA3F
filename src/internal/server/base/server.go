@@ -110,6 +110,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 	})
 
 	var req *http.Request
+	var destAddr string
 
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
@@ -133,7 +134,15 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			return
 		}
 
-		decision := s.Rewriter.EvaluateRewriteDecision(req, c.LAddr, c.RAddr)
+		destAddr = req.Host
+		if len(destAddr) == 0 {
+			destAddr = c.RAddr
+		}
+		if strings.IndexByte(destAddr, ':') == -1 {
+			destAddr = net.JoinHostPort(destAddr, c.RPort())
+		}
+
+		decision := s.Rewriter.EvaluateRewriteDecision(req, c.LAddr, destAddr)
 
 		if decision.Action == action.DropAction {
 			c.LogInfo("Request dropped by rule")
@@ -151,7 +160,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		}
 
 		if decision.ShouldRewrite() {
-			req = s.Rewriter.Rewrite(req, c.LAddr, c.RAddr, decision)
+			req = s.Rewriter.Rewrite(req, c.LAddr, destAddr, decision)
 		}
 
 		if err := req.Write(c.RConn); err != nil {
@@ -163,7 +172,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  c.LAddr,
-				DestAddr: c.RAddr,
+				DestAddr: destAddr,
 			})
 			return
 		}

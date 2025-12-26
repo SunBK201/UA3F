@@ -1,5 +1,13 @@
 [
     {
+        "enabled": true,
+        "type": "DOMAIN-SUFFIX",
+        "match_value": "ua-check.stagoh.com",
+        "action": "REPLACE",
+        "rewrite_header": "User-Agent",
+        "rewrite_value": "UA3F"
+    },
+    {
         "enabled": false,
         "type": "DEST-PORT",
         "match_value": "443",

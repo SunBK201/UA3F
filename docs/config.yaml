@@ -23,9 +23,14 @@ desync:
   inject-ttl: 3
 
 # Rules
-# type: HEADER-KEYWORD, HEADER-REGEX, DEST-PORT, IP-CIDR, SRC-IP, FINAL
+# type: HEADER-KEYWORD, HEADER-REGEX, DEST-PORT, IP-CIDR, SRC-IP, DOMAIN-SUFFIX, DOMAIN-KEYWORD, DOMAIN, FINAL
 # action: DIRECT, REPLACE, REPLACE-PART, DELETE, DROP
 rules:
+  - type: DOMAIN-SUFFIX
+    match-value: "ua-check.stagoh.com"
+    action: REPLACE
+    rewrite-header: "User-Agent"
+    rewrite-value: "UA3F"
   - type: DEST-PORT
     match-value: "22"
     action: DIRECT

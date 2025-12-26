@@ -8,6 +8,9 @@ const (
 	RuleTypeIPCIDR        RuleType = "IP-CIDR"
 	RuleTypeSrcIP         RuleType = "SRC-IP"
 	RuleTypeDestPort      RuleType = "DEST-PORT"
+	RuleTypeDomain        RuleType = "DOMAIN"
+	RuleTypeDomainKeyword RuleType = "DOMAIN-KEYWORD"
+	RuleTypeDomainSuffix  RuleType = "DOMAIN-SUFFIX"
 	RuleTypeFinal         RuleType = "FINAL"
 )
 

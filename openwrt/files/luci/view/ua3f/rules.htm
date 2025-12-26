@@ -246,6 +246,9 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
         
         getRuleTypeLabel: function(type) {
             var labels = {
+                'DOMAIN': '<%:DOMAIN%>',
+                'DOMAIN-SUFFIX': '<%:DOMAIN-SUFFIX%>',
+                'DOMAIN-KEYWORD': '<%:DOMAIN-KEYWORD%>',
                 'HEADER-KEYWORD': '<%:HEADER-KEYWORD%>',
                 'HEADER-REGEX': '<%:HEADER-REGEX%>',
                 'IP-CIDR': '<%:IP-CIDR%>',
@@ -316,6 +319,9 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 typeSelect.className = 'cbi-input-select';
                 typeSelect.id = 'modal_rule_type';
                 var types = [
+                    ['DOMAIN', '<%:DOMAIN%>'],
+                    ['DOMAIN-SUFFIX', '<%:DOMAIN-SUFFIX%>'],
+                    ['DOMAIN-KEYWORD', '<%:DOMAIN-KEYWORD%>'],
                     ['HEADER-KEYWORD', '<%:HEADER-KEYWORD%>'],
                     ['HEADER-REGEX', '<%:HEADER-REGEX%>'],
                     ['IP-CIDR', '<%:IP-CIDR%>'],
@@ -530,6 +536,9 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             if (!typeSelect || !matchInput) return;
             
             var placeholders = {
+                'DOMAIN': '<%:example.com%>',
+                'DOMAIN-SUFFIX': '<%:example.com%>',
+                'DOMAIN-KEYWORD': '<%:example%>',
                 'HEADER-KEYWORD': '<%:Mac%>',
                 'HEADER-REGEX': '<%:Mac.*Chrome%>',
                 'IP-CIDR': '<%:10.0.0.0/8%>',

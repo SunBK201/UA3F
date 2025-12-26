@@ -8,32 +8,32 @@ import (
 	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
-type DestPort struct {
+type Domain struct {
 	action common.Action
-	port   string
+	domain string
 }
 
-func (d *DestPort) Type() common.RuleType {
-	return common.RuleTypeDestPort
+func (d *Domain) Type() common.RuleType {
+	return common.RuleTypeDomain
 }
 
-func (d *DestPort) Match(meta *common.Metadata) bool {
-	return meta.DestPort() == d.port
+func (d *Domain) Match(metadata *common.Metadata) bool {
+	return metadata.Host() == d.domain
 }
 
-func (d *DestPort) Action() common.Action {
+func (d *Domain) Action() common.Action {
 	return d.action
 }
 
-func NewDestPort(rule *config.Rule) *DestPort {
+func NewDomain(rule *config.Rule) *Domain {
 	action := action.NewAction(rule)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
-	return &DestPort{
+	return &Domain{
 		action: action,
-		port:   rule.MatchValue,
+		domain: rule.MatchValue,
 	}
 }

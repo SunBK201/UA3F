@@ -61,6 +61,12 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
 			r = match.NewSrcIP(rule)
 		case common.RuleTypeDestPort:
 			r = match.NewDestPort(rule)
+		case common.RuleTypeDomain:
+			r = match.NewDomain(rule)
+		case common.RuleTypeDomainKeyword:
+			r = match.NewDomainKeyword(rule)
+		case common.RuleTypeDomainSuffix:
+			r = match.NewDomainSuffix(rule)
 		case common.RuleTypeFinal:
 			r = match.NewFinal(rule)
 		default:
