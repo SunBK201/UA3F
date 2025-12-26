@@ -144,7 +144,6 @@ func (s *NfqueueServer) Close() {
 func (s *NfqueueServer) worker(workerID int, aChan <-chan *nfq.Attribute) {
 	defer s.wg.Done()
 	defer slog.Info("Nfqueue worker stopped", slog.Int("workerID", workerID))
-	slog.Info("Nfqueue worker started", slog.Int("workerID", workerID))
 
 	for a := range aChan {
 		if ok := attributeSanityCheck(a); !ok {
