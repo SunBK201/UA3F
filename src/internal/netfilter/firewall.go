@@ -158,12 +158,12 @@ func (f *Firewall) AddTproxyRoute(fwmark, routeTable string) error {
 
 	cmd = exec.Command("ip", "-6", "rule", "add", "fwmark", fwmark, "table", routeTable)
 	if err := cmd.Run(); err != nil {
-		slog.Warn("ip -6 rule add", slog.String("error", err.Error()))
+		slog.Info("ip -6 rule add", slog.String("error", err.Error()))
 	}
 
 	cmd = exec.Command("ip", "-6", "route", "add", "local", "::/0", "dev", "lo", "table", routeTable)
 	if err := cmd.Run(); err != nil {
-		slog.Warn("ip -6 route add", slog.String("error", err.Error()))
+		slog.Info("ip -6 route add", slog.String("error", err.Error()))
 	}
 
 	return nil
