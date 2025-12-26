@@ -312,7 +312,7 @@ msgid "Enable TCP Desync Injection"
 msgstr "TCP 混淆注入"
 
 msgid "Enable TCP Injection to resist DPI"
-msgstr "启用 TCP 混淆注入，用于对抗 DPI 检测"
+msgstr "启用 TCP 混淆注入，用于对抗 DPI 检测（注意此功能与固定 TTL 功能冲突）"
 
 msgid "Desync Inject TTL"
 msgstr "混淆数据包的 TTL 值"
