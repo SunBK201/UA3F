@@ -23,7 +23,7 @@ type RewriteMode string
 const (
 	RewriteModeGlobal RewriteMode = "GLOBAL"
 	RewriteModeDirect RewriteMode = "DIRECT"
-	RewriteModeRules  RewriteMode = "RULES"
+	RewriteModeRule   RewriteMode = "RULE"
 )
 
 type Config struct {
@@ -74,7 +74,7 @@ func Parse() (*Config, bool) {
 	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
 	flag.StringVar(&uaRegx, "r", "", "User-Agent regex")
 	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
-	flag.StringVar(&rewriteMode, "x", string(RewriteModeGlobal), "Rewrite mode: GLOBAL, DIRECT, RULES")
+	flag.StringVar(&rewriteMode, "x", string(RewriteModeGlobal), "Rewrite mode: GLOBAL, DIRECT, RULE")
 	flag.StringVar(&rules, "z", "", "Rules JSON string")
 	flag.StringVar(&others, "o", "", "Other options (tcpts, ttl, ipid)")
 	flag.BoolVar(&showVer, "v", false, "Show version")
@@ -166,6 +166,11 @@ func Parse() (*Config, bool) {
 				cfg.TCPDesync.InjectTTL = ttl
 			}
 		}
+	}
+
+	// Backwards compatibility: convert deprecated "RULES" value to "RULE".
+	if cfg.RewriteMode == "RULES" {
+		cfg.RewriteMode = RewriteModeRule
 	}
 
 	// Parse other options from -o flag

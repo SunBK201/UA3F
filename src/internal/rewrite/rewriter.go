@@ -53,7 +53,7 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	}
 
 	var ruleEngine *rule.Engine
-	if cfg.RewriteMode == config.RewriteModeRules {
+	if cfg.RewriteMode == config.RewriteModeRule {
 		ruleEngine, err = rule.NewEngine(cfg.Rules)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create rule engine: %w", err)
@@ -124,8 +124,8 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		}
 	}
 
-	// RULES
-	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
+	// RULE
+	if r.rewriteMode == config.RewriteModeRule && r.ruleEngine != nil {
 		matchedRule := r.ruleEngine.MatchWithRule(req, srcAddr, destAddr)
 
 		// no match rule, direct forward
@@ -233,8 +233,8 @@ func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, d
 	action := decision.Action
 	var rewritedValue string
 
-	// RULES
-	if r.rewriteMode == config.RewriteModeRules && r.ruleEngine != nil {
+	// RULE
+	if r.rewriteMode == config.RewriteModeRule && r.ruleEngine != nil {
 		rewritedValue = r.ruleEngine.ApplyAction(action, rewriteValue, originalValue, decision.MatchedRule)
 	} else {
 		// GLOBAL

@@ -98,11 +98,11 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
 - `-l <log level>`: 日志等级，默认 info，可选：debug，默认日志位置：`/var/log/ua3f.log`
-- `-x`: 重写策略，支持 GLOBAL、DIRECT、RULES，默认 GLOBAL
+- `-x`: 重写策略，支持 GLOBAL、DIRECT、RULE，默认 GLOBAL
 - `-f <UA>`: 自定义 UA，默认 FFF
 - `-r <regex>`: 自定义正则匹配 User-Agent, 默认为空, 表示所有 User-Agent 都会被重写
 - `-s`: 部分替换，仅替换正则匹配到的部分
-- `-z`: 重写规则，json string 格式，仅在 RULES 重写策略模式下生效
+- `-z`: 重写规则，json string 格式，仅在 RULE 重写策略模式下生效
 - `-o ttl,tcpts,ipid`: 启用 TTL、TCP Timestamp、IP ID 伪装功能
 
 </details>
@@ -127,7 +127,7 @@ UA3F 支持 3 种不同的重写策略：
 | ---------- | -------------------- | ----------- | ---------------------------------- |
 | **GLOBAL** | 所有请求均进行重写   | User-Agent  | 适用于所有服务模式                 |
 | **DIRECT** | 不进行重写，纯转发   | 无          | 适用于所有服务模式                 |
-| **RULES**  | 根据重写规则进行重写 | 自定义      | 适用于 HTTP/SOCKS5/TPROXY/REDIRECT |
+| **RULE**  | 根据重写规则进行重写 | 自定义      | 适用于 HTTP/SOCKS5/TPROXY/REDIRECT |
 
 ## Clash 配置建议
 

@@ -71,7 +71,7 @@ function M.add_general_fields(section)
     local rewrite_mode = section:taboption("general", ListValue, "rewrite_mode", translate("Rewrite Mode"))
     rewrite_mode:value("DIRECT", translate("Direct Forward"))
     rewrite_mode:value("GLOBAL", translate("Global Rewrite"))
-    rewrite_mode:value("RULES", translate("Rule Based"))
+    rewrite_mode:value("RULE", translate("Rule Based"))
     rewrite_mode.default = "GLOBAL"
     rewrite_mode.description = translate(
         "Direct Forward: No rewriting. Global Rewrite: Rewrite all User-Agents. Rule Based: Use rewrite rules to determine behavior.")

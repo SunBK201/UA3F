@@ -91,11 +91,11 @@ Command line parameters:
 - `-b <bind addr>`: Custom bind address. Default: 127.0.0.1
 - `-p <port>`: Port number. Default: 1080
 - `-l <log level>`: Log level. Default: info. Options: debug. Default log location: `/var/log/ua3f.log`
-- `-x`: Rewrite mode. Supports GLOBAL, DIRECT, RULES. Default: GLOBAL
+- `-x`: Rewrite mode. Supports GLOBAL, DIRECT, RULE. Default: GLOBAL
 - `-f <UA>`: Custom User-Agent. Default: FFF
 - `-r <regex>`: Custom regex to match User-Agent. Default: empty (all User-Agents will be rewritten)
 - `-s`: Partial replacement, only replace the regex matched portion
-- `-z`: Rewrite rules in JSON string format. Only effective in RULES rewrite mode
+- `-z`: Rewrite rules in JSON string format. Only effective in RULE rewrite mode
 - `-o ttl,tcpts,ipid`: Enable TTL, TCP Timestamp, and IP ID obfuscation
 
 </details>
@@ -120,7 +120,7 @@ UA3F supports 3 different rewrite strategies:
 | ---------------- | -------------------------------- | --------------- | --------------------------- |
 | **GLOBAL**       | Rewrite all requests             | User-Agent      | All server modes            |
 | **DIRECT**       | No rewriting, pure forwarding    | None            | All server modes            |
-| **RULES**        | Rewrite based on rewriting rules | Customizable    | HTTP/SOCKS5/TPROXY/REDIRECT |
+| **RULE**        | Rewrite based on rewriting rules | Customizable    | HTTP/SOCKS5/TPROXY/REDIRECT |
 
 ## Clash Configuration
 
