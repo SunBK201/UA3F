@@ -41,7 +41,7 @@ func New(cfg *config.Config) *Server {
 }
 
 func (s *Server) Start() (err error) {
-	if !(s.cfg.SetTTL || s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow || s.cfg.SetIPID) {
+	if !(s.cfg.TTL || s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow || s.cfg.IPID) {
 		slog.Info("No packet modification options enabled, skipping netlink helper setup")
 		return nil
 	}
@@ -50,8 +50,8 @@ func (s *Server) Start() (err error) {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.SetTTL), slog.Bool("tcpts", s.cfg.DelTCPTimestamp), slog.Bool("ipid", s.cfg.SetIPID), slog.Bool("tcp_init_window", s.cfg.SetTCPInitialWindow))
-	if s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow || s.cfg.SetIPID {
+	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.TTL), slog.Bool("tcpts", s.cfg.TCPTimeStamp), slog.Bool("ipid", s.cfg.IPID), slog.Bool("tcp_init_window", s.cfg.TCPInitialWindow))
+	if s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow || s.cfg.IPID {
 		return s.nfqServer.Start()
 	}
 	return nil
@@ -69,14 +69,14 @@ func (s *Server) handlePacket(packet *base.Packet) {
 
 	modified := false
 	if packet.TCP != nil {
-		if s.cfg.DelTCPTimestamp {
+		if s.cfg.TCPTimeStamp {
 			modified = s.clearTCPTimestamp(packet.TCP) || modified
 		}
-		if s.cfg.SetTCPInitialWindow {
+		if s.cfg.TCPInitialWindow {
 			modified = s.setInitialTCPWindow(packet.TCP) || modified
 		}
 	}
-	if s.cfg.SetIPID {
+	if s.cfg.IPID {
 		modified = s.zeroIPID(packet) || modified
 	}
 

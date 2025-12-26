@@ -33,7 +33,7 @@ function M.add_others_fields(section)
         nfqueue_warning:depends("set_ipid", 1)
         function nfqueue_warning.cfgvalue(self, section)
             return "<strong style='color:red;'>" ..
-                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+                translate("Recommend install kmod-nft-queue package for compatibility") .. "</strong>"
         end
     end
 end

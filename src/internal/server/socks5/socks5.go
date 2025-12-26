@@ -50,7 +50,8 @@ func (s *Server) Close() (err error) {
 }
 
 func (s *Server) Start() (err error) {
-	if s.listener, err = net.Listen("tcp", s.Cfg.ListenAddr); err != nil {
+	listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
+	if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 

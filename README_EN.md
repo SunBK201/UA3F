@@ -96,7 +96,6 @@ Command line parameters:
 - `-r <regex>`: Custom regex to match User-Agent. Default: empty (all User-Agents will be rewritten)
 - `-s`: Partial replacement, only replace the regex matched portion
 - `-z`: Rewrite rules in JSON string format. Only effective in RULE rewrite mode
-- `-o ttl,tcpts,ipid`: Enable TTL, TCP Timestamp, and IP ID obfuscation
 
 </details>
 

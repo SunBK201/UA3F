@@ -46,7 +46,7 @@ func (d *RewriteDecision) ShouldRewrite() bool {
 // New constructs a Rewriter from config. Compiles regex and allocates cache.
 func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	// UA pattern is compiled with case-insensitive prefix (?i)
-	pattern := "(?i)" + cfg.UARegex
+	pattern := "(?i)" + cfg.UserAgentRegex
 	uaRegex, err := regexp2.Compile(pattern, regexp2.None)
 	if err != nil {
 		return nil, err
@@ -54,16 +54,16 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 
 	var ruleEngine *rule.Engine
 	if cfg.RewriteMode == config.RewriteModeRule {
-		ruleEngine, err = rule.NewEngine(cfg.Rules)
+		ruleEngine, err = rule.NewEngine(cfg.RulesJson, &cfg.Rules)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create rule engine: %w", err)
 		}
 	}
 
 	return &Rewriter{
-		payloadUA:      cfg.PayloadUA,
-		pattern:        cfg.UARegex,
-		partialReplace: cfg.PartialReplace,
+		payloadUA:      cfg.UserAgent,
+		pattern:        cfg.UserAgentRegex,
+		partialReplace: cfg.UserAgentPartialReplace,
 		rewriteMode:    cfg.RewriteMode,
 		uaRegex:        uaRegex,
 		ruleEngine:     ruleEngine,

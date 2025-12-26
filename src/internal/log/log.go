@@ -54,7 +54,7 @@ func SetLogConf(level string) {
 }
 
 func LogHeader(version string, cfg *config.Config) {
-	slog.Info("UA3F started", "version", version, "", cfg)
+	slog.Info("UA3F: Advanced HTTP Header Rewriting Tool", "version", version, "", cfg)
 	slog.Info("OS Info", GetOSInfo()...)
 	slog.Info("Log file", "path", GetLogFilePath())
 }

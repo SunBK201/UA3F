@@ -11,7 +11,7 @@ local DummyValue = cbi.DummyValue
 
 function M.add_desync_fields(section)
     -- Enable TCP Desync
-    local desync_reorder = section:taboption("desync", Flag, "desync_reorder", translate("Enable TCP Desync Reordering"))
+    local desync_reorder = section:taboption("desync", Flag, "desync_reorder", translate("TCP Desync Reordering"))
     desync_reorder.description = translate("Enable TCP Reordering to resist DPI")
 
     if not utils.nfqueue_exists() then
@@ -20,7 +20,7 @@ function M.add_desync_fields(section)
         nfqueue_warning:depends("desync_reorder", 1)
         function nfqueue_warning.cfgvalue(self, section)
             return "<strong style='color:red;'>" ..
-                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+                translate("Recommend install kmod-nft-queue package for compatibility") .. "</strong>"
         end
     end
 
@@ -50,7 +50,7 @@ function M.add_desync_fields(section)
     ct_packets.description = translate("Number of packets for fragmented random emission")
     ct_packets:depends("desync_reorder", "1")
 
-    local desync_inject = section:taboption("desync", Flag, "desync_inject", translate("Enable TCP Desync Injection"))
+    local desync_inject = section:taboption("desync", Flag, "desync_inject", translate("TCP Desync Injection"))
     desync_inject.description = translate("Enable TCP Injection to resist DPI")
 
     if not utils.nfqueue_exists() then
@@ -59,7 +59,7 @@ function M.add_desync_fields(section)
         nfqueue_warning:depends("desync_inject", 1)
         function nfqueue_warning.cfgvalue(self, section)
             return "<strong style='color:red;'>" ..
-                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+                translate("Recommend install kmod-nft-queue package for compatibility") .. "</strong>"
         end
     end
 

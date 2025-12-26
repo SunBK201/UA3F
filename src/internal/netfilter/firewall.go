@@ -195,7 +195,7 @@ func detectFirewallBackend(cfg *config.Config) string {
 	nftTproxyAvailable := isOpkgPackageInstalled("kmod-nft-tproxy") && nftAvailable
 	nftNfqueueAvailable := isOpkgPackageInstalled("kmod-nft-queue") && nftAvailable
 	tproxyNeeded := cfg.ServerMode == config.ServerModeTProxy
-	nfqueueNeeded := cfg.SetTCPInitialWindow || cfg.DelTCPTimestamp || cfg.SetIPID || cfg.ServerMode == config.ServerModeNFQueue || cfg.TCPDesync.Reorder || cfg.TCPDesync.Inject
+	nfqueueNeeded := cfg.TCPInitialWindow || cfg.TCPTimeStamp || cfg.IPID || cfg.ServerMode == config.ServerModeNFQueue || cfg.Desync.Reorder || cfg.Desync.Inject
 
 	selectNFT := func() bool {
 		if !nftAvailable {

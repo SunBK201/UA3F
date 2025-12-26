@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
+	"go.yaml.in/yaml/v3"
 )
 
 type ServerMode string
@@ -27,145 +30,182 @@ const (
 )
 
 type Config struct {
-	ServerMode          ServerMode
-	BindAddr            string
-	Port                int
-	ListenAddr          string
-	LogLevel            string
-	RewriteMode         RewriteMode
-	Rules               string
-	PayloadUA           string
-	UARegex             string
-	PartialReplace      bool
-	SetTTL              bool
-	SetIPID             bool
-	DelTCPTimestamp     bool
-	SetTCPInitialWindow bool
-	TCPDesync           TCPDesyncConfig
+	ServerMode  ServerMode `yaml:"server-mode" validate:"required,oneof=HTTP SOCKS5 TPROXY REDIRECT NFQUEUE"`
+	BindAddress string     `yaml:"bind-address" validate:"ip"`
+	Port        int        `yaml:"port" default:"1080" validate:"required,min=1,max=65535"`
+
+	LogLevel string `yaml:"log-level" default:"info" validate:"required,oneof=debug info warn error"`
+
+	RewriteMode RewriteMode `yaml:"rewrite-mode" default:"GLOBAL" validate:"required,oneof=GLOBAL DIRECT RULE"`
+
+	UserAgent               string `yaml:"user-agent" default:"FFF"`
+	UserAgentRegex          string `yaml:"user-agent-regex"`
+	UserAgentPartialReplace bool   `yaml:"user-agent-partial-replace"`
+
+	TTL              bool `yaml:"ttl"`
+	IPID             bool `yaml:"ipid"`
+	TCPTimeStamp     bool `yaml:"tcp_timestamp"`
+	TCPInitialWindow bool `yaml:"tcp_initial_window"`
+
+	Desync DesyncConfig `yaml:"desync"`
+
+	Rules     []Rule `yaml:"rules" validate:"dive"`
+	RulesJson string
 }
 
-type TCPDesyncConfig struct {
-	Reorder        bool
-	ReorderBytes   uint32
-	ReorderPackets uint32
-	Inject         bool
-	InjectTTL      uint8
+type DesyncConfig struct {
+	Reorder        bool   `yaml:"reorder"`
+	ReorderBytes   uint32 `yaml:"reorder-bytes" default:"8" validate:"min=0"`
+	ReorderPackets uint32 `yaml:"reorder-packets" default:"1500" validate:"min=0"`
+	Inject         bool   `yaml:"inject"`
+	InjectTTL      uint8  `yaml:"inject-ttl" default:"3" validate:"min=0"`
 }
 
-func Parse() (*Config, bool) {
+type Rule struct {
+	Type string `yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP FINAL"`
+
+	MatchHeader string `yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
+	MatchValue  string `yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP"`
+
+	Action string `yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-PART DELETE DROP"`
+
+	RewriteHeader string `yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART,required_if=Action DELETE"`
+	RewriteValue  string `yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART"`
+}
+
+func Parse() (*Config, bool, error) {
 	var (
-		serverMode  string
-		bindAddr    string
-		port        int
-		loglevel    string
-		payloadUA   string
-		uaRegx      string
-		partial     bool
-		rewriteMode string
-		rules       string
-		others      string
-		showVer     bool
+		configFile       string
+		serverMode       string
+		bindAddr         string
+		port             int
+		loglevel         string
+		payloadUA        string
+		uaRegx           string
+		partial          bool
+		rewriteMode      string
+		rulesJson        string
+		showVer          bool
+		ttl              bool
+		ipid             bool
+		tcpTimestamp     bool
+		tcpInitialWindow bool
+		desyncReorder    bool
+		reorderBytes     uint
+		reorderPackets   uint
+		desyncInject     bool
+		injectTTL        uint
 	)
 
-	flag.StringVar(&serverMode, "m", string(ServerModeSocks5), "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
-	flag.StringVar(&bindAddr, "b", "127.0.0.1", "Bind address")
-	flag.IntVar(&port, "p", 1080, "Port")
-	flag.StringVar(&loglevel, "l", "info", "Log level")
-	flag.StringVar(&payloadUA, "f", "FFF", "User-Agent")
+	flag.StringVar(&configFile, "c", "", "Config file path")
+	flag.StringVar(&serverMode, "m", "", "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
+	flag.StringVar(&bindAddr, "b", "", "Bind address")
+	flag.IntVar(&port, "p", 0, "Port")
+	flag.StringVar(&loglevel, "l", "", "Log level")
+	flag.StringVar(&payloadUA, "f", "", "User-Agent")
 	flag.StringVar(&uaRegx, "r", "", "User-Agent regex")
 	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
-	flag.StringVar(&rewriteMode, "x", string(RewriteModeGlobal), "Rewrite mode: GLOBAL, DIRECT, RULE")
-	flag.StringVar(&rules, "z", "", "Rules JSON string")
-	flag.StringVar(&others, "o", "", "Other options (tcpts, ttl, ipid)")
+	flag.StringVar(&rewriteMode, "x", "", "Rewrite mode: GLOBAL, DIRECT, RULE")
+	flag.StringVar(&rulesJson, "z", "", "Rules JSON string")
 	flag.BoolVar(&showVer, "v", false, "Show version")
+	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
+	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
+	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
+	flag.BoolVar(&tcpInitialWindow, "tcpwin", false, "Set TCP Initial Window")
+	flag.BoolVar(&desyncReorder, "desync-reorder", false, "Enable desync reorder")
+	flag.UintVar(&reorderBytes, "desync-reorder-bytes", 0, "Desync reorder bytes")
+	flag.UintVar(&reorderPackets, "desync-reorder-packets", 0, "Desync reorder packets")
+	flag.BoolVar(&desyncInject, "desync-inject", false, "Enable desync inject")
+	flag.UintVar(&injectTTL, "desync-inject-ttl", 0, "Desync inject TTL")
 	flag.Parse()
 
+	// Track which CLI flags were explicitly set
+	cliSet := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		cliSet[f.Name] = true
+	})
+
+	// 1. Start with default values (lowest priority)
 	cfg := &Config{
-		ServerMode:     ServerMode(strings.ToUpper(serverMode)),
-		BindAddr:       bindAddr,
-		Port:           port,
-		ListenAddr:     fmt.Sprintf("%s:%d", bindAddr, port),
-		LogLevel:       loglevel,
-		PayloadUA:      payloadUA,
-		UARegex:        uaRegx,
-		PartialReplace: partial,
-		RewriteMode:    RewriteMode(strings.ToUpper(rewriteMode)),
-		Rules:          rules,
-	}
-	if cfg.ServerMode == ServerModeRedirect || cfg.ServerMode == ServerModeTProxy {
-		cfg.BindAddr = "0.0.0.0"
-		cfg.ListenAddr = fmt.Sprintf("0.0.0.0:%d", port)
+		ServerMode:  ServerModeSocks5,
+		BindAddress: "127.0.0.1",
+		Port:        1080,
+		LogLevel:    "info",
+		UserAgent:   "FFF",
+		RewriteMode: RewriteModeGlobal,
+		Desync: DesyncConfig{
+			ReorderBytes:   8,
+			ReorderPackets: 1500,
+			InjectTTL:      3,
+		},
 	}
 
-	if os.Getenv("UA3F_SERVER_MODE") != "" {
-		cfg.ServerMode = ServerMode(strings.ToUpper(os.Getenv("UA3F_SERVER_MODE")))
-	}
-
-	if os.Getenv("UA3F_PORT") != "" {
-		var p int
-		_, err := fmt.Sscanf(os.Getenv("UA3F_PORT"), "%d", &p)
-		if err == nil {
-			cfg.Port = p
-			cfg.ListenAddr = fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
+	// 2. Apply config file values (if provided)
+	if configFile != "" {
+		fileCfg, err := LoadConfig(configFile)
+		if err != nil {
+			return nil, false, err
 		}
+		cfg = fileCfg
 	}
 
-	if os.Getenv("UA3F_REWRITE_MODE") != "" {
-		cfg.RewriteMode = RewriteMode(strings.ToUpper(os.Getenv("UA3F_REWRITE_MODE")))
-	}
+	// 3. Apply environment variables (overrides config file)
+	applyEnvConfig(cfg)
 
-	if os.Getenv("UA3F_PAYLOAD_UA") != "" {
-		cfg.PayloadUA = os.Getenv("UA3F_PAYLOAD_UA")
+	// 4. Apply CLI arguments (highest priority, only if explicitly set)
+	if cliSet["m"] {
+		cfg.ServerMode = ServerMode(strings.ToUpper(serverMode))
 	}
-
-	if os.Getenv("UA3F_UA_REGEX") != "" {
-		cfg.UARegex = os.Getenv("UA3F_UA_REGEX")
+	if cliSet["b"] {
+		cfg.BindAddress = bindAddr
 	}
-
-	if os.Getenv("UA3F_PARTIAL_REPLACE") == "1" {
-		cfg.PartialReplace = true
+	if cliSet["p"] {
+		cfg.Port = port
 	}
-
-	if os.Getenv("UA3F_TCPTS") == "1" {
-		cfg.DelTCPTimestamp = true
+	if cliSet["l"] {
+		cfg.LogLevel = loglevel
 	}
-	if os.Getenv("UA3F_TTL") == "1" {
-		cfg.SetTTL = true
+	if cliSet["f"] {
+		cfg.UserAgent = payloadUA
 	}
-	if os.Getenv("UA3F_IPID") == "1" {
-		cfg.SetIPID = true
+	if cliSet["r"] {
+		cfg.UserAgentRegex = uaRegx
 	}
-	if os.Getenv("UA3F_TCP_INIT_WINDOW") == "1" {
-		cfg.SetTCPInitialWindow = true
+	if cliSet["s"] {
+		cfg.UserAgentPartialReplace = partial
 	}
-
-	if os.Getenv("UA3F_DESYNC_REORDER") == "1" {
-		cfg.TCPDesync.Reorder = true
-		if val := os.Getenv("UA3F_DESYNC_REORDER_BYTES"); val != "" {
-			var bytes uint32
-			_, err := fmt.Sscanf(val, "%d", &bytes)
-			if err == nil {
-				cfg.TCPDesync.ReorderBytes = bytes
-			}
-		}
-		if val := os.Getenv("UA3F_DESYNC_REORDER_PACKETS"); val != "" {
-			var packets uint32
-			_, err := fmt.Sscanf(val, "%d", &packets)
-			if err == nil {
-				cfg.TCPDesync.ReorderPackets = packets
-			}
-		}
+	if cliSet["x"] {
+		cfg.RewriteMode = RewriteMode(strings.ToUpper(rewriteMode))
 	}
-
-	if os.Getenv("UA3F_DESYNC_INJECT") == "1" {
-		cfg.TCPDesync.Inject = true
-		if val := os.Getenv("UA3F_DESYNC_INJECT_TTL"); val != "" {
-			var ttl uint8
-			_, err := fmt.Sscanf(val, "%d", &ttl)
-			if err == nil {
-				cfg.TCPDesync.InjectTTL = ttl
-			}
-		}
+	if cliSet["z"] {
+		cfg.RulesJson = rulesJson
+	}
+	if cliSet["ttl"] {
+		cfg.TTL = ttl
+	}
+	if cliSet["ipid"] {
+		cfg.IPID = ipid
+	}
+	if cliSet["tcpts"] {
+		cfg.TCPTimeStamp = tcpTimestamp
+	}
+	if cliSet["tcpwin"] {
+		cfg.TCPInitialWindow = tcpInitialWindow
+	}
+	if cliSet["desync-reorder"] {
+		cfg.Desync.Reorder = desyncReorder
+	}
+	if cliSet["desync-reorder-bytes"] {
+		cfg.Desync.ReorderBytes = uint32(reorderBytes)
+	}
+	if cliSet["desync-reorder-packets"] {
+		cfg.Desync.ReorderPackets = uint32(reorderPackets)
+	}
+	if cliSet["desync-inject"] {
+		cfg.Desync.Inject = desyncInject
+	}
+	if cliSet["desync-inject-ttl"] {
+		cfg.Desync.InjectTTL = uint8(injectTTL)
 	}
 
 	// Backwards compatibility: convert deprecated "RULES" value to "RULE".
@@ -173,33 +213,134 @@ func Parse() (*Config, bool) {
 		cfg.RewriteMode = RewriteModeRule
 	}
 
-	// Parse other options from -o flag
-	opts := strings.Split(others, ",")
-	for _, opt := range opts {
-		switch strings.ToLower(strings.TrimSpace(opt)) {
-		case "tcpts":
-			cfg.DelTCPTimestamp = true
-		case "ttl":
-			cfg.SetTTL = true
-		case "ipid":
-			cfg.SetIPID = true
+	return cfg, showVer, nil
+}
+
+// applyEnvConfig applies environment variables to the config
+func applyEnvConfig(cfg *Config) {
+	if os.Getenv("UA3F_SERVER_MODE") != "" {
+		cfg.ServerMode = ServerMode(strings.ToUpper(os.Getenv("UA3F_SERVER_MODE")))
+	}
+
+	if os.Getenv("UA3F_BIND_ADDRESS") != "" {
+		cfg.BindAddress = os.Getenv("UA3F_BIND_ADDRESS")
+	}
+
+	if os.Getenv("UA3F_PORT") != "" {
+		var p int
+		_, err := fmt.Sscanf(os.Getenv("UA3F_PORT"), "%d", &p)
+		if err == nil {
+			cfg.Port = p
 		}
 	}
 
-	return cfg, showVer
+	if os.Getenv("UA3F_LOG_LEVEL") != "" {
+		cfg.LogLevel = strings.ToLower(os.Getenv("UA3F_LOG_LEVEL"))
+	}
+
+	if os.Getenv("UA3F_REWRITE_MODE") != "" {
+		cfg.RewriteMode = RewriteMode(strings.ToUpper(os.Getenv("UA3F_REWRITE_MODE")))
+	}
+
+	if os.Getenv("UA3F_PAYLOAD_UA") != "" {
+		cfg.UserAgent = os.Getenv("UA3F_PAYLOAD_UA")
+	}
+
+	if os.Getenv("UA3F_UA_REGEX") != "" {
+		cfg.UserAgentRegex = os.Getenv("UA3F_UA_REGEX")
+	}
+
+	if os.Getenv("UA3F_PARTIAL_REPLACE") == "1" {
+		cfg.UserAgentPartialReplace = true
+	}
+
+	if os.Getenv("UA3F_TCPTS") == "1" {
+		cfg.TCPTimeStamp = true
+	}
+	if os.Getenv("UA3F_TTL") == "1" {
+		cfg.TTL = true
+	}
+	if os.Getenv("UA3F_IPID") == "1" {
+		cfg.IPID = true
+	}
+	if os.Getenv("UA3F_TCP_INIT_WINDOW") == "1" {
+		cfg.TCPInitialWindow = true
+	}
+
+	if os.Getenv("UA3F_DESYNC_REORDER") == "1" {
+		cfg.Desync.Reorder = true
+	}
+	if val := os.Getenv("UA3F_DESYNC_REORDER_BYTES"); val != "" {
+		var bytes uint32
+		_, err := fmt.Sscanf(val, "%d", &bytes)
+		if err == nil {
+			cfg.Desync.ReorderBytes = bytes
+		}
+	}
+	if val := os.Getenv("UA3F_DESYNC_REORDER_PACKETS"); val != "" {
+		var packets uint32
+		_, err := fmt.Sscanf(val, "%d", &packets)
+		if err == nil {
+			cfg.Desync.ReorderPackets = packets
+		}
+	}
+
+	if os.Getenv("UA3F_DESYNC_INJECT") == "1" {
+		cfg.Desync.Inject = true
+	}
+	if val := os.Getenv("UA3F_DESYNC_INJECT_TTL"); val != "" {
+		var ttl uint8
+		_, err := fmt.Sscanf(val, "%d", &ttl)
+		if err == nil {
+			cfg.Desync.InjectTTL = ttl
+		}
+	}
+
+	if os.Getenv("UA3F_RULES_JSON") != "" {
+		cfg.RulesJson = os.Getenv("UA3F_RULES_JSON")
+	}
+}
+
+func LoadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 func (c *Config) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("Log Level", c.LogLevel),
 		slog.String("Server Mode", string(c.ServerMode)),
-		slog.String("Listen Address", c.ListenAddr),
+		slog.String("Bind Address", c.BindAddress),
 		slog.String("Rewrite Mode", string(c.RewriteMode)),
-		slog.String("User-Agent", c.PayloadUA),
-		slog.String("User-Agent Regex", c.UARegex),
-		slog.Bool("Partial Replace", c.PartialReplace),
-		slog.Bool("Set TTL", c.SetTTL),
-		slog.Bool("Set IP ID", c.SetIPID),
-		slog.Bool("Delete TCP Timestamp", c.DelTCPTimestamp),
+		slog.String("User-Agent", c.UserAgent),
+		slog.String("User-Agent Regex", c.UserAgentRegex),
+		slog.Bool("User-Agent Partial Replace", c.UserAgentPartialReplace),
+		slog.Bool("Set TTL", c.TTL),
+		slog.Bool("Set IP ID", c.IPID),
+		slog.Bool("Delete TCP Timestamp", c.TCPTimeStamp),
+		slog.Bool("Set TCP Initial Window", c.TCPInitialWindow),
+		slog.Attr{
+			Key: "Desync", Value: slog.GroupValue(
+				slog.Bool("Reorder", c.Desync.Reorder),
+				slog.Uint64("Reorder Bytes", uint64(c.Desync.ReorderBytes)),
+				slog.Uint64("Reorder Packets", uint64(c.Desync.ReorderPackets)),
+				slog.Bool("Inject", c.Desync.Inject),
+				slog.Uint64("Inject TTL", uint64(c.Desync.InjectTTL)),
+			),
+		},
 	)
 }

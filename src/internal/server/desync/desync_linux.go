@@ -54,14 +54,14 @@ func New(cfg *config.Config) *Server {
 		IptSetup:   s.iptSetup,
 		IptCleanup: s.iptCleanup,
 	}
-	if s.cfg.TCPDesync.ReorderBytes > 0 {
-		s.ReorderByte = s.cfg.TCPDesync.ReorderBytes
+	if s.cfg.Desync.ReorderBytes > 0 {
+		s.ReorderByte = s.cfg.Desync.ReorderBytes
 	}
-	if s.cfg.TCPDesync.ReorderPackets > 0 {
-		s.ReorderPackets = s.cfg.TCPDesync.ReorderPackets
+	if s.cfg.Desync.ReorderPackets > 0 {
+		s.ReorderPackets = s.cfg.Desync.ReorderPackets
 	}
-	if s.cfg.TCPDesync.InjectTTL > 0 {
-		s.InjectTTL = s.cfg.TCPDesync.InjectTTL
+	if s.cfg.Desync.InjectTTL > 0 {
+		s.InjectTTL = s.cfg.Desync.InjectTTL
 	}
 	return s
 }
@@ -73,14 +73,14 @@ func (s *Server) Start() (err error) {
 		return err
 	}
 
-	if s.cfg.TCPDesync.Reorder {
+	if s.cfg.Desync.Reorder {
 		err = s.ReorderNfqServer.Start()
 		if err != nil {
 			return err
 		}
 	}
 
-	if s.cfg.TCPDesync.Inject {
+	if s.cfg.Desync.Inject {
 		s.rawSocketFD4, err = syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW)
 		if err != nil {
 			return err
@@ -128,10 +128,10 @@ func (s *Server) Start() (err error) {
 
 func (s *Server) Close() error {
 	err := s.Firewall.Cleanup()
-	if s.cfg.TCPDesync.Reorder {
+	if s.cfg.Desync.Reorder {
 		s.ReorderNfqServer.Close()
 	}
-	if s.cfg.TCPDesync.Inject {
+	if s.cfg.Desync.Inject {
 		s.InjectNfqServer.Close()
 		syscall.Close(s.rawSocketFD4)
 		syscall.Close(s.rawSocketFD6)

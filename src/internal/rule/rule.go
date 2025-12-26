@@ -9,18 +9,21 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/sunbk201/ua3f/internal/config"
+
 	"github.com/dlclark/regexp2"
 )
 
 type RuleType string
 
 const (
-	RuleTypeKeyword  RuleType = "KEYWORD"
-	RuleTypeRegex    RuleType = "REGEX"
-	RuleTypeIPCIDR   RuleType = "IP-CIDR"
-	RuleTypeSrcIP    RuleType = "SRC-IP"
-	RuleTypeDestPort RuleType = "DEST-PORT"
-	RuleTypeFinal    RuleType = "FINAL"
+	RuleTypeHeaderKeyword RuleType = "HEADER-KEYWORD"
+	RuleTypeHeaderRegex   RuleType = "HEADER-REGEX"
+	RuleTypeIPCIDR        RuleType = "IP-CIDR"
+	RuleTypeSrcIP         RuleType = "SRC-IP"
+	RuleTypeDestPort      RuleType = "DEST-PORT"
+	RuleTypeFinal         RuleType = "FINAL"
 )
 
 type Action string
@@ -34,13 +37,17 @@ const (
 )
 
 type Rule struct {
-	Enabled       bool     `json:"enabled"`
-	Type          RuleType `json:"type"`
-	Action        Action   `json:"action"`
-	MatchValue    string   `json:"match_value"`
-	RewriteValue  string   `json:"rewrite_value"`
-	RewriteHeader string   `json:"rewrite_header"`
-	Description   string   `json:"description"`
+	Enabled bool `json:"enabled"`
+
+	Type RuleType `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP FINAL"`
+
+	MatchHeader string `json:"match_header,omitempty" yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
+	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP"`
+
+	Action Action `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-PART DELETE DROP"`
+
+	RewriteHeader string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART,required_if=Action DELETE"`
+	RewriteValue  string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART"`
 
 	regex *regexp2.Regexp
 	ipNet *net.IPNet
@@ -50,18 +57,41 @@ type Engine struct {
 	rules []*Rule
 }
 
-func NewEngine(rulesJSON string) (*Engine, error) {
-	if rulesJSON == "" {
-		return &Engine{rules: []*Rule{}}, nil
+func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
+	var rules []*Rule
+
+	if ruleSet != nil && len(*ruleSet) > 0 {
+		for _, r := range *ruleSet {
+			rule := &Rule{
+				Enabled:       true,
+				Type:          RuleType(r.Type),
+				MatchHeader:   r.MatchHeader,
+				MatchValue:    r.MatchValue,
+				Action:        Action(r.Action),
+				RewriteHeader: r.RewriteHeader,
+				RewriteValue:  r.RewriteValue,
+			}
+			rules = append(rules, rule)
+		}
+	} else {
+		if rulesJSON == "" {
+			return &Engine{rules: []*Rule{}}, nil
+		}
+		if err := json.Unmarshal([]byte(rulesJSON), &rules); err != nil {
+			return nil, fmt.Errorf("failed to parse rules JSON: %w", err)
+		}
 	}
 
-	var rules []*Rule
-	if err := json.Unmarshal([]byte(rulesJSON), &rules); err != nil {
-		return nil, fmt.Errorf("failed to parse rules JSON: %w", err)
-	}
+	validate := validator.New()
 
 	for _, rule := range rules {
 		if !rule.Enabled {
+			continue
+		}
+
+		if err := validate.Struct(rule); err != nil {
+			slog.Warn("Invalid rule", slog.Any("rule", rule), slog.Any("error", err))
+			rule.Enabled = false
 			continue
 		}
 
@@ -71,7 +101,7 @@ func NewEngine(rulesJSON string) (*Engine, error) {
 		}
 
 		switch rule.Type {
-		case RuleTypeRegex:
+		case RuleTypeHeaderRegex:
 			if rule.MatchValue != "" {
 				pattern := "(?i)" + rule.MatchValue
 				regex, err := regexp2.Compile(pattern, regexp2.None)
@@ -111,10 +141,10 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 		var err error
 
 		switch rule.Type {
-		case RuleTypeKeyword:
-			matched = e.matchKeyword(req, rule)
-		case RuleTypeRegex:
-			matched, err = e.matchRegex(req, rule)
+		case RuleTypeHeaderKeyword:
+			matched = e.matchHeaderKeyword(req, rule)
+		case RuleTypeHeaderRegex:
+			matched, err = e.matchHeaderRegex(req, rule)
 			if err != nil {
 				slog.Warn("e.matchRegex", slog.Any("error", err))
 			}
@@ -129,23 +159,23 @@ func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) *Rul
 		}
 
 		if matched {
-			slog.Debug("Rule matched", slog.String("description", rule.Description), slog.String("type", string(rule.Type)), slog.String("action", string(rule.Action)))
+			slog.Debug("Rule matched", slog.String("type", string(rule.Type)), slog.String("action", string(rule.Action)))
 			return rule
 		}
 	}
 	return nil
 }
 
-func (e *Engine) matchKeyword(req *http.Request, rule *Rule) bool {
-	header := req.Header.Get(rule.RewriteHeader)
+func (e *Engine) matchHeaderKeyword(req *http.Request, rule *Rule) bool {
+	header := req.Header.Get(rule.MatchHeader)
 	return strings.Contains(strings.ToLower(header), strings.ToLower(rule.MatchValue))
 }
 
-func (e *Engine) matchRegex(req *http.Request, rule *Rule) (bool, error) {
+func (e *Engine) matchHeaderRegex(req *http.Request, rule *Rule) (bool, error) {
 	if rule.regex == nil {
 		return false, nil
 	}
-	header := req.Header.Get(rule.RewriteHeader)
+	header := req.Header.Get(rule.MatchHeader)
 	return rule.regex.MatchString(header)
 }
 
@@ -200,7 +230,7 @@ func (e *Engine) ApplyAction(action Action, rewriteValue string, originalUA stri
 	case ActionReplace:
 		return rewriteValue
 	case ActionReplacePart:
-		if rule != nil && rule.Type == RuleTypeRegex && rule.regex != nil {
+		if rule != nil && rule.Type == RuleTypeHeaderRegex && rule.regex != nil {
 			newUA, err := rule.regex.Replace(originalUA, rewriteValue, -1, -1)
 			if err != nil {
 				slog.Error("rule.regex.Replace", slog.Any("error", err))

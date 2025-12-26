@@ -19,10 +19,10 @@ func (s *Server) nftSetup() error {
 	tx := nft.NewTransaction()
 	tx.Add(s.Nftable)
 
-	if s.cfg.TCPDesync.Reorder {
+	if s.cfg.Desync.Reorder {
 		s.NftSetDesyncReorder(tx, s.Nftable)
 	}
-	if s.cfg.TCPDesync.Inject {
+	if s.cfg.Desync.Inject {
 		s.NftSetLanIP(tx, s.Nftable)
 		s.NftSetLanIP6(tx, s.Nftable)
 		s.NftSetDesyncInject(tx, s.Nftable)

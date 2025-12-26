@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) nftSetup() error {
-	if !s.cfg.SetTTL && !s.cfg.DelTCPTimestamp && !s.cfg.SetIPID {
+	if !s.cfg.TTL && !s.cfg.TCPTimeStamp && !s.cfg.IPID {
 		slog.Info("No packet modification features enabled, skipping nftables setup")
 		return nil
 	}
@@ -26,13 +26,13 @@ func (s *Server) nftSetup() error {
 	tx := nft.NewTransaction()
 	tx.Add(s.Nftable)
 
-	if s.cfg.SetTTL {
+	if s.cfg.TTL {
 		s.NftSetTTL(tx, s.Nftable)
 	}
-	if (s.cfg.DelTCPTimestamp || s.cfg.SetTCPInitialWindow) && !s.cfg.SetIPID {
+	if (s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow) && !s.cfg.IPID {
 		s.NftHookTCPSyn(tx, s.Nftable)
 	}
-	if s.cfg.SetIPID {
+	if s.cfg.IPID {
 		s.NftHookIP(tx, s.Nftable)
 	}
 
@@ -40,7 +40,7 @@ func (s *Server) nftSetup() error {
 		return err
 	}
 
-	if s.cfg.SetTTL && netfilter.FlowOffloadEnabled() {
+	if s.cfg.TTL && netfilter.FlowOffloadEnabled() {
 		lanDev, err := netfilter.GetLanDevice()
 		if err != nil {
 			slog.Warn("nftSetup netfilter.GetLanDevice", slog.Any("error", err))
@@ -154,7 +154,7 @@ func (s *Server) NftHookIP(tx *knftables.Transaction, table *knftables.Table) {
 	}
 	tx.Add(chain)
 
-	if s.cfg.SetTCPInitialWindow || s.cfg.DelTCPTimestamp {
+	if s.cfg.TCPInitialWindow || s.cfg.TCPTimeStamp {
 		tx.Add(&knftables.Rule{
 			Chain: chain.Name,
 			Rule: knftables.Concat(

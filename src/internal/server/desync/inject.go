@@ -127,7 +127,7 @@ func (s *Server) checkTTL(p *base.Packet) bool {
 		dis = 255 - ttl
 	}
 
-	if s.cfg.TCPDesync.InjectTTL > dis {
+	if s.cfg.Desync.InjectTTL > dis {
 		return false
 	}
 	return true

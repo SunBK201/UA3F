@@ -1,0 +1,59 @@
+server-mode: SOCKS5 # HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE
+bind-address: 127.0.0.1
+port: 1080
+
+log-level: info # debug, info, warn, error
+
+rewrite-mode: GLOBAL # GLOBAL, DIRECT, RULE
+
+user-agent: "FFF"
+user-agent-regex: ""
+user-agent-partial-replace: false
+
+ttl: false
+ipid: false
+tcp_timestamp: false
+tcp_initial_window: false
+
+desync:
+  reorder: false
+  reorder-bytes: 8
+  reorder-packets: 1500
+  inject: false
+  inject-ttl: 3
+
+# Rules
+# type: HEADER-KEYWORD, HEADER-REGEX, DEST-PORT, IP-CIDR, SRC-IP, FINAL
+# action: DIRECT, REPLACE, REPLACE-PART, DELETE, DROP
+rules:
+  - type: DEST-PORT
+    match-value: "22"
+    action: DIRECT
+  - type: HEADER-KEYWORD
+    match-header: "User-Agent"
+    match-value: "MicroMessenger Client"
+    action: DIRECT
+  - type: HEADER-KEYWORD
+    match-header: "User-Agent"
+    match-value: "Bilibili Freedoooooom/MarkII"
+    action: DIRECT
+  - type: HEADER-KEYWORD
+    match-header: "User-Agent"
+    match-value: "Valve/Steam HTTP Client 1.0"
+    action: DIRECT
+  - type: HEADER-KEYWORD
+    match-header: "User-Agent"
+    match-value: "Mac"
+    action: REPLACE
+    rewrite-header: "User-Agent"
+    rewrite-value: "FFF"
+  - type: HEADER-REGEX
+    match-header: "User-Agent"
+    match-value: "(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)"
+    action: REPLACE
+    rewrite-header: "User-Agent"
+    rewrite-value: "FFF"
+  - type: FINAL
+    action: REPLACE
+    rewrite-header: "User-Agent"
+    rewrite-value: "FFF"

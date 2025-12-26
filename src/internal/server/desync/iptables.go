@@ -33,7 +33,7 @@ func (s *Server) iptSetup() error {
 		return err
 	}
 
-	if s.cfg.TCPDesync.Reorder {
+	if s.cfg.Desync.Reorder {
 		err = ipt.NewChain(table, reorderChain)
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func (s *Server) iptSetup() error {
 			return err
 		}
 	}
-	if s.cfg.TCPDesync.Inject {
+	if s.cfg.Desync.Inject {
 		err = ipt.NewChain(table, injectChain)
 		if err != nil {
 			return err

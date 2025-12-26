@@ -96,7 +96,8 @@ func (s *Server) Start() error {
 		},
 	}
 
-	if s.listener, err = lc.Listen(context.TODO(), "tcp", s.Cfg.ListenAddr); err != nil {
+	listenAddr := fmt.Sprintf("0.0.0.0:%d", s.Cfg.Port)
+	if s.listener, err = lc.Listen(context.TODO(), "tcp", listenAddr); err != nil {
 		return fmt.Errorf("net.Listen: %w", err)
 	}
 

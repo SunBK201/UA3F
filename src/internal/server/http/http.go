@@ -44,7 +44,7 @@ func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Ser
 func (s *Server) Start() (err error) {
 	s.Recorder.Start()
 	server := &http.Server{
-		Addr: s.Cfg.ListenAddr,
+		Addr: fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodConnect {
 				s.handleTunneling(w, req)

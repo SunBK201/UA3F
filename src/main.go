@@ -21,7 +21,11 @@ var (
 )
 
 func main() {
-	cfg, showVer := config.Parse()
+	cfg, showVer, err := config.Parse()
+	if err != nil {
+		slog.Error("config.Parse", slog.Any("error", err))
+		return
+	}
 
 	log.SetLogConf(cfg.LogLevel)
 
@@ -45,7 +49,7 @@ func main() {
 		return
 	}
 
-	if cfg.TCPDesync.Reorder || cfg.TCPDesync.Inject {
+	if cfg.Desync.Reorder || cfg.Desync.Inject {
 		desync := desync.New(cfg)
 		addShutdown("desync.Close", desync.Close)
 		if err := desync.Start(); err != nil {

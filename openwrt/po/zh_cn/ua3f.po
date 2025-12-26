@@ -251,6 +251,9 @@ msgstr "注意：重写规则仅在规则判定模式下生效。NFQUEUE 模式�
 msgid "Rewrite Header"
 msgstr "重写请求头"
 
+msgid "Match Header"
+msgstr "匹配请求头"
+
 msgid "Delete TCP Timestamps"
 msgstr "删除 TCP 时间戳"
 
@@ -278,7 +281,7 @@ msgstr "日志管理"
 msgid "Desync Settings"
 msgstr "Desync 设置"
 
-msgid "Enable TCP Desync Reordering"
+msgid "TCP Desync Reordering"
 msgstr "TCP 分片乱序发射"
 
 msgid "Desync Reorder Bytes"
@@ -299,7 +302,7 @@ msgstr "TCP 分片乱序发射，用于对抗 DPI 检测"
 msgid "Recommend install kmod-nft-tproxy package for TPROXY mode"
 msgstr "建议安装 kmod-nft-tproxy 软件包以增强兼容性"
 
-msgid "Recommend install kmod-nft-queue package for NFQUEUE mode"
+msgid "Recommend install kmod-nft-queue package for compatibility"
 msgstr "建议安装 kmod-nft-queue 软件包以增强兼容性"
 
 msgid "Flow Offloading is enabled in firewall settings, it may cause NFQUEUE mode to not work properly"
@@ -308,7 +311,7 @@ msgstr "防火墙设置中启用了流量卸载，可能导致 NFQUEUE 模式无
 msgid "Flow Offloading is enabled in firewall settings, it may cause TCP Desync to not work properly"
 msgstr "防火墙设置中启用了流量卸载，可能导致 TCP Desync 无法正常工作"
 
-msgid "Enable TCP Desync Injection"
+msgid "TCP Desync Injection"
 msgstr "TCP 混淆注入"
 
 msgid "Enable TCP Injection to resist DPI"

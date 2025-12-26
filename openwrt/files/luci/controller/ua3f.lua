@@ -101,7 +101,7 @@ function get_rules()
     http.prepare_content("application/json")
 
     local rules = {}
-    local rules_data = uci:get("ua3f", "main", "rewrite_rules")
+    local rules_data = uci:get("ua3f", "main", "rules")
 
     if rules_data then
         -- Parse the rules from UCI config
@@ -175,7 +175,6 @@ function save_rules()
     if not has_final then
         table.insert(data.rules, {
             type = "FINAL",
-            match_value = "",
             action = "DIRECT",
             rewrite_value = "",
             rewrite_header = "User-Agent",
@@ -192,16 +191,9 @@ function save_rules()
         end
     end
 
-    -- Ensure all rules have rewrite_header field with default value
-    for i, rule in ipairs(data.rules) do
-        if not rule.rewrite_header or rule.rewrite_header == "" then
-            rule.rewrite_header = "User-Agent"
-        end
-    end
-
     -- Save rules to UCI
     local rules_json = json.stringify(data.rules)
-    uci:set("ua3f", "main", "rewrite_rules", rules_json)
+    uci:set("ua3f", "main", "rules", rules_json)
 
     http.write(json.stringify({
         success = true,

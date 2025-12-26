@@ -36,7 +36,7 @@ function M.add_general_fields(section)
         nfqueue_warning:depends("server_mode", "NFQUEUE")
         function nfqueue_warning.cfgvalue(self, section)
             return "<strong style='color:red;'>" ..
-                translate("Recommend install kmod-nft-queue package for NFQUEUE mode") .. "</strong>"
+                translate("Recommend install kmod-nft-queue package for compatibility") .. "</strong>"
         end
     end
 
