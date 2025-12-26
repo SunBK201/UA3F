@@ -10,6 +10,8 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rule"
+	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/rule/common"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -19,6 +21,7 @@ type Rewriter struct {
 	pattern        string
 	partialReplace bool
 	rewriteMode    config.RewriteMode
+	rewriteAction  common.Action
 
 	uaRegex    *regexp2.Regexp
 	ruleEngine *rule.Engine
@@ -28,8 +31,8 @@ type Rewriter struct {
 }
 
 type RewriteDecision struct {
-	Action      rule.Action
-	MatchedRule *rule.Rule
+	Action      common.Action
+	MatchedRule common.Rule
 	NeedCache   bool
 	NeedSkip    bool
 }
@@ -38,15 +41,13 @@ func (d *RewriteDecision) ShouldRewrite() bool {
 	if d.NeedCache || d.NeedSkip {
 		return false
 	}
-	return d.Action == rule.ActionReplace ||
-		d.Action == rule.ActionReplacePart ||
-		d.Action == rule.ActionDelete
+	return d.Action.Type() == common.ActionReplace ||
+		d.Action.Type() == common.ActionReplacePart ||
+		d.Action.Type() == common.ActionDelete
 }
 
-// New constructs a Rewriter from config. Compiles regex and allocates cache.
 func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
-	// UA pattern is compiled with case-insensitive prefix (?i)
-	pattern := "(?i)" + cfg.UserAgentRegex
+	pattern := "(?i)" + cfg.UserAgentRegex // case-insensitive prefix (?i)
 	uaRegex, err := regexp2.Compile(pattern, regexp2.None)
 	if err != nil {
 		return nil, err
@@ -60,11 +61,24 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 		}
 	}
 
+	var rewriteAction common.Action
+	if cfg.RewriteMode == config.RewriteModeGlobal {
+		if cfg.UserAgentPartialReplace && cfg.UserAgentRegex != "" {
+			rewriteAction = action.NewReplacePart(cfg.UserAgentRegex, "User-Agent", cfg.UserAgent, true)
+		} else {
+			rewriteAction = action.NewReplace("User-Agent", cfg.UserAgent)
+		}
+		if rewriteAction == nil {
+			return nil, fmt.Errorf("failed to create rewrite action")
+		}
+	}
+
 	return &Rewriter{
 		payloadUA:      cfg.UserAgent,
 		pattern:        cfg.UserAgentRegex,
 		partialReplace: cfg.UserAgentPartialReplace,
 		rewriteMode:    cfg.RewriteMode,
+		rewriteAction:  rewriteAction,
 		uaRegex:        uaRegex,
 		ruleEngine:     ruleEngine,
 		whitelist: []string{
@@ -113,19 +127,18 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 
 	// DIRECT
 	if r.rewriteMode == config.RewriteModeDirect {
-		log.LogDebugWithAddr(srcAddr, destAddr, "Direct forward mode, skip rewriting")
 		r.Recorder.AddRecord(&statistics.PassThroughRecord{
 			SrcAddr:  srcAddr,
 			DestAddr: destAddr,
 			UA:       originalUA,
 		})
 		return &RewriteDecision{
-			Action: rule.ActionDirect,
+			Action: action.DirectAction,
 		}
 	}
 
 	// RULE
-	if r.rewriteMode == config.RewriteModeRule && r.ruleEngine != nil {
+	if r.rewriteMode == config.RewriteModeRule {
 		matchedRule := r.ruleEngine.MatchWithRule(req, srcAddr, destAddr)
 
 		// no match rule, direct forward
@@ -137,21 +150,21 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 				UA:       originalUA,
 			})
 			return &RewriteDecision{
-				Action: rule.ActionDirect,
+				Action: action.DirectAction,
 			}
 		}
 
 		// DROP
-		if matchedRule.Action == rule.ActionDrop {
+		if matchedRule.Action() == action.DropAction {
 			log.LogInfoWithAddr(srcAddr, destAddr, "Rule matched: DROP action, request will be dropped")
 			return &RewriteDecision{
-				Action:      matchedRule.Action,
+				Action:      matchedRule.Action(),
 				MatchedRule: matchedRule,
 			}
 		}
 
 		// DIRECT
-		if matchedRule.Action == rule.ActionDirect {
+		if matchedRule.Action() == action.DirectAction {
 			log.LogDebugWithAddr(srcAddr, destAddr, "Rule matched: DIRECT action, skip rewriting")
 			r.Recorder.AddRecord(&statistics.PassThroughRecord{
 				SrcAddr:  srcAddr,
@@ -159,14 +172,14 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 				UA:       originalUA,
 			})
 			return &RewriteDecision{
-				Action:      matchedRule.Action,
+				Action:      matchedRule.Action(),
 				MatchedRule: matchedRule,
 			}
 		}
 
 		// REPLACE、REPLACE-PART、DELETE, Rewrite
 		return &RewriteDecision{
-			Action:      matchedRule.Action,
+			Action:      matchedRule.Action(),
 			MatchedRule: matchedRule,
 		}
 	}
@@ -177,7 +190,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 	decision := &RewriteDecision{}
 
 	if originalUA == "" {
-		decision.Action = rule.ActionDirect
+		decision.Action = action.DirectAction
 		return decision
 	}
 
@@ -212,38 +225,19 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 			DestAddr: destAddr,
 			UA:       originalUA,
 		})
-		decision.Action = rule.ActionDirect
+		decision.Action = action.DirectAction
 		return decision
 	}
-	decision.Action = rule.ActionReplace
+	decision.Action = r.rewriteAction
 	return decision
 }
 
 func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, decision *RewriteDecision) *http.Request {
-	headerName := "User-Agent"
-	if decision.MatchedRule != nil && decision.MatchedRule.RewriteHeader != "" {
-		headerName = decision.MatchedRule.RewriteHeader
-	}
-
-	originalValue := req.Header.Get(headerName)
-	rewriteValue := ""
-	if decision.MatchedRule != nil {
-		rewriteValue = decision.MatchedRule.RewriteValue
-	}
-	action := decision.Action
-	var rewritedValue string
-
-	// RULE
-	if r.rewriteMode == config.RewriteModeRule && r.ruleEngine != nil {
-		rewritedValue = r.ruleEngine.ApplyAction(action, rewriteValue, originalValue, decision.MatchedRule)
-	} else {
-		// GLOBAL
-		rewritedValue = r.buildUserAgent(originalValue)
-	}
-
-	req.Header.Set(headerName, rewritedValue)
-
-	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Rewrite %s from (%s) to (%s)", headerName, originalValue, rewritedValue))
+	originalValue, rewritedValue := decision.Action.Execute(&common.Metadata{
+		Request:  req,
+		SrcAddr:  srcAddr,
+		DestAddr: destAddr,
+	})
 
 	r.Recorder.AddRecord(&statistics.RewriteRecord{
 		Host:       destAddr,

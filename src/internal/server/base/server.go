@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
-	"github.com/sunbk201/ua3f/internal/rule"
+	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
@@ -135,7 +135,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 
 		decision := s.Rewriter.EvaluateRewriteDecision(req, c.LAddr, c.RAddr)
 
-		if decision.Action == rule.ActionDrop {
+		if decision.Action == action.DropAction {
 			c.LogInfo("Request dropped by rule")
 			continue
 		}

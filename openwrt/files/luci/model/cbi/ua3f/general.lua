@@ -47,7 +47,7 @@ function M.add_general_fields(section)
         function offloading_warning.cfgvalue(self, section)
             return "<strong style='color:red;'>" ..
                 translate(
-                "Flow Offloading is enabled in firewall settings, it may cause NFQUEUE mode to not work properly") ..
+                    "Flow Offloading is enabled in firewall settings, it may cause NFQUEUE mode to not work properly") ..
                 "</strong>"
         end
     end

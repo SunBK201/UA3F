@@ -62,15 +62,17 @@ type DesyncConfig struct {
 }
 
 type Rule struct {
-	Type string `yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP FINAL"`
+	Enabled bool `json:"enabled" yaml:"enabled"`
 
-	MatchHeader string `yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
-	MatchValue  string `yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP"`
+	Type string `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP FINAL"`
 
-	Action string `yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-PART DELETE DROP"`
+	MatchHeader string `json:"match_header,omitempty" yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
+	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP"`
 
-	RewriteHeader string `yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART,required_if=Action DELETE"`
-	RewriteValue  string `yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART"`
+	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-PART DELETE DROP"`
+
+	RewriteHeader string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART,required_if=Action DELETE"`
+	RewriteValue  string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-PART"`
 }
 
 func Parse() (*Config, bool, error) {

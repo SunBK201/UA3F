@@ -13,7 +13,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
-	"github.com/sunbk201/ua3f/internal/rule"
+	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/server/base"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
@@ -109,7 +109,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) rewrite(req *http.Request, srcAddr, dstAddr string) (*http.Request, error) {
 	decision := s.Rewriter.EvaluateRewriteDecision(req, srcAddr, dstAddr)
-	if decision.Action == rule.ActionDrop {
+	if decision.Action == action.DropAction {
 		log.LogInfoWithAddr(srcAddr, dstAddr, "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
 	}
