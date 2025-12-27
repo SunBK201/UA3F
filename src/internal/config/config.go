@@ -50,7 +50,7 @@ type Config struct {
 	Desync DesyncConfig `yaml:"desync"`
 
 	Rules     []Rule `yaml:"rules" validate:"dive"`
-	RulesJson string
+	RulesJson string `yaml:"rules_json,omitempty"`
 }
 
 type DesyncConfig struct {
@@ -62,7 +62,7 @@ type DesyncConfig struct {
 }
 
 type Rule struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
+	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
 	Type string `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP DOMAIN-SUFFIX DOMAIN-KEYWORD DOMAIN FINAL"`
 
@@ -90,6 +90,7 @@ func Parse() (*Config, bool, error) {
 		rewriteMode      string
 		rulesJson        string
 		showVer          bool
+		genConfig        bool
 		ttl              bool
 		ipid             bool
 		tcpTimestamp     bool
@@ -112,6 +113,7 @@ func Parse() (*Config, bool, error) {
 	flag.StringVar(&rewriteMode, "x", "", "Rewrite mode: GLOBAL, DIRECT, RULE")
 	flag.StringVar(&rulesJson, "z", "", "Rules JSON string")
 	flag.BoolVar(&showVer, "v", false, "Show version")
+	flag.BoolVar(&genConfig, "g", false, "Generate template config file")
 	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
 	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
 	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
@@ -122,6 +124,19 @@ func Parse() (*Config, bool, error) {
 	flag.BoolVar(&desyncInject, "desync-inject", false, "Enable desync inject")
 	flag.UintVar(&injectTTL, "desync-inject-ttl", 0, "Desync inject TTL")
 	flag.Parse()
+
+	if genConfig {
+		_, err := GenerateTemplateConfig(true)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to generate template config: %w", err)
+		}
+		fmt.Println("Template config file 'config.yaml' generated successfully.")
+		return nil, false, nil
+	}
+
+	if showVer {
+		return nil, true, nil
+	}
 
 	// Track which CLI flags were explicitly set
 	cliSet := make(map[string]bool)

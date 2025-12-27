@@ -59,9 +59,11 @@ Three deployment methods are available:
 
 ## Usage
 
-UA3F supports LuCI Web interface. Navigate to Services -> UA3F for configuration.
+UA3F supports OpenWrt LuCI Web interface. Navigate to Services -> UA3F for configuration.
 
 For detailed tutorial, please visit: [UA3F User Guide](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
+
+UA3F supports configuration via a YAML file. You can specify the configuration file path using the `-c` option, and generate a template configuration file using the `-g` option. An example configuration file can be found at [docs/config.yaml](docs/config.yaml).
 
 Device and system information regex reference:
 
@@ -87,6 +89,8 @@ sudo -u shellcrash /usr/bin/ua3f
 
 Command line parameters:
 
+- `-c <config path>`: Custom configuration file path
+- `-g`: Generate a template configuration file config.yaml in the current directory
 - `-m <mode>`: Server mode. Supports HTTP, SOCKS5, TPROXY, REDIRECT. Default: SOCKS5
 - `-b <bind addr>`: Custom bind address. Default: 127.0.0.1
 - `-p <port>`: Port number. Default: 1080

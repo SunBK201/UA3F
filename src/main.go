@@ -27,12 +27,16 @@ func main() {
 		return
 	}
 
-	log.SetLogConf(cfg.LogLevel)
-
 	if showVer {
 		fmt.Printf("UA3F version %s\n", appVersion)
 		return
 	}
+
+	if cfg == nil {
+		return
+	}
+
+	log.SetLogConf(cfg.LogLevel)
 
 	log.LogHeader(appVersion, cfg)
 

@@ -66,9 +66,11 @@ UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、
 
 ## 使用
 
-UA3F 支持 LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
+UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
 快速使用教程详见：[猴子也能看懂的 UA3F 使用教程](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
+
+UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [docs/config.yaml](docs/config.yaml)
 
 设备与系统信息正则表达式参考：
 
@@ -94,6 +96,8 @@ sudo -u shellcrash /usr/bin/ua3f
 
 相关命令行启动参数:
 
+- `-c <config path>`: 自定义配置文件路径
+- `-g`: 在当前目录生成模板配置文件 config.yaml
 - `-m <mode>`: 服务模式，支持 HTTP、SOCKS5、TPROXY、REDIRECT，默认 SOCKS5
 - `-b <bind addr>`: 自定义绑定监听地址，默认 127.0.0.1
 - `-p <port>`: 端口号，默认 1080
