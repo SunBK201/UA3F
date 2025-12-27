@@ -119,7 +119,26 @@ UA3F supports 3 different rewrite strategies:
 | ---------------- | -------------------------------- | --------------- | --------------------------- |
 | **GLOBAL**       | Rewrite all requests             | User-Agent      | All server modes            |
 | **DIRECT**       | No rewriting, pure forwarding    | None            | All server modes            |
-| **RULE**        | Rewrite based on rewriting rules | Customizable    | HTTP/SOCKS5/TPROXY/REDIRECT |
+| **RULE**         | Rewrite based on rewriting rules | Customizable    | HTTP/SOCKS5/TPROXY/REDIRECT |
+
+UA3F supports the following rule types:
+
+- **DOMAIN**: Match based on domain name
+- **DOMAIN-SUFFIX**: Match based on domain suffix
+- **DOMAIN-KEYWORD**: Match based on domain keyword
+- **IP-CIDR**: Match based on IP address range
+- **SRC-IP**: Match based on source IP address
+- **DST-PORT**: Match based on destination port
+- **HEADER-KEYWORD**: Match based on request header keyword
+- **HEADER-REGEX**: Match based on request header using regular expressions
+
+UA3F supports the following rewrite actions:
+
+- **DIRECT**: Allow the request directly without rewriting
+- **DELETE**: Delete the specified header
+- **REPLACE**: Replace the specified header with the given content
+- **REPLACE-REGEX**: Replace the part of the specified header that matches a regular expression with the given content
+- **DROP**: Drop the request
 
 ## Clash Configuration
 

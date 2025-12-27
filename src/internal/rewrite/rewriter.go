@@ -42,7 +42,7 @@ func (d *RewriteDecision) ShouldRewrite() bool {
 		return false
 	}
 	return d.Action.Type() == common.ActionReplace ||
-		d.Action.Type() == common.ActionReplacePart ||
+		d.Action.Type() == common.ActionReplaceRegex ||
 		d.Action.Type() == common.ActionDelete
 }
 
@@ -64,7 +64,7 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	var rewriteAction common.Action
 	if cfg.RewriteMode == config.RewriteModeGlobal {
 		if cfg.UserAgentPartialReplace && cfg.UserAgentRegex != "" {
-			rewriteAction = action.NewReplacePart(cfg.UserAgentRegex, "User-Agent", cfg.UserAgent, true)
+			rewriteAction = action.NewReplaceRegex("User-Agent", cfg.UserAgentRegex, cfg.UserAgent)
 		} else {
 			rewriteAction = action.NewReplace("User-Agent", cfg.UserAgent)
 		}
@@ -177,7 +177,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 			}
 		}
 
-		// REPLACE、REPLACE-PART、DELETE, Rewrite
+		// REPLACE、REPLACE-REGEX、DELETE, Rewrite
 		return &RewriteDecision{
 			Action:      matchedRule.Action(),
 			MatchedRule: matchedRule,

@@ -20,9 +20,8 @@ func NewAction(rule *config.Rule) common.Action {
 		return NewDelete(rule.RewriteHeader)
 	case common.ActionReplace:
 		return NewReplace(rule.RewriteHeader, rule.RewriteValue)
-	case common.ActionReplacePart:
-		regex := rule.Type == string(common.RuleTypeHeaderRegex)
-		return NewReplacePart(rule.MatchValue, rule.RewriteHeader, rule.RewriteValue, regex)
+	case common.ActionReplaceRegex:
+		return NewReplaceRegex(rule.RewriteHeader, rule.RewriteRegex, rule.RewriteValue)
 	default:
 		return nil
 	}

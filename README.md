@@ -126,7 +126,26 @@ UA3F 支持 3 种不同的重写策略：
 | ---------- | -------------------- | ----------- | ---------------------------------- |
 | **GLOBAL** | 所有请求均进行重写   | User-Agent  | 适用于所有服务模式                 |
 | **DIRECT** | 不进行重写，纯转发   | 无          | 适用于所有服务模式                 |
-| **RULE**  | 根据重写规则进行重写 | 自定义      | 适用于 HTTP/SOCKS5/TPROXY/REDIRECT |
+| **RULE**   | 根据重写规则进行重写 | 自定义      | 适用于 HTTP/SOCKS5/TPROXY/REDIRECT |
+
+UA3F 支持以下规则类型：
+
+- DOMAIN: 根据域名进行匹配
+- DOMAIN-SUFFIX: 根据域名后缀进行匹配
+- DOMAIN-KEYWORD: 根据域名关键字进行匹配
+- IP-CIDR: 根据 IP 地址段进行匹配
+- SRC-IP: 根据源 IP 地址进行匹配
+- DST-PORT: 根据目标端口进行匹配
+- HEADER-KEYWORD: 根据请求 Header 关键字进行匹配
+- HEADER-REGEX: 根据请求 Header 进行正则匹配
+
+UA3F 支持以下重写动作：
+
+- DIRECT: 直接放行，不进行重写
+- DELETE: 删除指定 Header
+- REPLACE: 替换指定 Header 为指定内容
+- REPLACE-REGEX: 替换指定 Header 中匹配正则的部分为指定内容
+- DROP: 丢弃该请求
 
 ## Clash 配置建议
 

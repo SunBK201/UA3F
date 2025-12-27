@@ -262,7 +262,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
         getActionLabel: function(action) {
             var labels = {
                 'REPLACE': '<%:REPLACE%>',
-                'REPLACE-PART': '<%:REPLACE-PART%>',
+                'REPLACE-REGEX': '<%:REPLACE-REGEX%>',
                 'DELETE': '<%:DELETE%>',
                 'DIRECT': '<%:DIRECT%>',
                 'DROP': '<%:DROP%>'
@@ -406,7 +406,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             ] : [
                 ['DELETE', '<%:DELETE%>'],
                 ['REPLACE', '<%:REPLACE%>'],
-                ['REPLACE-PART', '<%:REPLACE-PART%>'],
+                ['REPLACE-REGEX', '<%:REPLACE-REGEX%>'],
                 ['DIRECT', '<%:DIRECT%>'],
                 ['DROP', '<%:DROP%>']
             ];
@@ -422,7 +422,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             actionValue.appendChild(actionField);
             section.appendChild(actionValue);
             
-            // Rewrite Header (for REPLACE and REPLACE-PART actions)
+            // Rewrite Header (for REPLACE and REPLACE-REGEX actions)
             var headerValue = document.createElement('div');
             headerValue.className = 'cbi-value';
             headerValue.id = 'rewrite_header_container';
@@ -441,6 +441,26 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             headerField.appendChild(headerInput);
             headerValue.appendChild(headerField);
             section.appendChild(headerValue);
+            
+            // Rewrite Regex (for REPLACE-REGEX action)
+            var regexValue = document.createElement('div');
+            regexValue.className = 'cbi-value';
+            regexValue.id = 'rewrite_regex_container';
+            var regexLabel = document.createElement('label');
+            regexLabel.className = 'cbi-value-title';
+            regexLabel.textContent = '<%:Rewrite Regex%>';
+            regexValue.appendChild(regexLabel);
+            var regexField = document.createElement('div');
+            regexField.className = 'cbi-value-field';
+            var regexInput = document.createElement('input');
+            regexInput.type = 'text';
+            regexInput.className = 'cbi-input-text';
+            regexInput.id = 'modal_rewrite_regex';
+            regexInput.placeholder = '<%:Enter regex pattern to replace%>';
+            if (rule) regexInput.value = rule.rewrite_regex || '';
+            regexField.appendChild(regexInput);
+            regexValue.appendChild(regexField);
+            section.appendChild(regexValue);
             
             // Rewrite Value
             var rewriteValue = document.createElement('div');
@@ -552,20 +572,29 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             var actionSelect = document.getElementById('modal_action');
             var rewriteValueContainer = document.getElementById('rewrite_value_container');
             var rewriteHeaderContainer = document.getElementById('rewrite_header_container');
+            var rewriteRegexContainer = document.getElementById('rewrite_regex_container');
             var ruleTypeSelect = document.getElementById('modal_rule_type');
             if (!actionSelect || !rewriteValueContainer) return;
             
             var action = actionSelect.value;
-            // Show rewrite header for REPLACE, REPLACE-PART and DELETE actions
+            // Show rewrite header for REPLACE, REPLACE-REGEX and DELETE actions
             if (rewriteHeaderContainer) {
-                if (action === 'REPLACE' || action === 'REPLACE-PART' || action === 'DELETE') {
+                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'DELETE') {
                     rewriteHeaderContainer.style.display = '';
                 } else {
                     rewriteHeaderContainer.style.display = 'none';
                 }
             }
-            // Show rewrite value only for REPLACE and REPLACE-PART actions
-            if (action === 'REPLACE' || action === 'REPLACE-PART') {
+            // Show rewrite regex only for REPLACE-REGEX action
+            if (rewriteRegexContainer) {
+                if (action === 'REPLACE-REGEX') {
+                    rewriteRegexContainer.style.display = '';
+                } else {
+                    rewriteRegexContainer.style.display = 'none';
+                }
+            }
+            // Show rewrite value only for REPLACE and REPLACE-REGEX actions
+            if (action === 'REPLACE' || action === 'REPLACE-REGEX') {
                 rewriteValueContainer.style.display = '';
             } else {
                 rewriteValueContainer.style.display = 'none';
@@ -583,6 +612,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             var isFinal = index >= 0 && this.rules[index].type === 'FINAL';
             
             var rewriteHeader = document.getElementById('modal_rewrite_header').value || '';
+            var rewriteRegex = document.getElementById('modal_rewrite_regex').value || '';
             var matchHeaderInput = document.getElementById('modal_match_header');
             var matchHeader = matchHeaderInput ? (matchHeaderInput.value || 'User-Agent') : '';
             
@@ -597,6 +627,10 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     description: document.getElementById('modal_rule_description').value,
                     enabled: this.rules[index].enabled
                 };
+                // Add rewrite_regex for REPLACE-REGEX action
+                if (newRule.action === 'REPLACE-REGEX') {
+                    newRule.rewrite_regex = rewriteRegex;
+                }
             } else {
                 var ruleType = document.getElementById('modal_rule_type').value;
                 newRule = {
@@ -614,6 +648,11 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     newRule.match_header = matchHeader;
                 }
                 
+                // Add rewrite_regex for REPLACE-REGEX action
+                if (newRule.action === 'REPLACE-REGEX') {
+                    newRule.rewrite_regex = rewriteRegex;
+                }
+                
                 // Validate required fields
                 if (!newRule.match_value) {
                     alert('<%:Match value is required%>');
@@ -621,9 +660,15 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 }
             }
             
-            // Validate rewrite value for REPLACE and REPLACE-PART actions
-            if ((newRule.action === 'REPLACE' || newRule.action === 'REPLACE-PART') && !newRule.rewrite_value) {
-                alert('<%:Rewrite value is required for REPLACE and REPLACE-PART actions%>');
+            // Validate rewrite value for REPLACE and REPLACE-REGEX actions
+            if ((newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX') && !newRule.rewrite_value) {
+                alert('<%:Rewrite value is required for REPLACE and REPLACE-REGEX actions%>');
+                return;
+            }
+            
+            // Validate rewrite regex for REPLACE-REGEX action
+            if (newRule.action === 'REPLACE-REGEX' && !newRule.rewrite_regex) {
+                alert('<%:Rewrite regex is required for REPLACE-REGEX action%>');
                 return;
             }
             

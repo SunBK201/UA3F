@@ -18,7 +18,7 @@ func (d *Delete) Type() common.ActionType {
 func (d *Delete) Execute(metadata *common.Metadata) (string, string) {
 	header := metadata.Request.Header.Get(d.header)
 	metadata.Request.Header.Set(d.header, "")
-	log.LogInfoWithAddr(metadata.SrcAddr, metadata.DestAddr, fmt.Sprintf("Rewrite %s from (%s) to (%s)", d.header, header, ""))
+	log.LogInfoWithAddr(metadata.SrcAddr, metadata.DestAddr, fmt.Sprintf("Delete Header %s (%s)", d.header, header))
 	return header, ""
 }
 

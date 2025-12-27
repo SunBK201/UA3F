@@ -48,8 +48,9 @@
         "type": "HEADER-REGEX",
         "match_header": "User-Agent",
         "match_value": "(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)",
-        "action": "REPLACE",
+        "action": "REPLACE-REGEX",
         "rewrite_header": "User-Agent",
+        "rewrite_regex": "(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)",
         "rewrite_value": "FFF"
     },
     {

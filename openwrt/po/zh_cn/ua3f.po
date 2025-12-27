@@ -164,6 +164,12 @@ msgstr "重写策略"
 msgid "Rewrite Value"
 msgstr "重写值"
 
+msgid "Rewrite Regex"
+msgstr "重写正则表达式"
+
+msgid "Enter regex pattern to replace"
+msgstr "输入要替换的正则表达式"
+
 msgid "Pattern"
 msgstr "匹配模式"
 
@@ -230,8 +236,11 @@ msgstr "保存规则失败"
 msgid "Match value is required"
 msgstr "匹配值为必填项"
 
-msgid "Rewrite value is required for REPLACE and REPLACE-PART strategies"
-msgstr "REPLACE 和 REPLACE-PART 策略需要填写重写值"
+msgid "Rewrite value is required for REPLACE and REPLACE-REGEX actions"
+msgstr "REPLACE 和 REPLACE-REGEX 策略需要填写重写值"
+
+msgid "Rewrite regex is required for REPLACE-REGEX action"
+msgstr "REPLACE-REGEX 策略需要填写重写正则表达式"
 
 msgid "Pattern and Replacement are required"
 msgstr "匹配模式和替换内容为必填项"
