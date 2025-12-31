@@ -5,9 +5,9 @@ import (
 	"net"
 	"strings"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type SrcIP struct {
@@ -23,11 +23,7 @@ func (s *SrcIP) Match(metadata *common.Metadata) bool {
 	if s.ipNet == nil {
 		return false
 	}
-	host, _, err := net.SplitHostPort(metadata.SrcAddr)
-	if err != nil {
-		host = metadata.SrcAddr
-	}
-	ip := net.ParseIP(host)
+	ip := net.ParseIP(metadata.ConnLink.LIP())
 	if ip == nil {
 		return false
 	}

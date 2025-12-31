@@ -1,4 +1,4 @@
-package base
+package common
 
 import (
 	"fmt"
@@ -7,14 +7,28 @@ import (
 	"net"
 )
 
-var one = make([]byte, 1)
-
 type ConnLink struct {
 	LConn   net.Conn
 	RConn   net.Conn
 	LAddr   string
 	RAddr   string
 	Skipped bool
+}
+
+var one = make([]byte, 1)
+
+func (c *ConnLink) LIP() string {
+	if tcpAddr, ok := c.LConn.RemoteAddr().(*net.TCPAddr); ok {
+		return tcpAddr.IP.String()
+	}
+	return ""
+}
+
+func (c *ConnLink) RIP() string {
+	if tcpAddr, ok := c.RConn.RemoteAddr().(*net.TCPAddr); ok {
+		return tcpAddr.IP.String()
+	}
+	return ""
 }
 
 func (c *ConnLink) LPort() string {

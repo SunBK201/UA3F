@@ -7,11 +7,11 @@ import (
 
 	"github.com/dlclark/regexp2"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rule"
 	"github.com/sunbk201/ua3f/internal/rule/action"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -101,10 +101,6 @@ func (r *Rewriter) inWhitelist(ua string) bool {
 	return false
 }
 
-func (r *Rewriter) GetRuleEngine() *rule.Engine {
-	return r.ruleEngine
-}
-
 // buildUserAgent returns either a partial replacement (regex) or full overwrite.
 func (r *Rewriter) buildUserAgent(originUA string) string {
 	if r.partialReplace && r.uaRegex != nil && r.pattern != "" {
@@ -118,18 +114,15 @@ func (r *Rewriter) buildUserAgent(originUA string) string {
 	return r.payloadUA
 }
 
-func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr string) *RewriteDecision {
-	originalUA := req.Header.Get("User-Agent")
-	log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Original User-Agent: (%s)", originalUA))
-	if originalUA == "" {
-		req.Header.Set("User-Agent", "")
-	}
+func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) *RewriteDecision {
+	originalUA := metadata.UserAgent()
+	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", originalUA))
 
 	// DIRECT
 	if r.rewriteMode == config.RewriteModeDirect {
 		r.Recorder.AddRecord(&statistics.PassThroughRecord{
-			SrcAddr:  srcAddr,
-			DestAddr: destAddr,
+			SrcAddr:  metadata.SrcAddr(),
+			DestAddr: metadata.DestAddr(),
 			UA:       originalUA,
 		})
 		return &RewriteDecision{
@@ -139,14 +132,14 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 
 	// RULE
 	if r.rewriteMode == config.RewriteModeRule {
-		matchedRule := r.ruleEngine.MatchWithRule(req, srcAddr, destAddr)
+		matchedRule := r.ruleEngine.MatchWithRule(metadata)
 
 		// no match rule, direct forward
 		if matchedRule == nil {
-			log.LogDebugWithAddr(srcAddr, destAddr, "No rule matched, direct forward")
+			log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "No rule matched, direct forward")
 			r.Recorder.AddRecord(&statistics.PassThroughRecord{
-				SrcAddr:  srcAddr,
-				DestAddr: destAddr,
+				SrcAddr:  metadata.SrcAddr(),
+				DestAddr: metadata.DestAddr(),
 				UA:       originalUA,
 			})
 			return &RewriteDecision{
@@ -156,7 +149,7 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 
 		// DROP
 		if matchedRule.Action() == action.DropAction {
-			log.LogInfoWithAddr(srcAddr, destAddr, "Rule matched: DROP action, request will be dropped")
+			log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Rule matched: DROP action, request will be dropped")
 			return &RewriteDecision{
 				Action:      matchedRule.Action(),
 				MatchedRule: matchedRule,
@@ -165,10 +158,10 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 
 		// DIRECT
 		if matchedRule.Action() == action.DirectAction {
-			log.LogDebugWithAddr(srcAddr, destAddr, "Rule matched: DIRECT action, skip rewriting")
+			log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Rule matched: DIRECT action, skip rewriting")
 			r.Recorder.AddRecord(&statistics.PassThroughRecord{
-				SrcAddr:  srcAddr,
-				DestAddr: destAddr,
+				SrcAddr:  metadata.SrcAddr(),
+				DestAddr: metadata.DestAddr(),
 				UA:       originalUA,
 			})
 			return &RewriteDecision{
@@ -201,28 +194,28 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 		} else {
 			matches, err = r.uaRegex.MatchString(originalUA)
 			if err != nil {
-				log.LogErrorWithAddr(srcAddr, destAddr, fmt.Sprintf("r.uaRegex.MatchString: %s", err.Error()))
+				log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("r.uaRegex.MatchString: %s", err.Error()))
 				matches = true
 			}
 		}
 	}
 
 	if isWhitelist {
-		log.LogInfoWithAddr(srcAddr, destAddr, fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", originalUA))
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", originalUA))
 		decision.NeedCache = true
 		if originalUA == "Valve/Steam HTTP Client 1.0" {
 			decision.NeedSkip = true
 		}
 	}
 	if !matches {
-		log.LogDebugWithAddr(srcAddr, destAddr, fmt.Sprintf("Not hit User-Agent regex: %s", originalUA))
+		log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Not hit User-Agent regex: %s", originalUA))
 	}
 
 	hit := !isWhitelist && matches
 	if !hit {
 		r.Recorder.AddRecord(&statistics.PassThroughRecord{
-			SrcAddr:  srcAddr,
-			DestAddr: destAddr,
+			SrcAddr:  metadata.SrcAddr(),
+			DestAddr: metadata.DestAddr(),
 			UA:       originalUA,
 		})
 		decision.Action = action.DirectAction
@@ -232,21 +225,17 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 	return decision
 }
 
-func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, decision *RewriteDecision) *http.Request {
+func (r *Rewriter) Rewrite(metadata *common.Metadata, decision *RewriteDecision) *http.Request {
 	if !decision.ShouldRewrite() {
-		return req
+		return metadata.Request
 	}
 
-	originalValue, rewritedValue := decision.Action.Execute(&common.Metadata{
-		Request:  req,
-		SrcAddr:  srcAddr,
-		DestAddr: destAddr,
-	})
+	originalValue, rewritedValue := decision.Action.Execute(metadata)
 
 	r.Recorder.AddRecord(&statistics.RewriteRecord{
-		Host:       destAddr,
+		Host:       metadata.DestAddr(),
 		OriginalUA: originalValue,
 		MockedUA:   rewritedValue,
 	})
-	return req
+	return metadata.Request
 }

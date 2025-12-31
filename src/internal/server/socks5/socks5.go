@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/luyuhuang/subsocks/socks"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -158,7 +159,7 @@ func (s *Server) handleConnect(src net.Conn, req *socks.Request) error {
 		return fmt.Errorf("socks.NewReply.Write: %w", err)
 	}
 
-	s.ServeConnLink(&base.ConnLink{
+	s.ServeConnLink(&common.ConnLink{
 		LConn: src,
 		RConn: dest,
 		LAddr: srcAddr,
@@ -201,7 +202,7 @@ func (s *Server) handleBind(conn net.Conn) error {
 		return fmt.Errorf("socks.NewReply.Write: %w", err)
 	}
 
-	s.ServeConnLink(&base.ConnLink{
+	s.ServeConnLink(&common.ConnLink{
 		LConn: conn,
 		RConn: newConn,
 		LAddr: srcAddr,

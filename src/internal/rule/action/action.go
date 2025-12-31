@@ -1,8 +1,8 @@
 package action
 
 import (
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 var (

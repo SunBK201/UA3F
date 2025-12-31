@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type HeaderKeyword struct {

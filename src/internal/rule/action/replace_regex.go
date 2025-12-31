@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/dlclark/regexp2"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/log"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type ReplaceRegex struct {
@@ -28,7 +28,7 @@ func (r *ReplaceRegex) Execute(metadata *common.Metadata) (string, string) {
 		replaceValue = r.replaceValue
 	}
 
-	log.LogInfoWithAddr(metadata.SrcAddr, metadata.DestAddr, fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.replaceHeader, header, replaceValue))
+	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.replaceHeader, header, replaceValue))
 	metadata.Request.Header.Set(r.replaceHeader, replaceValue)
 	return header, replaceValue
 }

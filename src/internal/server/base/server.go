@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule/action"
@@ -28,7 +29,9 @@ type Server struct {
 	BufioReaderPool sync.Pool
 }
 
-func (s *Server) ServeConnLink(connLink *ConnLink) {
+var one = make([]byte, 1)
+
+func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
@@ -49,7 +52,7 @@ func (s *Server) ServeConnLink(connLink *ConnLink) {
 	}
 }
 
-func (s *Server) ProcessLR(c *ConnLink) (err error) {
+func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	reader := s.BufioReaderPool.Get().(*bufio.Reader)
 	reader.Reset(c.LConn)
 	defer func() {
@@ -109,8 +112,11 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 		DestAddr: c.RAddr,
 	})
 
+	metadata := &common.Metadata{
+		ConnLink: c,
+	}
+
 	var req *http.Request
-	var destAddr string
 
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
@@ -134,16 +140,9 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			return
 		}
 
-		destAddr = req.Host
-		if len(destAddr) == 0 {
-			destAddr = c.RAddr
-		}
-		if strings.IndexByte(destAddr, ':') == -1 {
-			destAddr = net.JoinHostPort(destAddr, c.RPort())
-		}
+		metadata.UpdateRequest(req)
 
-		decision := s.Rewriter.EvaluateRewriteDecision(req, c.LAddr, destAddr)
-
+		decision := s.Rewriter.EvaluateRewriteDecision(metadata)
 		if decision.Action == action.DropAction {
 			c.LogInfo("Request dropped by rule")
 			continue
@@ -159,7 +158,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			}
 		}
 
-		req = s.Rewriter.Rewrite(req, c.LAddr, destAddr, decision)
+		req = s.Rewriter.Rewrite(metadata, decision)
 
 		if err := req.Write(c.RConn); err != nil {
 			return fmt.Errorf("req.Write: %w", err)
@@ -170,7 +169,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  c.LAddr,
-				DestAddr: destAddr,
+				DestAddr: c.RAddr,
 			})
 			return
 		}

@@ -1,6 +1,6 @@
 package action
 
-import "github.com/sunbk201/ua3f/internal/rule/common"
+import "github.com/sunbk201/ua3f/internal/common"
 
 type Drop struct{}
 

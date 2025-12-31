@@ -3,9 +3,9 @@ package match
 import (
 	"log/slog"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type DestPort struct {
@@ -17,8 +17,8 @@ func (d *DestPort) Type() common.RuleType {
 	return common.RuleTypeDestPort
 }
 
-func (d *DestPort) Match(meta *common.Metadata) bool {
-	return meta.DestPort() == d.port
+func (d *DestPort) Match(metadata *common.Metadata) bool {
+	return metadata.ConnLink.RPort() == d.port
 }
 
 func (d *DestPort) Action() common.Action {

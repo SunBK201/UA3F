@@ -3,8 +3,8 @@ package action
 import (
 	"fmt"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/log"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type Delete struct {
@@ -18,7 +18,7 @@ func (d *Delete) Type() common.ActionType {
 func (d *Delete) Execute(metadata *common.Metadata) (string, string) {
 	header := metadata.Request.Header.Get(d.header)
 	metadata.Request.Header.Set(d.header, "")
-	log.LogInfoWithAddr(metadata.SrcAddr, metadata.DestAddr, fmt.Sprintf("Delete Header %s (%s)", d.header, header))
+	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Delete Header %s (%s)", d.header, header))
 	return header, ""
 }
 

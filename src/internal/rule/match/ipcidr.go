@@ -5,9 +5,9 @@ import (
 	"net"
 	"strings"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 )
 
 type IPCIDR struct {
@@ -23,11 +23,7 @@ func (i *IPCIDR) Match(metadata *common.Metadata) bool {
 	if i.ipNet == nil {
 		return false
 	}
-	host, _, err := net.SplitHostPort(metadata.DestAddr)
-	if err != nil {
-		host = metadata.DestAddr
-	}
-	ip := net.ParseIP(host)
+	ip := net.ParseIP(metadata.ConnLink.RIP())
 	if ip == nil {
 		return false
 	}

@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
-	"github.com/sunbk201/ua3f/internal/rule/common"
 	"github.com/sunbk201/ua3f/internal/rule/match"
 )
 
@@ -81,12 +80,7 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
 	return &Engine{rules: rules}, nil
 }
 
-func (e *Engine) MatchWithRule(req *http.Request, srcAddr, destAddr string) common.Rule {
-	metadata := &common.Metadata{
-		Request:  req,
-		SrcAddr:  srcAddr,
-		DestAddr: destAddr,
-	}
+func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
 	for _, rule := range e.rules {
 		matched := rule.Match(metadata)
 		if matched {

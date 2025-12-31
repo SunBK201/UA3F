@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
@@ -66,24 +67,21 @@ func (s *Server) Close() (err error) {
 }
 
 func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
-	destPort := req.URL.Port()
-	if destPort == "" {
-		destPort = "80"
-	}
-	destAddr := fmt.Sprintf("%s:%s", req.URL.Hostname(), destPort)
+	metadata := &common.Metadata{}
+	metadata.UpdateRequest(req)
 
 	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.HTTP,
-		SrcAddr:   req.RemoteAddr,
-		DestAddr:  destAddr,
+		SrcAddr:   metadata.SrcAddr(),
+		DestAddr:  metadata.DestAddr(),
 		StartTime: time.Now(),
 	}
 	s.Recorder.AddRecord(record)
 	defer s.Recorder.RemoveRecord(record)
 
-	slog.Info("HTTP proxy request", slog.String("srcAddr", req.RemoteAddr), slog.String("destAddr", destAddr))
+	slog.Info("HTTP proxy request", slog.String("srcAddr", metadata.SrcAddr()), slog.String("destAddr", metadata.DestAddr()))
 
-	req, err := s.rewrite(req, req.RemoteAddr, destAddr)
+	req, err := s.rewrite(metadata)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -107,16 +105,16 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	_, _ = io.Copy(w, resp.Body)
 }
 
-func (s *Server) rewrite(req *http.Request, srcAddr, dstAddr string) (*http.Request, error) {
-	decision := s.Rewriter.EvaluateRewriteDecision(req, srcAddr, dstAddr)
+func (s *Server) rewrite(metadata *common.Metadata) (*http.Request, error) {
+	decision := s.Rewriter.EvaluateRewriteDecision(metadata)
 	if decision.Action == action.DropAction {
-		log.LogInfoWithAddr(srcAddr, dstAddr, "Request dropped by rule")
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
 	}
 	if decision.NeedCache {
-		s.Cache.Add(dstAddr, struct{}{})
+		s.Cache.Add(metadata.DestAddr(), struct{}{})
 	}
-	req = s.Rewriter.Rewrite(req, srcAddr, dstAddr, decision)
+	req := s.Rewriter.Rewrite(metadata, decision)
 	return req, nil
 }
 
@@ -144,7 +142,7 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 		_ = dest.Close()
 		return
 	}
-	s.ServeConnLink(&base.ConnLink{
+	s.ServeConnLink(&common.ConnLink{
 		LConn: src,
 		RConn: dest,
 		LAddr: req.RemoteAddr,
