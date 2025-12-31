@@ -147,27 +147,13 @@ func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) *RewriteDe
 			}
 		}
 
-		// DROP
-		if matchedRule.Action() == action.DropAction {
-			log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Rule matched: DROP action, request will be dropped")
-			return &RewriteDecision{
-				Action:      matchedRule.Action(),
-				MatchedRule: matchedRule,
-			}
-		}
-
 		// DIRECT
 		if matchedRule.Action() == action.DirectAction {
-			log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Rule matched: DIRECT action, skip rewriting")
 			r.Recorder.AddRecord(&statistics.PassThroughRecord{
 				SrcAddr:  metadata.SrcAddr(),
 				DestAddr: metadata.DestAddr(),
 				UA:       originalUA,
 			})
-			return &RewriteDecision{
-				Action:      matchedRule.Action(),
-				MatchedRule: matchedRule,
-			}
 		}
 
 		// REPLACE、REPLACE-REGEX、DELETE, Rewrite
