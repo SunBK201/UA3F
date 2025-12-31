@@ -116,9 +116,7 @@ func (s *Server) rewrite(req *http.Request, srcAddr, dstAddr string) (*http.Requ
 	if decision.NeedCache {
 		s.Cache.Add(dstAddr, struct{}{})
 	}
-	if decision.ShouldRewrite() {
-		req = s.Rewriter.Rewrite(req, srcAddr, dstAddr, decision)
-	}
+	req = s.Rewriter.Rewrite(req, srcAddr, dstAddr, decision)
 	return req, nil
 }
 

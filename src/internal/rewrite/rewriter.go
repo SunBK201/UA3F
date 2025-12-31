@@ -233,6 +233,10 @@ func (r *Rewriter) EvaluateRewriteDecision(req *http.Request, srcAddr, destAddr 
 }
 
 func (r *Rewriter) Rewrite(req *http.Request, srcAddr string, destAddr string, decision *RewriteDecision) *http.Request {
+	if !decision.ShouldRewrite() {
+		return req
+	}
+
 	originalValue, rewritedValue := decision.Action.Execute(&common.Metadata{
 		Request:  req,
 		SrcAddr:  srcAddr,

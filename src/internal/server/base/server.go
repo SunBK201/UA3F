@@ -159,9 +159,7 @@ func (s *Server) ProcessLR(c *ConnLink) (err error) {
 			}
 		}
 
-		if decision.ShouldRewrite() {
-			req = s.Rewriter.Rewrite(req, c.LAddr, destAddr, decision)
-		}
+		req = s.Rewriter.Rewrite(req, c.LAddr, destAddr, decision)
 
 		if err := req.Write(c.RConn); err != nil {
 			return fmt.Errorf("req.Write: %w", err)
