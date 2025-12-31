@@ -150,12 +150,8 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		if decision.NeedCache {
 			s.Cache.Add(c.RAddr, struct{}{})
 		}
-		if !c.Skipped && decision.NeedSkip && s.SkipIpChan != nil {
-			select {
-			case s.SkipIpChan <- &c.RConn.RemoteAddr().(*net.TCPAddr).IP:
-				c.Skipped = true
-			default:
-			}
+		if decision.NeedSkip {
+			s.TrySkip(c)
 		}
 
 		req = s.Rewriter.Rewrite(metadata, decision)
@@ -177,5 +173,19 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		if c.Skipped {
 			return
 		}
+	}
+}
+
+func (s *Server) TrySkip(c *common.ConnLink) {
+	if c.Skipped {
+		return
+	}
+	if s.SkipIpChan == nil {
+		return
+	}
+	select {
+	case s.SkipIpChan <- &c.RConn.RemoteAddr().(*net.TCPAddr).IP:
+		c.Skipped = true
+	default:
 	}
 }
