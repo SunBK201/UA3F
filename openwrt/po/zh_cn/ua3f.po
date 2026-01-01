@@ -290,6 +290,12 @@ msgstr "问题反馈"
 msgid "Log Management"
 msgstr "日志管理"
 
+msgid "Pause Refresh"
+msgstr "暂停刷新"
+
+msgid "Resume Refresh"
+msgstr "恢复刷新"
+
 msgid "Desync Settings"
 msgstr "Desync 设置"
 

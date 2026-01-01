@@ -305,7 +305,8 @@ async function updateStats() {
             bindTableEvents('conn-stats-table', [3]);
             restoreTableSort('conn-stats-table', [3]);
         }
-        if (newLog) {
+        // Only update log if refresh is not paused
+        if (newLog && !window.ua3fLogRefreshPaused) {
             document.querySelector("#cbid\\.ua3f\\.main\\.log").value = newLog.value;
         }
 

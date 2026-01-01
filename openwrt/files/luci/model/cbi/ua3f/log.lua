@@ -69,6 +69,8 @@ function M.add_log_fields(section)
             <div class="cbi-value" id="cbi-ua3f-main-_button_container">
                 <label class="cbi-value-title">]] .. translate("Log Management") .. [[</label>
                 <div class="cbi-value-field" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="button" class="btn cbi-button cbi-button-link"
+                           value="]] .. translate("Pause Refresh") .. [[" id="ua3f-pauselog-btn"/>
                     <input type="button" class="btn cbi-button cbi-button-reset"
                            value="]] .. translate("Clear Logs") .. [[" id="ua3f-clearlog-btn"/>
                     <input type="button" class="btn cbi-button cbi-button-apply"
@@ -79,6 +81,26 @@ function M.add_log_fields(section)
             </div>
             <script>
             (function() {
+                // Initialize log refresh state (global variable for statistics.htm to access)
+                if (typeof window.ua3fLogRefreshPaused === 'undefined') {
+                    window.ua3fLogRefreshPaused = false;
+                }
+
+                // Pause/Resume Log Refresh Button
+                var pauseBtn = document.getElementById('ua3f-pauselog-btn');
+                function updatePauseButtonText() {
+                    if (pauseBtn) {
+                        pauseBtn.value = window.ua3fLogRefreshPaused ? ']] .. translate("Resume Refresh") .. [[' : ']] .. translate("Pause Refresh") .. [[';
+                    }
+                }
+                updatePauseButtonText();
+
+                pauseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.ua3fLogRefreshPaused = !window.ua3fLogRefreshPaused;
+                    updatePauseButtonText();
+                });
+
                 // Clear Log Button
                 document.getElementById('ua3f-clearlog-btn').addEventListener('click', function(e) {
                     e.preventDefault();
