@@ -5,6 +5,7 @@ package desync
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"sigs.k8s.io/knftables"
@@ -83,6 +84,21 @@ func (s *Server) NftSetDesyncInject(tx *knftables.Transaction, table *knftables.
 		),
 	})
 
+	if len(s.DesyncPorts) > 0 {
+		ports := make([]string, 0, len(s.DesyncPorts))
+		for _, p := range s.DesyncPorts {
+			ports = append(ports, fmt.Sprintf("%d", p))
+		}
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				fmt.Sprintf("tcp sport != { %s }", strings.Join(ports, ",")),
+				"counter return",
+			),
+		})
+	}
+
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
@@ -116,6 +132,21 @@ func (s *Server) NftSetDesyncReorder(tx *knftables.Transaction, table *knftables
 			"counter return",
 		),
 	})
+
+	if len(s.DesyncPorts) > 0 {
+		ports := make([]string, 0, len(s.DesyncPorts))
+		for _, p := range s.DesyncPorts {
+			ports = append(ports, fmt.Sprintf("%d", p))
+		}
+		tx.Add(&knftables.Rule{
+			Chain: chain.Name,
+			Rule: knftables.Concat(
+				"meta l4proto tcp",
+				fmt.Sprintf("tcp dport != { %s }", strings.Join(ports, ",")),
+				"counter return",
+			),
+		})
+	}
 
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,

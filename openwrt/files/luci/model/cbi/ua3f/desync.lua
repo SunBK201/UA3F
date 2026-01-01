@@ -80,6 +80,12 @@ function M.add_desync_fields(section)
     inject_ttl.datatype = "uinteger"
     inject_ttl.description = translate("TTL value for injected packets")
     inject_ttl:depends("desync_inject", "1")
+
+    local desync_ports = section:taboption("desync", Value, "desync_ports", translate("Desync Ports"))
+    desync_ports.placeholder = "80,443"
+    desync_ports.description = translate("Target ports for enabling TCP Desync (comma separated); if left empty, it applies to all ports.")
+    desync_ports:depends("desync_reorder", "1")
+    desync_ports:depends("desync_inject", "1")
 end
 
 return M

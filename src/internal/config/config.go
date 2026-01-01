@@ -59,6 +59,8 @@ type DesyncConfig struct {
 	ReorderPackets uint32 `yaml:"reorder-packets" default:"1500" validate:"min=0"`
 	Inject         bool   `yaml:"inject"`
 	InjectTTL      uint8  `yaml:"inject-ttl" default:"3" validate:"min=0"`
+
+	DesyncPorts string `yaml:"desync-ports,omitempty"`
 }
 
 type Rule struct {
@@ -102,6 +104,7 @@ func Parse() (*Config, bool, error) {
 		reorderPackets   uint
 		desyncInject     bool
 		injectTTL        uint
+		desyncPorts      string
 	)
 
 	flag.StringVar(&configFile, "c", "", "Config file path")
@@ -125,6 +128,7 @@ func Parse() (*Config, bool, error) {
 	flag.UintVar(&reorderPackets, "desync-reorder-packets", 0, "Desync reorder packets")
 	flag.BoolVar(&desyncInject, "desync-inject", false, "Enable desync inject")
 	flag.UintVar(&injectTTL, "desync-inject-ttl", 0, "Desync inject TTL")
+	flag.StringVar(&desyncPorts, "desync-ports", "", "Desync ports")
 	flag.Parse()
 
 	if genConfig {
@@ -228,6 +232,9 @@ func Parse() (*Config, bool, error) {
 	if cliSet["desync-inject-ttl"] {
 		cfg.Desync.InjectTTL = uint8(injectTTL)
 	}
+	if cliSet["desync-ports"] {
+		cfg.Desync.DesyncPorts = desyncPorts
+	}
 
 	// Backwards compatibility: convert deprecated "RULES" value to "RULE".
 	if cfg.RewriteMode == "RULES" {
@@ -315,6 +322,9 @@ func applyEnvConfig(cfg *Config) {
 		if err == nil {
 			cfg.Desync.InjectTTL = ttl
 		}
+	}
+	if os.Getenv("UA3F_DESYNC_PORTS") != "" {
+		cfg.Desync.DesyncPorts = os.Getenv("UA3F_DESYNC_PORTS")
 	}
 
 	if os.Getenv("UA3F_RULES_JSON") != "" {

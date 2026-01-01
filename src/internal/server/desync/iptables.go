@@ -3,7 +3,9 @@
 package desync
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
 )
@@ -77,6 +79,22 @@ func (s *Server) iptCleanup() error {
 }
 
 func (s *Server) IptSetDesyncInject(ipt *iptables.IPTables) error {
+	if len(s.DesyncPorts) > 0 {
+		ports := make([]string, 0, len(s.DesyncPorts))
+		for _, p := range s.DesyncPorts {
+			ports = append(ports, fmt.Sprintf("%d", p))
+		}
+		err := ipt.Append(table, injectChain, []string{
+			"-p", "tcp",
+			"-m", "multiport",
+			"!", "--sports", strings.Join(ports, ","),
+			"-j", "RETURN",
+		}...)
+		if err != nil {
+			return err
+		}
+	}
+
 	var RuleDesync = []string{
 		"-p", "tcp",
 		"--tcp-flags", "SYN,ACK", "SYN,ACK",
@@ -103,6 +121,23 @@ func (s *Server) IptSetDesyncReorder(ipt *iptables.IPTables) error {
 	if err != nil {
 		return err
 	}
+
+	if len(s.DesyncPorts) > 0 {
+		ports := make([]string, 0, len(s.DesyncPorts))
+		for _, p := range s.DesyncPorts {
+			ports = append(ports, fmt.Sprintf("%d", p))
+		}
+		err := ipt.Append(table, reorderChain, []string{
+			"-p", "tcp",
+			"-m", "multiport",
+			"!", "--dports", strings.Join(ports, ","),
+			"-j", "RETURN",
+		}...)
+		if err != nil {
+			return err
+		}
+	}
+
 	var RuleDesync = []string{
 		"-p", "tcp",
 		"-m", "conntrack",

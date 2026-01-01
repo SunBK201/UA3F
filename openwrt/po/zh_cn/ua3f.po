@@ -317,6 +317,12 @@ msgstr "乱序发射的数据包数，谨慎设置过大"
 msgid "Enable TCP Reordering to resist DPI"
 msgstr "TCP 分片乱序发射，用于对抗 DPI 检测"
 
+msgid "Desync Ports"
+msgstr "Desync 端口"
+
+msgid "Target ports for enabling TCP Desync (comma separated); if left empty, it applies to all ports."
+msgstr "启用 TCP Desync 的目标端口（逗号分隔），如果留空，则应用于所有目标端口。"
+
 msgid "Recommend install kmod-nft-tproxy package for TPROXY mode"
 msgstr "建议安装 kmod-nft-tproxy 软件包以增强兼容性"
 

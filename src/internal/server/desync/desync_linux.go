@@ -4,7 +4,10 @@ package desync
 
 import (
 	"crypto/rand"
+	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -17,8 +20,10 @@ type Server struct {
 	netfilter.Firewall
 	cfg              *config.Config
 	ReorderNfqServer *base.NfqueueServer
-	ReorderByte      uint32
-	ReorderPackets   uint32
+	DesyncPorts      []uint16
+
+	ReorderByte    uint32
+	ReorderPackets uint32
 
 	InjectNfqServer *base.NfqueueServer
 	randomData      [64]byte
@@ -62,6 +67,15 @@ func New(cfg *config.Config) *Server {
 	}
 	if s.cfg.Desync.InjectTTL > 0 {
 		s.InjectTTL = s.cfg.Desync.InjectTTL
+	}
+
+	if s.cfg.Desync.DesyncPorts != "" {
+		ports, err := parsePorts(s.cfg.Desync.DesyncPorts)
+		if err != nil {
+			slog.Error("parsePorts", slog.Any("error", err))
+		} else {
+			s.DesyncPorts = ports
+		}
 	}
 	return s
 }
@@ -137,4 +151,25 @@ func (s *Server) Close() error {
 		syscall.Close(s.rawSocketFD6)
 	}
 	return err
+}
+
+func parsePorts(s string) ([]uint16, error) {
+	parts := strings.Split(s, ",")
+	ports := make([]uint16, 0, len(parts))
+
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+
+		v, err := strconv.ParseUint(p, 10, 16)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port %q: %w", p, err)
+		}
+
+		ports = append(ports, uint16(v))
+	}
+
+	return ports, nil
 }
