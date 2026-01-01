@@ -144,6 +144,7 @@ UA3F 支持 3 种不同的重写策略：
 | DST-PORT       | 根据目标端口进行匹配           |
 | HEADER-KEYWORD | 根据请求 Header 关键字进行匹配 |
 | HEADER-REGEX   | 根据请求 Header 进行正则匹配   |
+| URL-REGEX      | 根据请求 URL 进行正则匹配      |
 
 重写动作：
 
@@ -151,6 +152,7 @@ UA3F 支持 3 种不同的重写策略：
 | ------------- | -------------------------------------------- |
 | DIRECT        | 直接放行，不进行重写                         |
 | DELETE        | 删除指定 Header                              |
+| ADD           | 添加指定 Header 为指定内容                   |
 | REPLACE       | 替换指定 Header 为指定内容                   |
 | REPLACE-REGEX | 将指定 Header 中匹配正则的部分替换为指定内容 |
 | DROP          | 丢弃该请求                                   |

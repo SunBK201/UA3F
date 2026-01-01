@@ -137,6 +137,7 @@ Rule Types:
 | DST-PORT       | Match based on destination port                   |
 | HEADER-KEYWORD | Match based on request header keyword             |
 | HEADER-REGEX   | Match using regular expression on request headers |
+| URL-REGEX      | Match using regular expression on request URL     |
 
 Rewrite Actions:
 
@@ -144,6 +145,7 @@ Rewrite Actions:
 | ------------- | ------------------------------------------------------------- |
 | DIRECT        | Allow directly without rewriting                              |
 | DELETE        | Delete the specified header                                   |
+| ADD           | Add the specified header with the given content               |
 | REPLACE       | Replace the specified header with the given content           |
 | REPLACE-REGEX | Replace the part of the specified header that matches a regex |
 | DROP          | Drop the request                                              |

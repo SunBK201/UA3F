@@ -64,10 +64,10 @@ type DesyncConfig struct {
 type Rule struct {
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
-	Type string `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP DOMAIN-SUFFIX DOMAIN-KEYWORD DOMAIN FINAL"`
+	Type string `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP DOMAIN-SUFFIX DOMAIN-KEYWORD DOMAIN URL-REGEX FINAL"`
 
 	MatchHeader string `json:"match_header,omitempty" yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
-	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP,required_if=Type DOMAIN-SUFFIX,required_if=Type DOMAIN-KEYWORD,required_if=Type DOMAIN"`
+	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP,required_if=Type DOMAIN-SUFFIX,required_if=Type DOMAIN-KEYWORD,required_if=Type DOMAIN,required_if=Type URL-REGEX"`
 
 	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD"`
 

@@ -11,6 +11,7 @@ const (
 	RuleTypeDomain        RuleType = "DOMAIN"
 	RuleTypeDomainKeyword RuleType = "DOMAIN-KEYWORD"
 	RuleTypeDomainSuffix  RuleType = "DOMAIN-SUFFIX"
+	RuleTypeURLRegex      RuleType = "URL-REGEX"
 	RuleTypeFinal         RuleType = "FINAL"
 )
 

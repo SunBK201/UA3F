@@ -251,6 +251,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 'DOMAIN-KEYWORD': '<%:DOMAIN-KEYWORD%>',
                 'HEADER-KEYWORD': '<%:HEADER-KEYWORD%>',
                 'HEADER-REGEX': '<%:HEADER-REGEX%>',
+                'URL-REGEX': '<%:URL-REGEX%>',
                 'IP-CIDR': '<%:IP-CIDR%>',
                 'SRC-IP': '<%:SRC-IP%>',
                 'DEST-PORT': '<%:DEST-PORT%>',
@@ -325,6 +326,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     ['DOMAIN-KEYWORD', '<%:DOMAIN-KEYWORD%>'],
                     ['HEADER-KEYWORD', '<%:HEADER-KEYWORD%>'],
                     ['HEADER-REGEX', '<%:HEADER-REGEX%>'],
+                    ['URL-REGEX', '<%:URL-REGEX%>'],
                     ['IP-CIDR', '<%:IP-CIDR%>'],
                     ['SRC-IP', '<%:SRC-IP%>'],
                     ['DEST-PORT', '<%:DEST-PORT%>']
@@ -587,6 +589,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 'DOMAIN-KEYWORD': '<%:example%>',
                 'HEADER-KEYWORD': '<%:Mac%>',
                 'HEADER-REGEX': '<%:Mac.*Chrome%>',
+                'URL-REGEX': '<%:^http://example.com/api/%>',
                 'IP-CIDR': '<%:10.0.0.0/8%>',
                 'SRC-IP': '<%:192.168.1.100%>',
                 'DEST-PORT': '<%:443%>'
