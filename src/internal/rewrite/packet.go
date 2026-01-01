@@ -2,22 +2,62 @@ package rewrite
 
 import (
 	"fmt"
+	"log/slog"
 
-	"github.com/google/gopacket/layers"
+	"github.com/dlclark/regexp2"
+	"github.com/sunbk201/ua3f/internal/common"
+	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
-// RewriteResult contains the result of TCP rewriting
-type RewriteResult struct {
-	Modified bool // Whether the packet was modified
-	HasUA    bool // Whether User-Agent was found
-	InCache  bool // Whether destination address is in cache
-	NeedSkip bool
+type PacketRewriter struct {
+	rewriteMode    config.RewriteMode
+	UserAgent      string
+	uaRegex        *regexp2.Regexp
+	partialReplace bool
+	Recorder       *statistics.Recorder
+}
+
+func (r *PacketRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDecision) {
+	if r.rewriteMode == config.RewriteModeDirect {
+		return &RewriteDecision{
+			Modified: false,
+		}
+	}
+	if len(metadata.Packet.TCP.Payload) == 0 {
+		return &RewriteDecision{
+			Modified: false,
+		}
+	}
+	hasUA, modified, skip := r.RewritePacketUserAgent(metadata.Packet.TCP.Payload, metadata.SrcAddr(), metadata.DestAddr())
+	return &RewriteDecision{
+		Modified: modified,
+		HasUA:    hasUA,
+		NeedSkip: skip,
+	}
+}
+
+func NewPacketRewriter(cfg *config.Config, recorder *statistics.Recorder) (*PacketRewriter, error) {
+	var regex *regexp2.Regexp
+	var err error
+	if cfg.UserAgentRegex != "" {
+		regex, err = regexp2.Compile("(?i)"+cfg.UserAgentRegex, regexp2.None)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &PacketRewriter{
+		rewriteMode:    cfg.RewriteMode,
+		UserAgent:      cfg.UserAgent,
+		uaRegex:        regex,
+		partialReplace: cfg.UserAgentPartialReplace,
+		Recorder:       recorder,
+	}, nil
 }
 
 // shouldRewriteUA determines if the User-Agent should be rewritten
-func (r *Rewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
+func (r *PacketRewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
 	if r.uaRegex == nil {
 		return true
 	}
@@ -32,10 +72,23 @@ func (r *Rewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
 	return matches
 }
 
+// buildUserAgent returns either a partial replacement (regex) or full overwrite.
+func (r *PacketRewriter) buildUserAgent(originUA string) string {
+	if r.partialReplace && r.uaRegex != nil {
+		newUA, err := r.uaRegex.Replace(originUA, r.UserAgent, -1, -1)
+		if err != nil {
+			slog.Error("r.uaRegex.Replace", slog.Any("error", err))
+			return r.UserAgent
+		}
+		return newUA
+	}
+	return r.UserAgent
+}
+
 // buildReplacement creates replacement content for User-Agent
 // If the original UA should not be rewritten, returns nil
 // Otherwise, uses buildUserAgent logic (partial or full replace) and adjusts to length n
-func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, n int) []byte {
+func (r *PacketRewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, n int) []byte {
 	if n <= 0 {
 		return nil
 	}
@@ -67,7 +120,7 @@ func (r *Rewriter) buildReplacement(srcAddr, dstAddr string, originalUA string, 
 
 // RewritePacketUserAgent rewrites User-Agent in a raw packet payload in-place
 // Returns metadata about the operation
-func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (hasUA, modified, skip bool) {
+func (r *PacketRewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr string) (hasUA, modified, skip bool) {
 	// Find all User-Agent positions
 	positions, unterm := findUserAgentInPayload(payload)
 
@@ -116,19 +169,4 @@ func (r *Rewriter) RewritePacketUserAgent(payload []byte, srcAddr, dstAddr strin
 		}
 	}
 	return true, modified, false
-}
-
-// RewriteTCP rewrites the TCP packet's User-Agent if applicable
-func (r *Rewriter) RewriteTCP(tcp *layers.TCP, srcAddr, dstAddr string) *RewriteResult {
-	if len(tcp.Payload) == 0 {
-		return &RewriteResult{
-			Modified: false,
-		}
-	}
-	hasUA, modified, skip := r.RewritePacketUserAgent(tcp.Payload, srcAddr, dstAddr)
-	return &RewriteResult{
-		Modified: modified,
-		HasUA:    hasUA,
-		NeedSkip: skip,
-	}
 }

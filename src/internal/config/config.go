@@ -75,6 +75,8 @@ type Rule struct {
 	RewriteValue  string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX"`
 
 	RewriteRegex string `json:"rewrite_regex,omitempty" yaml:"rewrite-regex,omitempty" validate:"required_if=Action REPLACE-REGEX"`
+
+	Continue bool `json:"continue,omitempty" yaml:"continue,omitempty"`
 }
 
 func Parse() (*Config, bool, error) {

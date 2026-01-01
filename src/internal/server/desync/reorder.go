@@ -6,10 +6,10 @@ import (
 	"log/slog"
 
 	nfq "github.com/florianl/go-nfqueue/v2"
-	"github.com/sunbk201/ua3f/internal/server/base"
+	"github.com/sunbk201/ua3f/internal/common"
 )
 
-func (s *Server) ReorderPacket(frame *base.Packet) {
+func (s *Server) ReorderPacket(frame *common.Packet) {
 	nf := s.ReorderNfqServer.Nf
 	id := *frame.A.PacketID
 

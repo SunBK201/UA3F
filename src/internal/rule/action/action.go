@@ -23,11 +23,11 @@ func NewAction(rule *config.Rule, recorder *statistics.Recorder) common.Action {
 	case common.ActionDrop:
 		return DropAction
 	case common.ActionDelete:
-		return NewDelete(recorder, rule.RewriteHeader)
+		return NewDelete(recorder, rule.RewriteHeader, rule.Continue)
 	case common.ActionReplace:
-		return NewReplace(recorder, rule.RewriteHeader, rule.RewriteValue)
+		return NewReplace(recorder, rule.RewriteHeader, rule.RewriteValue, rule.Continue)
 	case common.ActionReplaceRegex:
-		return NewReplaceRegex(recorder, rule.RewriteHeader, rule.RewriteRegex, rule.RewriteValue)
+		return NewReplaceRegex(recorder, rule.RewriteHeader, rule.RewriteRegex, rule.RewriteValue, rule.Continue)
 	default:
 		return nil
 	}

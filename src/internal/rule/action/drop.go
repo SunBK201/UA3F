@@ -16,9 +16,9 @@ func (d *Drop) Type() common.ActionType {
 	return common.ActionDrop
 }
 
-func (d *Drop) Execute(metadata *common.Metadata) error {
+func (d *Drop) Execute(metadata *common.Metadata) (bool, error) {
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Drop Request")
-	return nil
+	return false, nil
 }
 
 func (d *Drop) LogValue() slog.Value {

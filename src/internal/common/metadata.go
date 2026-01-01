@@ -10,7 +10,9 @@ import (
 type Metadata struct {
 	Request  *http.Request
 	ConnLink *ConnLink
+	Packet   *Packet // NFQUEUE
 
+	srcAddr  string
 	destAddr string
 }
 
@@ -26,7 +28,10 @@ func (m *Metadata) SrcAddr() string {
 	if m.Request != nil {
 		return m.Request.RemoteAddr
 	}
-	return ""
+	if m.Packet != nil {
+		return m.Packet.SrcAddr
+	}
+	return m.srcAddr
 }
 
 func (m *Metadata) DestAddr() string {
@@ -41,6 +46,9 @@ func (m *Metadata) DestAddr() string {
 		if strings.IndexByte(m.destAddr, ':') == -1 {
 			m.destAddr = net.JoinHostPort(m.destAddr, m.ConnLink.RPort())
 		}
+	}
+	if m.Packet != nil {
+		return m.Packet.DstAddr
 	}
 	return m.destAddr
 }

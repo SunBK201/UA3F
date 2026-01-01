@@ -13,17 +13,18 @@ type Replace struct {
 	recorder *statistics.Recorder
 	header   string
 	value    string
+	contine  bool
 }
 
 func (r *Replace) Type() common.ActionType {
 	return common.ActionReplace
 }
 
-func (r *Replace) Execute(metadata *common.Metadata) error {
+func (r *Replace) Execute(metadata *common.Metadata) (bool, error) {
 	header := metadata.Request.Header.Get(r.header)
 
 	if header == "" {
-		return nil
+		return r.contine, nil
 	}
 
 	metadata.Request.Header.Set(r.header, r.value)
@@ -36,7 +37,7 @@ func (r *Replace) Execute(metadata *common.Metadata) error {
 		})
 	}
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.header, header, r.value))
-	return nil
+	return r.contine, nil
 }
 
 func (r *Replace) LogValue() slog.Value {
@@ -44,13 +45,15 @@ func (r *Replace) LogValue() slog.Value {
 		slog.String("type", string(r.Type())),
 		slog.String("header", r.header),
 		slog.String("value", r.value),
+		slog.Bool("continue", r.contine),
 	)
 }
 
-func NewReplace(recorder *statistics.Recorder, header, value string) *Replace {
+func NewReplace(recorder *statistics.Recorder, header, value string, contine bool) *Replace {
 	return &Replace{
 		recorder: recorder,
 		header:   header,
 		value:    value,
+		contine:  contine,
 	}
 }

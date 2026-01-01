@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
-	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/sniff"
@@ -22,7 +21,7 @@ import (
 
 type Server struct {
 	Cfg             *config.Config
-	Rewriter        *rewrite.Rewriter
+	Rewriter        rewrite.Rewriter
 	Recorder        *statistics.Recorder
 	Cache           *expirable.LRU[string, struct{}]
 	SkipIpChan      chan *net.IP
@@ -142,7 +141,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 		metadata.UpdateRequest(req)
 
-		decision := s.Rewriter.EvaluateRewriteDecision(metadata)
+		decision := s.Rewriter.Rewrite(metadata)
 		if decision.Action == action.DropAction {
 			continue
 		}
@@ -151,10 +150,6 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		}
 		if decision.NeedSkip {
 			s.TrySkip(c)
-		}
-
-		if err = decision.Action.Execute(metadata); err != nil {
-			log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Action.Execute: %v", err))
 		}
 
 		if err := metadata.Request.Write(c.RConn); err != nil {

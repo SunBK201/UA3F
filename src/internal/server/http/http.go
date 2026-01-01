@@ -25,7 +25,7 @@ type Server struct {
 	so_mark int
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
@@ -106,16 +106,13 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) rewrite(metadata *common.Metadata) (*http.Request, error) {
-	decision := s.Rewriter.EvaluateRewriteDecision(metadata)
+	decision := s.Rewriter.Rewrite(metadata)
 	if decision.Action == action.DropAction {
 		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
 	}
 	if decision.NeedCache {
 		s.Cache.Add(metadata.DestAddr(), struct{}{})
-	}
-	if err := decision.Action.Execute(metadata); err != nil {
-		log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Action.Execute: %v", err))
 	}
 	return metadata.Request, nil
 }

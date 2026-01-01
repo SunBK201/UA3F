@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"sigs.k8s.io/knftables"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/netfilter"
@@ -30,7 +31,7 @@ type Server struct {
 	NotHTTPCtMark    uint32
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:        cfg,
@@ -80,17 +81,19 @@ func (s *Server) Close() error {
 }
 
 // handlePacket processes a single NFQUEUE packet
-func (s *Server) handlePacket(packet *base.Packet) {
+func (s *Server) handlePacket(packet *common.Packet) {
 	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil {
 		_ = s.nfqServer.Nf.SetVerdict(*packet.A.PacketID, nfq.NfAccept)
 		return
 	}
 	if s.Cache.Contains(packet.DstAddr) {
-		s.sendVerdict(packet, &rewrite.RewriteResult{Modified: false, InCache: true})
+		s.sendVerdict(packet, &rewrite.RewriteDecision{Modified: false, NeedCache: true})
 		log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, "Destination in cache, direct forwrard")
 		return
 	}
-	result := s.Rewriter.RewriteTCP(packet.TCP, packet.SrcAddr, packet.DstAddr)
+	result := s.Rewriter.Rewrite(&common.Metadata{
+		Packet: packet,
+	})
 	if result.NeedSkip {
 		select {
 		case s.SkipIpChan <- &packet.DstIP:
@@ -100,7 +103,7 @@ func (s *Server) handlePacket(packet *base.Packet) {
 	s.sendVerdict(packet, result)
 }
 
-func (s *Server) sendVerdict(packet *base.Packet, result *rewrite.RewriteResult) {
+func (s *Server) sendVerdict(packet *common.Packet, result *rewrite.RewriteDecision) {
 	nf := s.nfqServer.Nf
 	id := *packet.A.PacketID
 	setMark, nextMark := s.getNextMark(packet, result)
@@ -139,7 +142,7 @@ func (s *Server) sendVerdict(packet *base.Packet, result *rewrite.RewriteResult)
 	}
 }
 
-func (s *Server) getNextMark(packet *base.Packet, result *rewrite.RewriteResult) (setMark bool, mark uint32) {
+func (s *Server) getNextMark(packet *common.Packet, result *rewrite.RewriteDecision) (setMark bool, mark uint32) {
 	if result.NeedSkip {
 		return true, s.NotHTTPCtMark
 	}
@@ -159,7 +162,7 @@ func (s *Server) getNextMark(packet *base.Packet, result *rewrite.RewriteResult)
 		return false, 0
 	}
 
-	if result.InCache {
+	if result.NeedCache {
 		return true, s.NotHTTPCtMark
 	}
 

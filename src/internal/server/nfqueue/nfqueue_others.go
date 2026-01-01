@@ -15,7 +15,7 @@ type Server struct {
 	base.Server
 }
 
-func New(cfg *config.Config, rw *rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:      cfg,

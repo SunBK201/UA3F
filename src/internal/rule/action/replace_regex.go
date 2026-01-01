@@ -15,17 +15,18 @@ type ReplaceRegex struct {
 	replaceRegex  *regexp2.Regexp
 	replaceHeader string
 	replaceValue  string
+	contine       bool
 }
 
 func (r *ReplaceRegex) Type() common.ActionType {
 	return common.ActionReplaceRegex
 }
 
-func (r *ReplaceRegex) Execute(metadata *common.Metadata) error {
+func (r *ReplaceRegex) Execute(metadata *common.Metadata) (bool, error) {
 	header := metadata.Request.Header.Get(r.replaceHeader)
 
 	if header == "" {
-		return nil
+		return r.contine, nil
 	}
 
 	replaceValue, err := r.replaceRegex.Replace(header, r.replaceValue, -1, -1)
@@ -45,7 +46,7 @@ func (r *ReplaceRegex) Execute(metadata *common.Metadata) error {
 	}
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.replaceHeader, header, replaceValue))
 
-	return nil
+	return r.contine, nil
 }
 
 func (r *ReplaceRegex) LogValue() slog.Value {
@@ -54,10 +55,11 @@ func (r *ReplaceRegex) LogValue() slog.Value {
 		slog.String("header", r.replaceHeader),
 		slog.String("regex", r.replaceRegex.String()),
 		slog.String("value", r.replaceValue),
+		slog.Bool("continue", r.contine),
 	)
 }
 
-func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex string, replaceValue string) *ReplaceRegex {
+func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex string, replaceValue string, contine bool) *ReplaceRegex {
 	regex, err := regexp2.Compile("(?i)"+replaceRegex, regexp2.None)
 	if err != nil {
 		slog.Error("regexp2.Compile", "error", err)
@@ -69,5 +71,6 @@ func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex 
 		replaceRegex:  regex,
 		replaceHeader: replaceHeader,
 		replaceValue:  replaceValue,
+		contine:       contine,
 	}
 }

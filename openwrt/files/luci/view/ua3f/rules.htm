@@ -482,6 +482,29 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             rewriteValue.appendChild(rewriteField);
             section.appendChild(rewriteValue);
             
+            // Continue option (only for REPLACE, REPLACE-REGEX, DELETE actions, not for FINAL)
+            if (!isFinal) {
+                var continueValue = document.createElement('div');
+                continueValue.className = 'cbi-value';
+                continueValue.id = 'continue_container';
+                var continueLabel = document.createElement('label');
+                continueLabel.className = 'cbi-value-title';
+                continueLabel.textContent = '<%:Continue Evaluation%>';
+                continueValue.appendChild(continueLabel);
+                var continueField = document.createElement('div');
+                continueField.className = 'cbi-value-field';
+                continueField.style.display = 'flex';
+                continueField.style.alignItems = 'center';
+                var continueCheckbox = document.createElement('input');
+                continueCheckbox.type = 'checkbox';
+                continueCheckbox.className = 'cbi-input-checkbox';
+                continueCheckbox.id = 'modal_continue';
+                continueCheckbox.checked = rule ? (rule.continue || false) : false;
+                continueField.appendChild(continueCheckbox);
+                continueValue.appendChild(continueField);
+                section.appendChild(continueValue);
+            }
+            
             // Description
             var descValue = document.createElement('div');
             descValue.className = 'cbi-value';
@@ -599,6 +622,15 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             } else {
                 rewriteValueContainer.style.display = 'none';
             }
+            // Show continue option only for REPLACE, REPLACE-REGEX and DELETE actions (not for FINAL)
+            var continueContainer = document.getElementById('continue_container');
+            if (continueContainer) {
+                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'DELETE') {
+                    continueContainer.style.display = '';
+                } else {
+                    continueContainer.style.display = 'none';
+                }
+            }
         },
         
         closeDialog: function() {
@@ -615,6 +647,8 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             var rewriteRegex = document.getElementById('modal_rewrite_regex').value || '';
             var matchHeaderInput = document.getElementById('modal_match_header');
             var matchHeader = matchHeaderInput ? (matchHeaderInput.value || 'User-Agent') : '';
+            var continueCheckboxEl = document.getElementById('modal_continue');
+            var continueChecked = continueCheckboxEl ? continueCheckboxEl.checked : false;
             
             var newRule;
             if (isFinal) {
@@ -651,6 +685,11 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 // Add rewrite_regex for REPLACE-REGEX action
                 if (newRule.action === 'REPLACE-REGEX') {
                     newRule.rewrite_regex = rewriteRegex;
+                }
+                
+                // Add continue for REPLACE, REPLACE-REGEX and DELETE actions
+                if (newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX' || newRule.action === 'DELETE') {
+                    newRule.continue = continueChecked;
                 }
                 
                 // Validate required fields

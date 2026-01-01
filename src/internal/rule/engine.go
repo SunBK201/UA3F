@@ -94,3 +94,19 @@ func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
 	slog.Warn("No rule matched", slog.Any("metadata", metadata))
 	return nil
 }
+
+func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int) (common.Rule, int) {
+	if startIndex < 0 || startIndex >= len(e.rules) {
+		return nil, -1
+	}
+	for i := startIndex; i < len(e.rules); i++ {
+		rule := e.rules[i]
+		matched := rule.Match(metadata)
+		if matched {
+			slog.Info("Rule matched", slog.Any("rule", rule), slog.Any("metadata", metadata))
+			return rule, i
+		}
+	}
+	slog.Warn("No rule matched", slog.Any("metadata", metadata))
+	return nil, -1
+}

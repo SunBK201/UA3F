@@ -263,6 +263,9 @@ msgstr "重写请求头"
 msgid "Match Header"
 msgstr "匹配请求头"
 
+msgid "Continue Evaluation"
+msgstr "继续匹配后续规则"
+
 msgid "Delete TCP Timestamps"
 msgstr "删除 TCP 时间戳"
 

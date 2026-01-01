@@ -10,10 +10,10 @@ import (
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/sunbk201/ua3f/internal/server/base"
+	"github.com/sunbk201/ua3f/internal/common"
 )
 
-func (s *Server) InjectPacket(p *base.Packet) {
+func (s *Server) InjectPacket(p *common.Packet) {
 	defer func() {
 		_ = s.InjectNfqServer.Nf.SetVerdict(*p.A.PacketID, nfq.NfAccept)
 	}()
@@ -107,7 +107,7 @@ func (s *Server) InjectPacket(p *base.Packet) {
 	}
 }
 
-func (s *Server) checkTTL(p *base.Packet) bool {
+func (s *Server) checkTTL(p *common.Packet) bool {
 	var ttl uint8
 	var dis uint8
 

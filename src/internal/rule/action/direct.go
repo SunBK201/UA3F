@@ -16,10 +16,10 @@ func (d *Direct) Type() common.ActionType {
 	return common.ActionDirect
 }
 
-func (d *Direct) Execute(metadata *common.Metadata) error {
+func (d *Direct) Execute(metadata *common.Metadata) (bool, error) {
 	ua := metadata.UserAgent()
 	if ua == "" {
-		return nil
+		return false, nil
 	}
 	if d.recorder != nil {
 		d.recorder.AddRecord(&statistics.PassThroughRecord{
@@ -29,7 +29,7 @@ func (d *Direct) Execute(metadata *common.Metadata) error {
 		})
 	}
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Direct Forwarding with User-Agent: "+ua)
-	return nil
+	return false, nil
 }
 
 func (d *Direct) SetRecorder(recorder *statistics.Recorder) {

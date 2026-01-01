@@ -12,5 +12,5 @@ const (
 
 type Action interface {
 	Type() ActionType
-	Execute(metadata *Metadata) error
+	Execute(metadata *Metadata) (bool, error)
 }

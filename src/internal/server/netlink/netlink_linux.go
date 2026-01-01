@@ -7,6 +7,7 @@ import (
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket/layers"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -64,7 +65,7 @@ func (s *Server) Close() error {
 }
 
 // handlePacket processes a single NFQUEUE packet
-func (s *Server) handlePacket(packet *base.Packet) {
+func (s *Server) handlePacket(packet *common.Packet) {
 	nf := s.nfqServer.Nf
 
 	modified := false
@@ -136,7 +137,7 @@ func (s *Server) setInitialTCPWindow(tcp *layers.TCP) bool {
 
 // zeroIPID sets the IP ID field to zero for IPv4 packets
 // Returns true if the packet was modified
-func (s *Server) zeroIPID(packet *base.Packet) bool {
+func (s *Server) zeroIPID(packet *common.Packet) bool {
 	if packet.IsIPv6 {
 		return false
 	}
