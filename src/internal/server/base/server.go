@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -75,7 +74,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		_ = c.CloseLR()
 	}()
 
-	if strings.HasSuffix(c.RAddr, "443") {
+	if c.RPort() == "443" {
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
 			s.Cache.Add(c.RAddr, struct{}{})
 			c.LogInfo("TLS client hello detected")
