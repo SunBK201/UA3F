@@ -69,7 +69,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			return
 		}
 		if _, err = io.CopyBuffer(c.RConn, reader, one); err != nil {
-			c.LogWarnf("Process io.CopyBuffer: %v", err)
+			c.LogWarnf("ProcessLR io.CopyBuffer: %v", err)
 		}
 		_ = c.CloseLR()
 	}()
@@ -144,7 +144,6 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 		decision := s.Rewriter.EvaluateRewriteDecision(metadata)
 		if decision.Action == action.DropAction {
-			c.LogInfo("Request dropped by rule")
 			continue
 		}
 		if decision.NeedCache {
