@@ -24,6 +24,8 @@ func NewAction(rule *config.Rule, recorder *statistics.Recorder) common.Action {
 		return DropAction
 	case common.ActionDelete:
 		return NewDelete(recorder, rule.RewriteHeader, rule.Continue)
+	case common.ActionAdd:
+		return NewAdd(recorder, rule.RewriteHeader, rule.RewriteValue, rule.Continue)
 	case common.ActionReplace:
 		return NewReplace(recorder, rule.RewriteHeader, rule.RewriteValue, rule.Continue)
 	case common.ActionReplaceRegex:

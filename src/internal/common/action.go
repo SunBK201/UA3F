@@ -6,6 +6,7 @@ const (
 	ActionReplace      ActionType = "REPLACE"
 	ActionReplaceRegex ActionType = "REPLACE-REGEX"
 	ActionDelete       ActionType = "DELETE"
+	ActionAdd          ActionType = "ADD"
 	ActionDirect       ActionType = "DIRECT"
 	ActionDrop         ActionType = "DROP"
 )

@@ -263,6 +263,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             var labels = {
                 'REPLACE': '<%:REPLACE%>',
                 'REPLACE-REGEX': '<%:REPLACE-REGEX%>',
+                'ADD': '<%:ADD%>',
                 'DELETE': '<%:DELETE%>',
                 'DIRECT': '<%:DIRECT%>',
                 'DROP': '<%:DROP%>'
@@ -401,10 +402,12 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             actionSelect.id = 'modal_action';
             var actions = isFinal ? [
                 ['DELETE', '<%:DELETE%>'],
+                ['ADD', '<%:ADD%>'],
                 ['REPLACE', '<%:REPLACE%>'],
                 ['DIRECT', '<%:DIRECT%>']
             ] : [
                 ['DELETE', '<%:DELETE%>'],
+                ['ADD', '<%:ADD%>'],
                 ['REPLACE', '<%:REPLACE%>'],
                 ['REPLACE-REGEX', '<%:REPLACE-REGEX%>'],
                 ['DIRECT', '<%:DIRECT%>'],
@@ -600,9 +603,9 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             if (!actionSelect || !rewriteValueContainer) return;
             
             var action = actionSelect.value;
-            // Show rewrite header for REPLACE, REPLACE-REGEX and DELETE actions
+            // Show rewrite header for REPLACE, REPLACE-REGEX, ADD and DELETE actions
             if (rewriteHeaderContainer) {
-                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'DELETE') {
+                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'ADD' || action === 'DELETE') {
                     rewriteHeaderContainer.style.display = '';
                 } else {
                     rewriteHeaderContainer.style.display = 'none';
@@ -616,16 +619,16 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     rewriteRegexContainer.style.display = 'none';
                 }
             }
-            // Show rewrite value only for REPLACE and REPLACE-REGEX actions
-            if (action === 'REPLACE' || action === 'REPLACE-REGEX') {
+            // Show rewrite value only for REPLACE, REPLACE-REGEX and ADD actions
+            if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'ADD') {
                 rewriteValueContainer.style.display = '';
             } else {
                 rewriteValueContainer.style.display = 'none';
             }
-            // Show continue option only for REPLACE, REPLACE-REGEX and DELETE actions (not for FINAL)
+            // Show continue option only for REPLACE, REPLACE-REGEX, ADD and DELETE actions (not for FINAL)
             var continueContainer = document.getElementById('continue_container');
             if (continueContainer) {
-                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'DELETE') {
+                if (action === 'REPLACE' || action === 'REPLACE-REGEX' || action === 'ADD' || action === 'DELETE') {
                     continueContainer.style.display = '';
                 } else {
                     continueContainer.style.display = 'none';
@@ -687,8 +690,8 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     newRule.rewrite_regex = rewriteRegex;
                 }
                 
-                // Add continue for REPLACE, REPLACE-REGEX and DELETE actions
-                if (newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX' || newRule.action === 'DELETE') {
+                // Add continue for REPLACE, REPLACE-REGEX, ADD and DELETE actions
+                if (newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX' || newRule.action === 'ADD' || newRule.action === 'DELETE') {
                     newRule.continue = continueChecked;
                 }
                 
@@ -699,9 +702,9 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 }
             }
             
-            // Validate rewrite value for REPLACE and REPLACE-REGEX actions
-            if ((newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX') && !newRule.rewrite_value) {
-                alert('<%:Rewrite value is required for REPLACE and REPLACE-REGEX actions%>');
+            // Validate rewrite value for REPLACE, REPLACE-REGEX and ADD actions
+            if ((newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX' || newRule.action === 'ADD') && !newRule.rewrite_value) {
+                alert('<%:Rewrite value is required for REPLACE, REPLACE-REGEX and ADD actions%>');
                 return;
             }
             
