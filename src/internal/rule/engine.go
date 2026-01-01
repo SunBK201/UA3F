@@ -8,14 +8,16 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/rule/match"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type Engine struct {
 	rules []common.Rule
 }
 
-func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
+func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Recorder) (*Engine, error) {
 	var (
 		rules    []common.Rule
 		rulesCfg []*config.Rule
@@ -35,6 +37,7 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
 		}
 	}
 
+	action.InitActions(recorder)
 	validate := validator.New()
 
 	var r common.Rule
@@ -51,23 +54,23 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule) (*Engine, error) {
 
 		switch common.RuleType(rule.Type) {
 		case common.RuleTypeHeaderKeyword:
-			r = match.NewHeaderKeyword(rule)
+			r = match.NewHeaderKeyword(rule, recorder)
 		case common.RuleTypeHeaderRegex:
-			r = match.NewHeaderRegex(rule)
+			r = match.NewHeaderRegex(rule, recorder)
 		case common.RuleTypeIPCIDR:
-			r = match.NewIPCIDR(rule)
+			r = match.NewIPCIDR(rule, recorder)
 		case common.RuleTypeSrcIP:
-			r = match.NewSrcIP(rule)
+			r = match.NewSrcIP(rule, recorder)
 		case common.RuleTypeDestPort:
-			r = match.NewDestPort(rule)
+			r = match.NewDestPort(rule, recorder)
 		case common.RuleTypeDomain:
-			r = match.NewDomain(rule)
+			r = match.NewDomain(rule, recorder)
 		case common.RuleTypeDomainKeyword:
-			r = match.NewDomainKeyword(rule)
+			r = match.NewDomainKeyword(rule, recorder)
 		case common.RuleTypeDomainSuffix:
-			r = match.NewDomainSuffix(rule)
+			r = match.NewDomainSuffix(rule, recorder)
 		case common.RuleTypeFinal:
-			r = match.NewFinal(rule)
+			r = match.NewFinal(rule, recorder)
 		default:
 			slog.Warn("Unsupported rule type", slog.String("type", rule.Type))
 			continue
@@ -84,9 +87,10 @@ func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
 	for _, rule := range e.rules {
 		matched := rule.Match(metadata)
 		if matched {
-			slog.Debug("Rule matched", slog.String("type", string(rule.Type())), slog.String("action", string(rule.Action().Type())))
+			slog.Info("Rule matched", slog.Any("rule", rule), slog.Any("metadata", metadata))
 			return rule
 		}
 	}
+	slog.Warn("No rule matched", slog.Any("metadata", metadata))
 	return nil
 }

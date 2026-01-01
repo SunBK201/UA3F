@@ -1,6 +1,7 @@
 package common
 
 import (
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -61,4 +62,13 @@ func (m *Metadata) UserAgent() string {
 		m.Request.Header.Set("User-Agent", "")
 	}
 	return ua
+}
+
+func (m *Metadata) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("src_addr", m.SrcAddr()),
+		slog.String("dest_addr", m.DestAddr()),
+		slog.String("host", m.Host()),
+		slog.String("user_agent", m.UserAgent()),
+	)
 }

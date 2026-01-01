@@ -114,8 +114,10 @@ func (s *Server) rewrite(metadata *common.Metadata) (*http.Request, error) {
 	if decision.NeedCache {
 		s.Cache.Add(metadata.DestAddr(), struct{}{})
 	}
-	req := s.Rewriter.Rewrite(metadata, decision)
-	return req, nil
+	if err := decision.Action.Execute(metadata); err != nil {
+		log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Action.Execute: %v", err))
+	}
+	return metadata.Request, nil
 }
 
 func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {

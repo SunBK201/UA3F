@@ -7,6 +7,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type DomainSuffix struct {
@@ -26,8 +27,16 @@ func (d *DomainSuffix) Action() common.Action {
 	return d.action
 }
 
-func NewDomainSuffix(rule *config.Rule) *DomainSuffix {
-	action := action.NewAction(rule)
+func (d *DomainSuffix) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(d.Type())),
+		slog.String("domain_suffix", d.domainSuffix),
+		slog.Any("action", d.action),
+	)
+}
+
+func NewDomainSuffix(rule *config.Rule, recorder *statistics.Recorder) *DomainSuffix {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil

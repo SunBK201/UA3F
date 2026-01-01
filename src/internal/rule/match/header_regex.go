@@ -7,6 +7,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type HeaderRegex struct {
@@ -31,8 +32,16 @@ func (h *HeaderRegex) Action() common.Action {
 	return h.action
 }
 
-func NewHeaderRegex(rule *config.Rule) *HeaderRegex {
-	action := action.NewAction(rule)
+func (h *HeaderRegex) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(h.Type())),
+		slog.String("header", h.header),
+		slog.Any("action", h.action),
+	)
+}
+
+func NewHeaderRegex(rule *config.Rule, recorder *statistics.Recorder) *HeaderRegex {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil

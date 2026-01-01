@@ -8,6 +8,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type SrcIP struct {
@@ -34,8 +35,16 @@ func (s *SrcIP) Action() common.Action {
 	return s.action
 }
 
-func NewSrcIP(rule *config.Rule) *SrcIP {
-	action := action.NewAction(rule)
+func (s *SrcIP) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(s.Type())),
+		slog.String("ip_cidr", s.ipNet.String()),
+		slog.Any("action", s.action),
+	)
+}
+
+func NewSrcIP(rule *config.Rule, recorder *statistics.Recorder) *SrcIP {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil

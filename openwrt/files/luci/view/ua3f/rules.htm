@@ -50,7 +50,7 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
 <!-- Rewrite Rules Section -->
 <div class="cbi-section-descr" style="font-weight:bold; margin-bottom: 10px;"><%:Rewrite Rules%></div>
 <div class="cbi-section-descr" style="color: #999; font-size: 90%; margin-bottom: 10px;">
-    <%:Note: Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
+    <%:Rules will be matched and executed in order from top to bottom. Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
 </div>
 
 <table id="rewrite-rules-table" class="table cbi-section-table">

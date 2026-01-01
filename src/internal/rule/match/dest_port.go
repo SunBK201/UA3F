@@ -6,6 +6,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type DestPort struct {
@@ -25,8 +26,16 @@ func (d *DestPort) Action() common.Action {
 	return d.action
 }
 
-func NewDestPort(rule *config.Rule) *DestPort {
-	action := action.NewAction(rule)
+func (d *DestPort) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(d.Type())),
+		slog.String("port", d.port),
+		slog.Any("action", d.action),
+	)
+}
+
+func NewDestPort(rule *config.Rule, recorder *statistics.Recorder) *DestPort {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil

@@ -3,7 +3,6 @@ package rewrite
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
 
 	"github.com/dlclark/regexp2"
 
@@ -17,8 +16,7 @@ import (
 
 // Rewriter encapsulates HTTP UA rewrite behavior and pass-through cache.
 type Rewriter struct {
-	payloadUA      string
-	pattern        string
+	UserAgent      string
 	partialReplace bool
 	rewriteMode    config.RewriteMode
 	rewriteAction  common.Action
@@ -47,15 +45,19 @@ func (d *RewriteDecision) ShouldRewrite() bool {
 }
 
 func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
-	pattern := "(?i)" + cfg.UserAgentRegex // case-insensitive prefix (?i)
-	uaRegex, err := regexp2.Compile(pattern, regexp2.None)
-	if err != nil {
-		return nil, err
+	var err error
+	var regex *regexp2.Regexp
+
+	if cfg.UserAgentRegex != "" {
+		regex, err = regexp2.Compile("(?i)"+cfg.UserAgentRegex, regexp2.None)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var ruleEngine *rule.Engine
 	if cfg.RewriteMode == config.RewriteModeRule {
-		ruleEngine, err = rule.NewEngine(cfg.RulesJson, &cfg.Rules)
+		ruleEngine, err = rule.NewEngine(cfg.RulesJson, &cfg.Rules, recorder)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create rule engine: %w", err)
 		}
@@ -64,9 +66,9 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	var rewriteAction common.Action
 	if cfg.RewriteMode == config.RewriteModeGlobal {
 		if cfg.UserAgentPartialReplace && cfg.UserAgentRegex != "" {
-			rewriteAction = action.NewReplaceRegex("User-Agent", cfg.UserAgentRegex, cfg.UserAgent)
+			rewriteAction = action.NewReplaceRegex(recorder, "User-Agent", cfg.UserAgentRegex, cfg.UserAgent)
 		} else {
-			rewriteAction = action.NewReplace("User-Agent", cfg.UserAgent)
+			rewriteAction = action.NewReplace(recorder, "User-Agent", cfg.UserAgent)
 		}
 		if rewriteAction == nil {
 			return nil, fmt.Errorf("failed to create rewrite action")
@@ -74,12 +76,11 @@ func New(cfg *config.Config, recorder *statistics.Recorder) (*Rewriter, error) {
 	}
 
 	return &Rewriter{
-		payloadUA:      cfg.UserAgent,
-		pattern:        cfg.UserAgentRegex,
+		UserAgent:      cfg.UserAgent,
+		uaRegex:        regex,
 		partialReplace: cfg.UserAgentPartialReplace,
 		rewriteMode:    cfg.RewriteMode,
 		rewriteAction:  rewriteAction,
-		uaRegex:        uaRegex,
 		ruleEngine:     ruleEngine,
 		whitelist: []string{
 			"MicroMessenger Client",
@@ -103,28 +104,29 @@ func (r *Rewriter) inWhitelist(ua string) bool {
 
 // buildUserAgent returns either a partial replacement (regex) or full overwrite.
 func (r *Rewriter) buildUserAgent(originUA string) string {
-	if r.partialReplace && r.uaRegex != nil && r.pattern != "" {
-		newUA, err := r.uaRegex.Replace(originUA, r.payloadUA, -1, -1)
+	if r.partialReplace && r.uaRegex != nil {
+		newUA, err := r.uaRegex.Replace(originUA, r.UserAgent, -1, -1)
 		if err != nil {
 			slog.Error("r.uaRegex.Replace", slog.Any("error", err))
-			return r.payloadUA
+			return r.UserAgent
 		}
 		return newUA
 	}
-	return r.payloadUA
+	return r.UserAgent
 }
 
-func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) *RewriteDecision {
-	originalUA := metadata.UserAgent()
-	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", originalUA))
+func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) (decision *RewriteDecision) {
+	defer func() {
+		if decision != nil {
+			log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite decision: Action=%s, NeedCache=%v, NeedSkip=%v", decision.Action.Type(), decision.NeedCache, decision.NeedSkip))
+		}
+	}()
+
+	ua := metadata.UserAgent()
+	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", ua))
 
 	// DIRECT
 	if r.rewriteMode == config.RewriteModeDirect {
-		r.Recorder.AddRecord(&statistics.PassThroughRecord{
-			SrcAddr:  metadata.SrcAddr(),
-			DestAddr: metadata.DestAddr(),
-			UA:       originalUA,
-		})
 		return &RewriteDecision{
 			Action: action.DirectAction,
 		}
@@ -133,30 +135,11 @@ func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) *RewriteDe
 	// RULE
 	if r.rewriteMode == config.RewriteModeRule {
 		matchedRule := r.ruleEngine.MatchWithRule(metadata)
-
-		// no match rule, direct forward
 		if matchedRule == nil {
-			log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "No rule matched, direct forward")
-			r.Recorder.AddRecord(&statistics.PassThroughRecord{
-				SrcAddr:  metadata.SrcAddr(),
-				DestAddr: metadata.DestAddr(),
-				UA:       originalUA,
-			})
 			return &RewriteDecision{
 				Action: action.DirectAction,
 			}
 		}
-
-		// DIRECT
-		if matchedRule.Action() == action.DirectAction {
-			r.Recorder.AddRecord(&statistics.PassThroughRecord{
-				SrcAddr:  metadata.SrcAddr(),
-				DestAddr: metadata.DestAddr(),
-				UA:       originalUA,
-			})
-		}
-
-		// REPLACE、REPLACE-REGEX、DELETE, Rewrite
 		return &RewriteDecision{
 			Action:      matchedRule.Action(),
 			MatchedRule: matchedRule,
@@ -164,64 +147,42 @@ func (r *Rewriter) EvaluateRewriteDecision(metadata *common.Metadata) *RewriteDe
 	}
 
 	// GLOBAL
-	var err error
-	matches := false
-	decision := &RewriteDecision{}
-
-	if originalUA == "" {
-		decision.Action = action.DirectAction
-		return decision
-	}
-
-	isWhitelist := r.inWhitelist(originalUA)
-	if !isWhitelist {
-		if r.pattern == "" {
-			matches = true
-		} else {
-			matches, err = r.uaRegex.MatchString(originalUA)
-			if err != nil {
-				log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("r.uaRegex.MatchString: %s", err.Error()))
-				matches = true
-			}
+	if ua == "" {
+		return &RewriteDecision{
+			Action: action.DirectAction,
 		}
 	}
 
+	decision = &RewriteDecision{}
+
+	isWhitelist := r.inWhitelist(ua)
 	if isWhitelist {
-		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", originalUA))
+		decision.Action = action.DirectAction
 		decision.NeedCache = true
-		if originalUA == "Valve/Steam HTTP Client 1.0" {
+		if ua == "Valve/Steam HTTP Client 1.0" {
 			decision.NeedSkip = true
 		}
-	}
-	if !matches {
-		log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Not hit User-Agent regex: %s", originalUA))
-	}
-
-	hit := !isWhitelist && matches
-	if !hit {
-		r.Recorder.AddRecord(&statistics.PassThroughRecord{
-			SrcAddr:  metadata.SrcAddr(),
-			DestAddr: metadata.DestAddr(),
-			UA:       originalUA,
-		})
-		decision.Action = action.DirectAction
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Hit User-Agent whitelist: %s, add to cache", ua))
 		return decision
 	}
-	decision.Action = r.rewriteAction
-	return decision
-}
 
-func (r *Rewriter) Rewrite(metadata *common.Metadata, decision *RewriteDecision) *http.Request {
-	if !decision.ShouldRewrite() {
-		return metadata.Request
+	if r.uaRegex == nil {
+		decision.Action = r.rewriteAction
+		return decision
 	}
 
-	originalValue, rewritedValue := decision.Action.Execute(metadata)
+	match, err := r.uaRegex.MatchString(ua)
+	if err != nil {
+		log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("r.uaRegex.MatchString: %s", err.Error()))
+		match = true
+	}
 
-	r.Recorder.AddRecord(&statistics.RewriteRecord{
-		Host:       metadata.DestAddr(),
-		OriginalUA: originalValue,
-		MockedUA:   rewritedValue,
-	})
-	return metadata.Request
+	if !match {
+		decision.Action = action.DirectAction
+		log.LogDebugWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Not hit User-Agent regex: %s", ua))
+		return decision
+	}
+
+	decision.Action = r.rewriteAction
+	return decision
 }

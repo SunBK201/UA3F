@@ -18,7 +18,7 @@ type RewriteResult struct {
 
 // shouldRewriteUA determines if the User-Agent should be rewritten
 func (r *Rewriter) shouldRewriteUA(srcAddr, dstAddr string, ua string) bool {
-	if r.pattern == "" {
+	if r.uaRegex == nil {
 		return true
 	}
 

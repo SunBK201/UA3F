@@ -12,6 +12,5 @@ const (
 
 type Action interface {
 	Type() ActionType
-	Execute(metadata *Metadata) (string, string)
-	Header() string
+	Execute(metadata *Metadata) error
 }

@@ -7,9 +7,11 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/log"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type ReplaceRegex struct {
+	recorder      *statistics.Recorder
 	replaceRegex  *regexp2.Regexp
 	replaceHeader string
 	replaceValue  string
@@ -19,25 +21,43 @@ func (r *ReplaceRegex) Type() common.ActionType {
 	return common.ActionReplaceRegex
 }
 
-func (r *ReplaceRegex) Execute(metadata *common.Metadata) (string, string) {
+func (r *ReplaceRegex) Execute(metadata *common.Metadata) error {
 	header := metadata.Request.Header.Get(r.replaceHeader)
+
+	if header == "" {
+		return nil
+	}
 
 	replaceValue, err := r.replaceRegex.Replace(header, r.replaceValue, -1, -1)
 	if err != nil {
-		slog.Error("r.matchRegex.Replace", "error", err)
+		slog.Error("r.replaceRegex.Replace", "error", err)
 		replaceValue = r.replaceValue
 	}
 
-	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.replaceHeader, header, replaceValue))
 	metadata.Request.Header.Set(r.replaceHeader, replaceValue)
-	return header, replaceValue
+
+	if r.recorder != nil {
+		r.recorder.AddRecord(&statistics.RewriteRecord{
+			Host:       metadata.DestAddr(),
+			OriginalUA: header,
+			MockedUA:   replaceValue,
+		})
+	}
+	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.replaceHeader, header, replaceValue))
+
+	return nil
 }
 
-func (r *ReplaceRegex) Header() string {
-	return r.replaceHeader
+func (r *ReplaceRegex) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(r.Type())),
+		slog.String("header", r.replaceHeader),
+		slog.String("regex", r.replaceRegex.String()),
+		slog.String("value", r.replaceValue),
+	)
 }
 
-func NewReplaceRegex(replaceHeader, replaceRegex string, replaceValue string) *ReplaceRegex {
+func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex string, replaceValue string) *ReplaceRegex {
 	regex, err := regexp2.Compile("(?i)"+replaceRegex, regexp2.None)
 	if err != nil {
 		slog.Error("regexp2.Compile", "error", err)
@@ -45,6 +65,7 @@ func NewReplaceRegex(replaceHeader, replaceRegex string, replaceValue string) *R
 	}
 
 	return &ReplaceRegex{
+		recorder:      recorder,
 		replaceRegex:  regex,
 		replaceHeader: replaceHeader,
 		replaceValue:  replaceValue,

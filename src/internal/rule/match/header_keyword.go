@@ -7,6 +7,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type HeaderKeyword struct {
@@ -27,8 +28,17 @@ func (h *HeaderKeyword) Action() common.Action {
 	return h.action
 }
 
-func NewHeaderKeyword(rule *config.Rule) *HeaderKeyword {
-	action := action.NewAction(rule)
+func (h *HeaderKeyword) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(h.Type())),
+		slog.String("header", h.header),
+		slog.String("keyword", h.keyword),
+		slog.Any("action", h.action),
+	)
+}
+
+func NewHeaderKeyword(rule *config.Rule, recorder *statistics.Recorder) *HeaderKeyword {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil

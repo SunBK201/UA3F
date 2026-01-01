@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
@@ -115,7 +116,7 @@ func (s *Server) HandleClient(client net.Conn) {
 		return
 	}
 
-	s.ServeConnLink(&base.ConnLink{
+	s.ServeConnLink(&common.ConnLink{
 		LConn: client,
 		RConn: target,
 		LAddr: client.RemoteAddr().String(),

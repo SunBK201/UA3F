@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/sniff"
@@ -154,10 +155,12 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			s.TrySkip(c)
 		}
 
-		req = s.Rewriter.Rewrite(metadata, decision)
+		if err = decision.Action.Execute(metadata); err != nil {
+			log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Action.Execute: %v", err))
+		}
 
-		if err := req.Write(c.RConn); err != nil {
-			return fmt.Errorf("req.Write: %w", err)
+		if err := metadata.Request.Write(c.RConn); err != nil {
+			return fmt.Errorf("Request.Write: %w", err)
 		}
 
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {

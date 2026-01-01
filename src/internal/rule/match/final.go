@@ -6,6 +6,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
 type final struct {
@@ -24,8 +25,15 @@ func (f *final) Action() common.Action {
 	return f.action
 }
 
-func NewFinal(rule *config.Rule) *final {
-	action := action.NewAction(rule)
+func (f *final) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", string(f.Type())),
+		slog.Any("action", f.action),
+	)
+}
+
+func NewFinal(rule *config.Rule, recorder *statistics.Recorder) *final {
+	action := action.NewAction(rule, recorder)
 	if action == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
