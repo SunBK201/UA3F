@@ -7,7 +7,10 @@ import (
 )
 
 type Rewriter interface {
-	Rewrite(metadata *common.Metadata) (decision *RewriteDecision)
+	RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision)
+	RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision)
+	ServeRequest() bool
+	ServeResponse() bool
 }
 
 type RewriteDecision struct {

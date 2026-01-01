@@ -73,8 +73,9 @@ type Rule struct {
 
 	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD"`
 
-	RewriteHeader string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"`
-	RewriteValue  string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action ADD"`
+	RewriteHeader    string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"`
+	RewriteValue     string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action ADD"`
+	RewriteDirection string `json:"rewrite_direction,omitempty" yaml:"rewrite-direction,omitempty" validate:"omitempty,oneof=REQUEST RESPONSE"`
 
 	RewriteRegex string `json:"rewrite_regex,omitempty" yaml:"rewrite-regex,omitempty" validate:"required_if=Action REPLACE-REGEX"`
 

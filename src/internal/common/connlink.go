@@ -5,14 +5,21 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"sync"
+
+	"github.com/sunbk201/ua3f/internal/sniff"
 )
 
 type ConnLink struct {
-	LConn   net.Conn
-	RConn   net.Conn
-	LAddr   string
-	RAddr   string
-	Skipped bool
+	LConn    net.Conn
+	RConn    net.Conn
+	LAddr    string
+	RAddr    string
+	Skipped  bool
+	Protocol sniff.Protocol
+	Metadata *Metadata
+
+	SniffDone *sync.WaitGroup // For waiting ProcessLR First Sniff
 }
 
 var one = make([]byte, 1)

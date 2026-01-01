@@ -11,7 +11,7 @@ import (
 type DirectRewriter struct {
 }
 
-func (r *DirectRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *DirectRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
 	ua := metadata.UserAgent()
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", ua))
 
@@ -23,6 +23,20 @@ func (r *DirectRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDe
 		log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("decision.Action.Execute: %s", err.Error()))
 	}
 	return decision
+}
+
+func (r *DirectRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
+	return &RewriteDecision{
+		Action: action.DirectAction,
+	}
+}
+
+func (r *DirectRewriter) ServeRequest() bool {
+	return false
+}
+
+func (r *DirectRewriter) ServeResponse() bool {
+	return false
 }
 
 func NewDirectRewriter() *DirectRewriter {

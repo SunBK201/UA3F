@@ -36,6 +36,10 @@ func (d *Direct) SetRecorder(recorder *statistics.Recorder) {
 	d.recorder = recorder
 }
 
+func (d *Direct) Direction() common.Direction {
+	return common.DirectionDual
+}
+
 func (d *Direct) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("type", string(d.Type())),

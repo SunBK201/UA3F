@@ -9,6 +9,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
+	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -24,7 +25,7 @@ var (
 	uaTag = []byte("\r\nUser-Agent:")
 )
 
-func (r *PacketRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *PacketRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
 	if r.rewriteMode == config.RewriteModeDirect {
 		return &RewriteDecision{
 			Modified: false,
@@ -41,6 +42,20 @@ func (r *PacketRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDe
 		HasUA:    hasUA,
 		NeedSkip: skip,
 	}
+}
+
+func (r *PacketRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
+	return &RewriteDecision{
+		Action: action.DirectAction,
+	}
+}
+
+func (r *PacketRewriter) ServeRequest() bool {
+	return true
+}
+
+func (r *PacketRewriter) ServeResponse() bool {
+	return false
 }
 
 func NewPacketRewriter(cfg *config.Config, recorder *statistics.Recorder) (*PacketRewriter, error) {

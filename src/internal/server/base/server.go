@@ -42,12 +42,39 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	defer s.Recorder.RemoveRecord(record)
 	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 
-	go connLink.CopyRL()
+	connLink.Metadata = &common.Metadata{
+		ConnLink: connLink,
+	}
 
-	if s.Cfg.RewriteMode == config.RewriteModeDirect || s.Cache.Contains(connLink.RAddr) {
+	switch s.Cfg.RewriteMode {
+	case config.RewriteModeDirect:
+		go connLink.CopyRL()
 		connLink.CopyLR()
-	} else {
-		_ = s.ProcessLR(connLink)
+	case config.RewriteModeGlobal:
+		go connLink.CopyRL()
+		if s.Cache.Contains(connLink.RAddr) {
+			connLink.CopyLR()
+		} else {
+			_ = s.ProcessLR(connLink)
+		}
+	case config.RewriteModeRule:
+		if s.Rewriter.ServeResponse() {
+			connLink.SniffDone = &sync.WaitGroup{}
+			connLink.SniffDone.Add(1)
+			go func() {
+				_ = s.ProcessRL(connLink)
+			}()
+		} else {
+			go connLink.CopyRL()
+		}
+		if s.Rewriter.ServeRequest() {
+			_ = s.ProcessLR(connLink)
+		} else {
+			connLink.CopyLR()
+		}
+	default:
+		go connLink.CopyRL()
+		connLink.CopyLR()
 	}
 }
 
@@ -77,6 +104,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
 			s.Cache.Add(c.RAddr, struct{}{})
 			c.LogInfo("TLS client hello detected")
+			c.Protocol = sniff.HTTPS
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.HTTPS,
 				SrcAddr:  c.LAddr,
@@ -88,7 +116,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 	var isHTTP bool
 
-	if isHTTP, err = sniff.SniffHTTP(reader); err != nil {
+	if isHTTP, err = sniff.SniffHTTPRequest(reader); err != nil {
 		err = fmt.Errorf("sniff.SniffHTTP: %w", err)
 		return
 	}
@@ -96,6 +124,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		s.Cache.Add(c.RAddr, struct{}{})
 		c.LogInfo("Sniff first request is not http, switch to direct forward")
 		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
+			c.Protocol = sniff.TLS
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.TLS,
 				SrcAddr:  c.LAddr,
@@ -105,21 +134,23 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		return
 	}
 
+	if s.Cfg.RewriteMode == config.RewriteModeRule && s.Rewriter.ServeResponse() {
+		c.SniffDone.Done()
+	}
+
+	c.Protocol = sniff.HTTP
 	s.Recorder.AddRecord(&statistics.ConnectionRecord{
 		Protocol: sniff.HTTP,
 		SrcAddr:  c.LAddr,
 		DestAddr: c.RAddr,
 	})
 
-	metadata := &common.Metadata{
-		ConnLink: c,
-	}
-
 	var req *http.Request
 
 	for {
 		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
 			err = fmt.Errorf("sniff.SniffHTTPFast: %w", err)
+			c.Protocol = sniff.TCP
 			s.Recorder.AddRecord(
 				&statistics.ConnectionRecord{
 					Protocol: sniff.TCP,
@@ -139,10 +170,10 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			return
 		}
 
-		metadata.UpdateRequest(req)
+		c.Metadata.UpdateRequest(req)
 
-		decision := s.Rewriter.Rewrite(metadata)
-		if decision.Action == action.DropAction {
+		decision := s.Rewriter.RewriteRequest(c.Metadata)
+		if decision.Action == action.DropRequestAction {
 			continue
 		}
 		if decision.NeedCache {
@@ -152,12 +183,13 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			s.TrySkip(c)
 		}
 
-		if err := metadata.Request.Write(c.RConn); err != nil {
+		if err := c.Metadata.Request.Write(c.RConn); err != nil {
 			return fmt.Errorf("Request.Write: %w", err)
 		}
 
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
 			c.LogInfo("websocket upgrade detected, switch to direct forward")
+			c.Protocol = sniff.WebSocket
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
 				SrcAddr:  c.LAddr,
@@ -168,6 +200,71 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 		if c.Skipped {
 			return
+		}
+	}
+}
+
+func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
+	reader := s.BufioReaderPool.Get().(*bufio.Reader)
+	reader.Reset(c.RConn)
+	defer func() {
+		reader.Reset(nil)
+		s.BufioReaderPool.Put(reader)
+	}()
+
+	defer func() {
+		if err != nil {
+			c.LogDebugf("ProcessRL: %s", err.Error())
+		}
+		if _, err = io.CopyBuffer(c.LConn, reader, one); err != nil {
+			c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+		}
+		_ = c.CloseRL()
+	}()
+
+	if c.RPort() == "443" {
+		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
+			return
+		}
+	}
+
+	c.SniffDone.Wait()
+	if c.Protocol != sniff.HTTP {
+		return
+	}
+
+	var (
+		isHTTP bool
+		resp   *http.Response
+	)
+
+	for {
+		if isHTTP, err = sniff.SniffHTTPResponse(reader); err != nil {
+			err = fmt.Errorf("sniff.SniffHTTPResponse: %w", err)
+			return
+		}
+		if !isHTTP {
+			c.LogWarn("sniff subsequent request is not http, switch to direct forward")
+			return
+		}
+
+		if c.Protocol != sniff.HTTP {
+			return
+		}
+
+		if resp, err = http.ReadResponse(reader, nil); err != nil {
+			err = fmt.Errorf("http.ReadResponse: %w", err)
+			return
+		}
+
+		c.Metadata.UpdateResponse(resp)
+
+		if decision := s.Rewriter.RewriteResponse(c.Metadata); decision.Action == action.DropResponseAction {
+			continue
+		}
+
+		if err := c.Metadata.Response.Write(c.LConn); err != nil {
+			return fmt.Errorf("Response.Write: %w", err)
 		}
 	}
 }

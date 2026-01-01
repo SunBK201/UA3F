@@ -25,7 +25,7 @@ func SniffProtocol(reader *bufio.Reader) (Protocol, error) {
 	if isTLS, _ := SniffTLS(reader); isTLS {
 		return TLS, nil
 	}
-	if isHTTP, _ := SniffHTTP(reader); isHTTP {
+	if isHTTP, _ := SniffHTTPRequest(reader); isHTTP {
 		return HTTP, nil
 	}
 	if isSSH, _ := SniffSSH(reader); isSSH {

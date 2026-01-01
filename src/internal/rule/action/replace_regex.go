@@ -16,6 +16,7 @@ type ReplaceRegex struct {
 	replaceHeader string
 	replaceValue  string
 	contine       bool
+	direction     common.Direction
 }
 
 func (r *ReplaceRegex) Type() common.ActionType {
@@ -23,7 +24,22 @@ func (r *ReplaceRegex) Type() common.ActionType {
 }
 
 func (r *ReplaceRegex) Execute(metadata *common.Metadata) (bool, error) {
-	header := metadata.Request.Header.Get(r.replaceHeader)
+	var header string
+	switch r.direction {
+	case common.DirectionRequest:
+		if metadata.Request == nil {
+			return r.contine, fmt.Errorf("Request is nil")
+		}
+		header = metadata.Request.Header.Get(r.replaceHeader)
+	case common.DirectionResponse:
+		if metadata.Response == nil {
+			return r.contine, fmt.Errorf("Response is nil")
+		}
+		header = metadata.Response.Header.Get(r.replaceHeader)
+	case common.DirectionDual:
+	default:
+		return r.contine, fmt.Errorf("Unknown direction %s", r.direction)
+	}
 
 	if header == "" {
 		return r.contine, nil
@@ -35,7 +51,18 @@ func (r *ReplaceRegex) Execute(metadata *common.Metadata) (bool, error) {
 		replaceValue = r.replaceValue
 	}
 
-	metadata.Request.Header.Set(r.replaceHeader, replaceValue)
+	switch r.direction {
+	case common.DirectionRequest:
+		if metadata.Request == nil {
+			return r.contine, fmt.Errorf("Request is nil")
+		}
+		metadata.Request.Header.Set(r.replaceHeader, replaceValue)
+	case common.DirectionResponse:
+		if metadata.Response == nil {
+			return r.contine, fmt.Errorf("Response is nil")
+		}
+		metadata.Response.Header.Set(r.replaceHeader, replaceValue)
+	}
 
 	if r.recorder != nil {
 		r.recorder.AddRecord(&statistics.RewriteRecord{
@@ -49,6 +76,10 @@ func (r *ReplaceRegex) Execute(metadata *common.Metadata) (bool, error) {
 	return r.contine, nil
 }
 
+func (r *ReplaceRegex) Direction() common.Direction {
+	return r.direction
+}
+
 func (r *ReplaceRegex) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("type", string(r.Type())),
@@ -56,10 +87,11 @@ func (r *ReplaceRegex) LogValue() slog.Value {
 		slog.String("regex", r.replaceRegex.String()),
 		slog.String("value", r.replaceValue),
 		slog.Bool("continue", r.contine),
+		slog.String("direction", string(r.direction)),
 	)
 }
 
-func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex string, replaceValue string, contine bool) *ReplaceRegex {
+func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex string, replaceValue string, contine bool, direction common.Direction) *ReplaceRegex {
 	regex, err := regexp2.Compile("(?i)"+replaceRegex, regexp2.None)
 	if err != nil {
 		slog.Error("regexp2.Compile", "error", err)
@@ -72,5 +104,6 @@ func NewReplaceRegex(recorder *statistics.Recorder, replaceHeader, replaceRegex 
 		replaceHeader: replaceHeader,
 		replaceValue:  replaceValue,
 		contine:       contine,
+		direction:     direction,
 	}
 }

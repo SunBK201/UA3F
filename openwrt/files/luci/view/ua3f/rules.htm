@@ -427,6 +427,35 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             actionValue.appendChild(actionField);
             section.appendChild(actionValue);
             
+            // Direction (for all actions except DIRECT)
+            var directionValue = document.createElement('div');
+            directionValue.className = 'cbi-value';
+            directionValue.id = 'direction_container';
+            var directionLabel = document.createElement('label');
+            directionLabel.className = 'cbi-value-title';
+            directionLabel.textContent = '<%:Direction%>';
+            directionValue.appendChild(directionLabel);
+            var directionField = document.createElement('div');
+            directionField.className = 'cbi-value-field';
+            var directionSelect = document.createElement('select');
+            directionSelect.className = 'cbi-input-select';
+            directionSelect.id = 'modal_direction';
+            var directions = [
+                ['REQUEST', '<%:HTTP Request%>'],
+                ['RESPONSE', '<%:HTTP Response%>']
+            ];
+            directions.forEach(function(d) {
+                var option = document.createElement('option');
+                option.value = d[0];
+                option.textContent = d[1];
+                if (rule && rule.rewrite_direction === d[0]) option.selected = true;
+                else if (!rule && d[0] === 'REQUEST') option.selected = true;
+                directionSelect.appendChild(option);
+            });
+            directionField.appendChild(directionSelect);
+            directionValue.appendChild(directionField);
+            section.appendChild(directionValue);
+            
             // Rewrite Header (for REPLACE and REPLACE-REGEX actions)
             var headerValue = document.createElement('div');
             headerValue.className = 'cbi-value';
@@ -637,6 +666,15 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     continueContainer.style.display = 'none';
                 }
             }
+            // Show direction for all actions except DIRECT
+            var directionContainer = document.getElementById('direction_container');
+            if (directionContainer) {
+                if (action !== 'DIRECT') {
+                    directionContainer.style.display = '';
+                } else {
+                    directionContainer.style.display = 'none';
+                }
+            }
         },
         
         closeDialog: function() {
@@ -655,6 +693,8 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
             var matchHeader = matchHeaderInput ? (matchHeaderInput.value || 'User-Agent') : '';
             var continueCheckboxEl = document.getElementById('modal_continue');
             var continueChecked = continueCheckboxEl ? continueCheckboxEl.checked : false;
+            var directionSelect = document.getElementById('modal_direction');
+            var direction = directionSelect ? directionSelect.value : 'REQUEST';
             
             var newRule;
             if (isFinal) {
@@ -667,6 +707,10 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                     description: document.getElementById('modal_rule_description').value,
                     enabled: this.rules[index].enabled
                 };
+                // Add direction for non-DIRECT actions
+                if (newRule.action !== 'DIRECT') {
+                    newRule.rewrite_direction = direction;
+                }
                 // Add rewrite_regex for REPLACE-REGEX action
                 if (newRule.action === 'REPLACE-REGEX') {
                     newRule.rewrite_regex = rewriteRegex;
@@ -696,6 +740,11 @@ local rules_data = uci:get("ua3f", "main", "rules") or "[]"
                 // Add continue for REPLACE, REPLACE-REGEX, ADD and DELETE actions
                 if (newRule.action === 'REPLACE' || newRule.action === 'REPLACE-REGEX' || newRule.action === 'ADD' || newRule.action === 'DELETE') {
                     newRule.continue = continueChecked;
+                }
+                
+                // Add direction for non-DIRECT actions
+                if (newRule.action !== 'DIRECT') {
+                    newRule.rewrite_direction = direction;
                 }
                 
                 // Validate required fields

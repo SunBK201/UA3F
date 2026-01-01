@@ -78,8 +78,8 @@ func parseRequestLine(line string) (method, requestURI, proto string, ok bool) {
 	return method, requestURI, proto, true
 }
 
-// SniffHTTP peeks the first few bytes and checks for a known HTTP method prefix.
-func SniffHTTP(reader *bufio.Reader) (bool, error) {
+// SniffHTTPRequest peeks the first few bytes and checks for a known HTTP method prefix.
+func SniffHTTPRequest(reader *bufio.Reader) (bool, error) {
 	// Fast check: peek first word to see if it's a known HTTP method
 	beginHTTP, err := beginWithHTTPMethod(reader)
 	if err != nil {
@@ -99,6 +99,18 @@ func SniffHTTP(reader *bufio.Reader) (bool, error) {
 		return false, nil
 	}
 	return beginHTTP, nil
+}
+
+func SniffHTTPResponse(reader *bufio.Reader) (bool, error) {
+	line, err := reader.Peek(6)
+	if err != nil {
+		return false, err
+	}
+	version := string(line)
+	if strings.HasPrefix(version, "HTTP/1") {
+		return true, nil
+	}
+	return false, nil
 }
 
 func SniffHTTPFast(reader *bufio.Reader) (bool, error) {

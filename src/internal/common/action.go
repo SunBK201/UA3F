@@ -11,7 +11,16 @@ const (
 	ActionDrop         ActionType = "DROP"
 )
 
+type Direction string
+
+const (
+	DirectionDual     Direction = "DUAL"
+	DirectionRequest  Direction = "REQUEST"
+	DirectionResponse Direction = "RESPONSE"
+)
+
 type Action interface {
 	Type() ActionType
 	Execute(metadata *Metadata) (bool, error)
+	Direction() Direction
 }

@@ -21,7 +21,7 @@ func (i *IPCIDR) Type() common.RuleType {
 }
 
 func (i *IPCIDR) Match(metadata *common.Metadata) bool {
-	if i.ipNet == nil {
+	if i.ipNet == nil || metadata.ConnLink == nil {
 		return false
 	}
 	ip := net.ParseIP(metadata.ConnLink.RIP())

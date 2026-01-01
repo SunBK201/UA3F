@@ -10,9 +10,10 @@ import (
 )
 
 type Delete struct {
-	recorder *statistics.Recorder
-	header   string
-	contine  bool
+	recorder  *statistics.Recorder
+	header    string
+	contine   bool
+	direction common.Direction
 }
 
 func (d *Delete) Type() common.ActionType {
@@ -20,13 +21,29 @@ func (d *Delete) Type() common.ActionType {
 }
 
 func (d *Delete) Execute(metadata *common.Metadata) (bool, error) {
-	header := metadata.Request.Header.Get(d.header)
+	var header string
+	switch d.direction {
+	case common.DirectionRequest:
+		if metadata.Request == nil {
+			return d.contine, fmt.Errorf("request is nil")
+		}
+		header = metadata.Request.Header.Get(d.header)
+		metadata.Request.Header.Del(d.header)
+	case common.DirectionResponse:
+		if metadata.Response == nil {
+			return d.contine, fmt.Errorf("response is nil")
+		}
+		header = metadata.Response.Header.Get(d.header)
+		metadata.Response.Header.Del(d.header)
+	case common.DirectionDual:
+	default:
+		return d.contine, fmt.Errorf("unknown direction %s", d.direction)
+	}
 
 	if header == "" {
 		return d.contine, nil
 	}
 
-	metadata.Request.Header.Set(d.header, "")
 	if d.recorder != nil {
 		d.recorder.AddRecord(&statistics.RewriteRecord{
 			Host:       metadata.DestAddr(),
@@ -34,9 +51,13 @@ func (d *Delete) Execute(metadata *common.Metadata) (bool, error) {
 			MockedUA:   "",
 		})
 	}
-
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Delete Header %s (%s)", d.header, header))
+
 	return d.contine, nil
+}
+
+func (d *Delete) Direction() common.Direction {
+	return d.direction
 }
 
 func (d *Delete) LogValue() slog.Value {
@@ -44,13 +65,15 @@ func (d *Delete) LogValue() slog.Value {
 		slog.String("type", string(d.Type())),
 		slog.String("header", d.header),
 		slog.Bool("continue", d.contine),
+		slog.String("direction", string(d.direction)),
 	)
 }
 
-func NewDelete(recorder *statistics.Recorder, header string, contine bool) *Delete {
+func NewDelete(recorder *statistics.Recorder, header string, contine bool, direction common.Direction) *Delete {
 	return &Delete{
-		recorder: recorder,
-		header:   header,
-		contine:  contine,
+		recorder:  recorder,
+		header:    header,
+		contine:   contine,
+		direction: direction,
 	}
 }

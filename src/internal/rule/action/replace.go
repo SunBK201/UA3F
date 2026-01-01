@@ -10,10 +10,11 @@ import (
 )
 
 type Replace struct {
-	recorder *statistics.Recorder
-	header   string
-	value    string
-	contine  bool
+	recorder  *statistics.Recorder
+	header    string
+	value     string
+	contine   bool
+	direction common.Direction
 }
 
 func (r *Replace) Type() common.ActionType {
@@ -21,13 +22,28 @@ func (r *Replace) Type() common.ActionType {
 }
 
 func (r *Replace) Execute(metadata *common.Metadata) (bool, error) {
-	header := metadata.Request.Header.Get(r.header)
+	var header string
+	switch r.direction {
+	case common.DirectionRequest:
+		if metadata.Request == nil {
+			return r.contine, fmt.Errorf("Request is nil")
+		}
+		header = metadata.Request.Header.Get(r.header)
+		metadata.Request.Header.Set(r.header, r.value)
+	case common.DirectionResponse:
+		if metadata.Response == nil {
+			return r.contine, fmt.Errorf("Response is nil")
+		}
+		header = metadata.Response.Header.Get(r.header)
+		metadata.Response.Header.Set(r.header, r.value)
+	case common.DirectionDual:
+	default:
+		return r.contine, fmt.Errorf("Unknown direction %s", r.direction)
+	}
 
 	if header == "" {
 		return r.contine, nil
 	}
-
-	metadata.Request.Header.Set(r.header, r.value)
 
 	if r.recorder != nil {
 		r.recorder.AddRecord(&statistics.RewriteRecord{
@@ -37,7 +53,12 @@ func (r *Replace) Execute(metadata *common.Metadata) (bool, error) {
 		})
 	}
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Rewrite %s from (%s) to (%s)", r.header, header, r.value))
+
 	return r.contine, nil
+}
+
+func (r *Replace) Direction() common.Direction {
+	return r.direction
 }
 
 func (r *Replace) LogValue() slog.Value {
@@ -46,14 +67,16 @@ func (r *Replace) LogValue() slog.Value {
 		slog.String("header", r.header),
 		slog.String("value", r.value),
 		slog.Bool("continue", r.contine),
+		slog.String("direction", string(r.direction)),
 	)
 }
 
-func NewReplace(recorder *statistics.Recorder, header, value string, contine bool) *Replace {
+func NewReplace(recorder *statistics.Recorder, header, value string, contine bool, direction common.Direction) *Replace {
 	return &Replace{
-		recorder: recorder,
-		header:   header,
-		value:    value,
-		contine:  contine,
+		recorder:  recorder,
+		header:    header,
+		value:     value,
+		contine:   contine,
+		direction: direction,
 	}
 }

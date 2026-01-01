@@ -9,7 +9,8 @@ import (
 )
 
 type Drop struct {
-	recorder *statistics.Recorder
+	recorder  *statistics.Recorder
+	direction common.Direction
 }
 
 func (d *Drop) Type() common.ActionType {
@@ -21,14 +22,20 @@ func (d *Drop) Execute(metadata *common.Metadata) (bool, error) {
 	return false, nil
 }
 
+func (d *Drop) Direction() common.Direction {
+	return d.direction
+}
+
 func (d *Drop) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("type", string(d.Type())),
+		slog.Any("direction", d.direction),
 	)
 }
 
-func NewDrop(recorder *statistics.Recorder) *Drop {
+func NewDrop(recorder *statistics.Recorder, direction common.Direction) *Drop {
 	return &Drop{
-		recorder: recorder,
+		recorder:  recorder,
+		direction: direction,
 	}
 }

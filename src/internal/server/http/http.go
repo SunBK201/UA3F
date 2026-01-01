@@ -81,7 +81,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 
 	slog.Info("HTTP proxy request", slog.String("srcAddr", metadata.SrcAddr()), slog.String("destAddr", metadata.DestAddr()))
 
-	req, err := s.rewrite(metadata)
+	req, err := s.rewriteRequest(metadata)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -89,12 +89,17 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	metadata.UpdateResponse(resp)
+	resp, err = s.rewriteResponse(metadata)
+	if err != nil {
+		return
+	}
 
 	for k, v := range resp.Header {
 		for _, vv := range v {
@@ -105,9 +110,9 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	_, _ = io.Copy(w, resp.Body)
 }
 
-func (s *Server) rewrite(metadata *common.Metadata) (*http.Request, error) {
-	decision := s.Rewriter.Rewrite(metadata)
-	if decision.Action == action.DropAction {
+func (s *Server) rewriteRequest(metadata *common.Metadata) (*http.Request, error) {
+	decision := s.Rewriter.RewriteRequest(metadata)
+	if decision.Action == action.DropRequestAction {
 		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
 	}
@@ -115,6 +120,15 @@ func (s *Server) rewrite(metadata *common.Metadata) (*http.Request, error) {
 		s.Cache.Add(metadata.DestAddr(), struct{}{})
 	}
 	return metadata.Request, nil
+}
+
+func (s *Server) rewriteResponse(metadata *common.Metadata) (*http.Response, error) {
+	decision := s.Rewriter.RewriteResponse(metadata)
+	if decision.Action == action.DropResponseAction {
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Response dropped by rule")
+		return nil, fmt.Errorf("response dropped by rule")
+	}
+	return metadata.Response, nil
 }
 
 func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
@@ -142,9 +156,10 @@ func (s *Server) handleTunneling(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	s.ServeConnLink(&common.ConnLink{
-		LConn: src,
-		RConn: dest,
-		LAddr: req.RemoteAddr,
-		RAddr: destAddr,
+		LConn:    src,
+		RConn:    dest,
+		LAddr:    req.RemoteAddr,
+		RAddr:    destAddr,
+		Protocol: sniff.TCP,
 	})
 }

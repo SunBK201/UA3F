@@ -346,3 +346,12 @@ msgstr "混淆数据包的 TTL 值"
 
 msgid "TTL value for injected packets"
 msgstr "注入混淆数据包的 TTL 值，谨慎设置过大"
+
+msgid "Direction"
+msgstr "重写方向"
+
+msgid "HTTP Request"
+msgstr "HTTP 请求"
+
+msgid "HTTP Response"
+msgstr "HTTP 响应"

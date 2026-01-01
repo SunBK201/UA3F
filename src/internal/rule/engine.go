@@ -14,7 +14,9 @@ import (
 )
 
 type Engine struct {
-	rules []common.Rule
+	rules         []common.Rule
+	ServeRequest  bool
+	ServeResponse bool
 }
 
 func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Recorder) (*Engine, error) {
@@ -82,7 +84,17 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 		}
 	}
 
-	return &Engine{rules: rules}, nil
+	var serveRequest, serveResponse bool
+	for _, rule := range rules {
+		if rule.Action().Direction() == common.DirectionRequest {
+			serveRequest = true
+		}
+		if rule.Action().Direction() == common.DirectionResponse {
+			serveResponse = true
+		}
+	}
+
+	return &Engine{rules: rules, ServeRequest: serveRequest, ServeResponse: serveResponse}, nil
 }
 
 func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
@@ -97,12 +109,15 @@ func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
 	return nil
 }
 
-func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int) (common.Rule, int) {
+func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int, direction common.Direction) (common.Rule, int) {
 	if startIndex < 0 || startIndex >= len(e.rules) {
 		return nil, -1
 	}
 	for i := startIndex; i < len(e.rules); i++ {
 		rule := e.rules[i]
+		if rule.Action().Direction() != common.DirectionDual && rule.Action().Direction() != direction {
+			continue
+		}
 		matched := rule.Match(metadata)
 		if matched {
 			slog.Info("Rule matched", slog.Any("rule", rule), slog.Any("metadata", metadata))

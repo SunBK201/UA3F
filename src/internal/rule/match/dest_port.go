@@ -19,7 +19,7 @@ func (d *DestPort) Type() common.RuleType {
 }
 
 func (d *DestPort) Match(metadata *common.Metadata) bool {
-	return metadata.ConnLink.RPort() == d.port
+	return metadata.DestPort() == d.port
 }
 
 func (d *DestPort) Action() common.Action {

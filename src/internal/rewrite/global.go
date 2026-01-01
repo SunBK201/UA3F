@@ -22,7 +22,7 @@ type GlobalRewriter struct {
 	Recorder *statistics.Recorder
 }
 
-func (r *GlobalRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
 	defer func() {
 		_, err := decision.Action.Execute(metadata)
 		if err != nil {
@@ -74,6 +74,20 @@ func (r *GlobalRewriter) Rewrite(metadata *common.Metadata) (decision *RewriteDe
 	return decision
 }
 
+func (r *GlobalRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
+	return &RewriteDecision{
+		Action: action.DirectAction,
+	}
+}
+
+func (r *GlobalRewriter) ServeRequest() bool {
+	return true
+}
+
+func (r *GlobalRewriter) ServeResponse() bool {
+	return false
+}
+
 func (r *GlobalRewriter) inWhitelist(ua string) bool {
 	for _, w := range r.whitelist {
 		if w == ua {
@@ -96,9 +110,9 @@ func NewGlobalRewriter(cfg *config.Config, recorder *statistics.Recorder) (*Glob
 
 	var rewriteAction common.Action
 	if cfg.UserAgentPartialReplace && cfg.UserAgentRegex != "" {
-		rewriteAction = action.NewReplaceRegex(recorder, "User-Agent", cfg.UserAgentRegex, cfg.UserAgent, false)
+		rewriteAction = action.NewReplaceRegex(recorder, "User-Agent", cfg.UserAgentRegex, cfg.UserAgent, false, common.DirectionRequest)
 	} else {
-		rewriteAction = action.NewReplace(recorder, "User-Agent", cfg.UserAgent, false)
+		rewriteAction = action.NewReplace(recorder, "User-Agent", cfg.UserAgent, false, common.DirectionRequest)
 	}
 	if rewriteAction == nil {
 		return nil, fmt.Errorf("failed to create rewrite action")

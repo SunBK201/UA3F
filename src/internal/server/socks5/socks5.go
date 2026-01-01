@@ -17,6 +17,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
+	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -160,10 +161,11 @@ func (s *Server) handleConnect(src net.Conn, req *socks.Request) error {
 	}
 
 	s.ServeConnLink(&common.ConnLink{
-		LConn: src,
-		RConn: dest,
-		LAddr: srcAddr,
-		RAddr: destAddr,
+		LConn:    src,
+		RConn:    dest,
+		LAddr:    srcAddr,
+		RAddr:    destAddr,
+		Protocol: sniff.TCP,
 	})
 
 	return nil
@@ -203,10 +205,11 @@ func (s *Server) handleBind(conn net.Conn) error {
 	}
 
 	s.ServeConnLink(&common.ConnLink{
-		LConn: conn,
-		RConn: newConn,
-		LAddr: srcAddr,
-		RAddr: newConn.RemoteAddr().String(),
+		LConn:    conn,
+		RConn:    newConn,
+		LAddr:    srcAddr,
+		RAddr:    newConn.RemoteAddr().String(),
+		Protocol: sniff.TCP,
 	})
 	return nil
 }

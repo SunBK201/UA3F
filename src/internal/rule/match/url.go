@@ -28,7 +28,6 @@ func (h *URLRegex) Match(metadata *common.Metadata) bool {
 		scheme = "https"
 	}
 	url := scheme + "://" + req.Host + req.URL.RequestURI()
-	slog.Info("URLRegex Match", slog.String("url", url))
 	match, _ := h.regex.MatchString(url)
 	return match
 }

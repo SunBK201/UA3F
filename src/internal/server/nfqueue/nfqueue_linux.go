@@ -91,7 +91,7 @@ func (s *Server) handlePacket(packet *common.Packet) {
 		log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, "Destination in cache, direct forwrard")
 		return
 	}
-	result := s.Rewriter.Rewrite(&common.Metadata{
+	result := s.Rewriter.RewriteRequest(&common.Metadata{
 		Packet: packet,
 	})
 	if result.NeedSkip {
