@@ -134,6 +134,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v5
+        if: github.ref_type != 'tag'
+
       - name: Download OpenWrt packages
         uses: actions/download-artifact@v4
         with:
@@ -178,6 +181,6 @@ jobs:
           draft: true
           prerelease: true
           tag_name: nightly-${{ steps.get_version.outputs.VERSION }}
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
