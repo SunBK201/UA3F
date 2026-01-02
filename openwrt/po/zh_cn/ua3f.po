@@ -105,7 +105,7 @@ msgid "Modified Header"
 msgstr "重写后 Header"
 
 msgid "Pass-Through Statistics"
-msgstr "放行次数实时统计"
+msgstr "请求 Header 实时统计"
 
 msgid "Last Source Address"
 msgstr "最近访问源地址"

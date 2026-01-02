@@ -93,6 +93,19 @@ func (m *Metadata) Host() string {
 	return host
 }
 
+func (m *Metadata) URL() string {
+	if m.Request == nil {
+		return ""
+	}
+	req := m.Request
+	scheme := "http"
+	if req.TLS != nil {
+		scheme = "https"
+	}
+	url := scheme + "://" + req.Host + req.URL.RequestURI()
+	return url
+}
+
 func (m *Metadata) UserAgent() string {
 	if m.Request == nil {
 		return ""

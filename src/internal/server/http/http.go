@@ -119,6 +119,11 @@ func (s *Server) rewriteRequest(metadata *common.Metadata) (*http.Request, error
 	if decision.NeedCache {
 		s.Cache.Add(metadata.DestAddr(), struct{}{})
 	}
+	s.Recorder.AddRecord(&statistics.PassThroughRecord{
+		SrcAddr:  metadata.SrcAddr(),
+		DestAddr: metadata.DestAddr(),
+		UA:       metadata.UserAgent(),
+	})
 	return metadata.Request, nil
 }
 

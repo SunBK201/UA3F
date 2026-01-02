@@ -56,6 +56,10 @@ func (l *PassThroughRecordList) Run() {
 }
 
 func (l *PassThroughRecordList) Add(record *PassThroughRecord) {
+	if record.UA == "" {
+		return
+	}
+
 	if strings.HasPrefix(record.UA, "curl/") {
 		record.UA = "curl/*"
 	}

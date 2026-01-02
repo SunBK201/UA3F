@@ -183,6 +183,12 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			s.TrySkip(c)
 		}
 
+		s.Recorder.AddRecord(&statistics.PassThroughRecord{
+			SrcAddr:  c.Metadata.SrcAddr(),
+			DestAddr: c.Metadata.DestAddr(),
+			UA:       c.Metadata.UserAgent(),
+		})
+
 		if err := c.Metadata.Request.Write(c.RConn); err != nil {
 			return fmt.Errorf("Request.Write: %w", err)
 		}

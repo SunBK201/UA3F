@@ -22,13 +22,7 @@ func (h *URLRegex) Match(metadata *common.Metadata) bool {
 	if h.regex == nil {
 		return false
 	}
-	req := metadata.Request
-	scheme := "http"
-	if req.TLS != nil {
-		scheme = "https"
-	}
-	url := scheme + "://" + req.Host + req.URL.RequestURI()
-	match, _ := h.regex.MatchString(url)
+	match, _ := h.regex.MatchString(metadata.URL())
 	return match
 }
 

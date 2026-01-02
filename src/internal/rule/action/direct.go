@@ -4,7 +4,6 @@ import (
 	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/common"
-	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -21,14 +20,6 @@ func (d *Direct) Execute(metadata *common.Metadata) (bool, error) {
 	if ua == "" {
 		return false, nil
 	}
-	if d.recorder != nil {
-		d.recorder.AddRecord(&statistics.PassThroughRecord{
-			SrcAddr:  metadata.SrcAddr(),
-			DestAddr: metadata.DestAddr(),
-			UA:       ua,
-		})
-	}
-	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Direct Forwarding with User-Agent: "+ua)
 	return false, nil
 }
 
