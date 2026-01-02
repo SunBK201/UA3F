@@ -159,11 +159,25 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
           name: UA3F ${{ steps.get_version.outputs.VERSION }}
           files: dist/*
           draft: true
-          prerelease: ${{ github.ref_type != 'tag' }}
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Nightly
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type != 'tag'
+        with:
+          name: UA3F ${{ steps.get_version.outputs.VERSION }}
+          files: dist/*
+          draft: true
+          prerelease: true
+          tag_name: nightly-${{ steps.get_version.outputs.VERSION }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
