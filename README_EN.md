@@ -8,10 +8,11 @@
 
 English | [简体中文](README.md)
 
-UA3F is an HTTP Header rewriting tool that transparently rewrites HTTP request headers (such as User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
+UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
 
 ## Features
 
+- Supports bidirectional rewriting of HTTP Headers and Body
 - Multiple server modes: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
 - Highly flexible rewriting rule system with multiple rule types and rewriting strategies
 - Real-time statistics dashboard with traffic modification monitoring and analysis

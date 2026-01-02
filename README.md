@@ -8,12 +8,13 @@
 
 [English](README_EN.md) | 简体中文
 
-UA3F 是一个 HTTP Header 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 请求 Header (例如 User-Agent) 进行透明重写。
+UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP (例如 User-Agent) 进行透明重写。
 
 <table>
   <tr>
     <td>
       <ul>
+        <li>支持 HTTP Header、Body 双向重写</li>
         <li>应用层服务模式：HTTP、SOCKS5</li>
         <li>传输层服务模式：TPROXY、REDIRECT</li>
         <li>网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)</li>
@@ -70,7 +71,7 @@ UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关
 
 快速使用教程详见：[猴子也能看懂的 UA3F 使用教程](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
 
-UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [docs/config.yaml](docs/config.yaml)
+UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [config.yaml](docs/config.yaml)
 
 设备与系统信息正则表达式参考：
 
@@ -148,14 +149,14 @@ UA3F 支持 3 种不同的重写策略：
 
 重写动作：
 
-| 动作类型      | 说明                                         |
-| ------------- | -------------------------------------------- |
-| DIRECT        | 直接放行，不进行重写                         |
-| DELETE        | 删除指定 Header                              |
-| ADD           | 添加指定 Header 为指定内容                   |
-| REPLACE       | 替换指定 Header 为指定内容                   |
-| REPLACE-REGEX | 将指定 Header 中匹配正则的部分替换为指定内容 |
-| DROP          | 丢弃该请求                                   |
+| 动作类型      | 说明                           |
+| ------------- | ------------------------------ |
+| DIRECT        | 直接放行，不进行重写           |
+| DELETE        | 删除指定 Header                |
+| ADD           | 添加指定 Header 为指定内容     |
+| REPLACE       | 替换指定 Header 为指定内容     |
+| REPLACE-REGEX | 将匹配正则的部分替换为指定内容 |
+| DROP          | 丢弃该请求                     |
 
 ## Clash 配置建议
 
