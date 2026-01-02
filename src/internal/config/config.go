@@ -49,8 +49,10 @@ type Config struct {
 
 	Desync DesyncConfig `yaml:"desync"`
 
-	Rules     []Rule `yaml:"rules" validate:"dive"`
-	RulesJson string `yaml:"rules_json,omitempty"`
+	Rules []Rule `yaml:"rules,omitempty" validate:"dive"`
+
+	HeaderRules     []Rule `yaml:"header-rewrite" validate:"dive"`
+	HeaderRulesJson string `yaml:"header-rewrite-json,omitempty"`
 }
 
 type DesyncConfig struct {
@@ -93,7 +95,7 @@ func Parse() (*Config, bool, error) {
 		uaRegx           string
 		partial          bool
 		rewriteMode      string
-		rulesJson        string
+		headerRewrite    string
 		showVer          bool
 		genConfig        bool
 		ttl              bool
@@ -117,9 +119,9 @@ func Parse() (*Config, bool, error) {
 	flag.StringVar(&uaRegx, "r", "", "User-Agent regex")
 	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
 	flag.StringVar(&rewriteMode, "x", "", "Rewrite mode: GLOBAL, DIRECT, RULE")
-	flag.StringVar(&rulesJson, "z", "", "Rules JSON string")
 	flag.BoolVar(&showVer, "v", false, "Show version")
 	flag.BoolVar(&genConfig, "g", false, "Generate template config file")
+	flag.StringVar(&headerRewrite, "header-rewrite", "", "Header rewrite json rules")
 	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
 	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
 	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
@@ -203,8 +205,8 @@ func Parse() (*Config, bool, error) {
 	if cliSet["x"] {
 		cfg.RewriteMode = RewriteMode(strings.ToUpper(rewriteMode))
 	}
-	if cliSet["z"] {
-		cfg.RulesJson = rulesJson
+	if cliSet["header-rewrite"] {
+		cfg.HeaderRulesJson = headerRewrite
 	}
 	if cliSet["ttl"] {
 		cfg.TTL = ttl
@@ -328,8 +330,8 @@ func applyEnvConfig(cfg *Config) {
 		cfg.Desync.DesyncPorts = os.Getenv("UA3F_DESYNC_PORTS")
 	}
 
-	if os.Getenv("UA3F_RULES_JSON") != "" {
-		cfg.RulesJson = os.Getenv("UA3F_RULES_JSON")
+	if os.Getenv("UA3F_HEADER_REWRITE") != "" {
+		cfg.HeaderRulesJson = os.Getenv("UA3F_HEADER_REWRITE")
 	}
 }
 

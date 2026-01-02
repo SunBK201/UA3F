@@ -34,7 +34,7 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 			InjectTTL:      3,
 		},
 
-		Rules: []Rule{
+		HeaderRules: []Rule{
 			{
 				Type:          "FINAL",
 				Action:        "REPLACE",

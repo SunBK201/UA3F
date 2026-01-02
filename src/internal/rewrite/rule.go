@@ -84,7 +84,7 @@ func (r *RuleRewriter) ServeResponse() bool {
 }
 
 func NewRuleRewriter(cfg *config.Config, recorder *statistics.Recorder) (*RuleRewriter, error) {
-	ruleEngine, err := rule.NewEngine(cfg.RulesJson, &cfg.Rules, recorder)
+	ruleEngine, err := rule.NewEngine(cfg.HeaderRulesJson, &cfg.Rules, recorder)
 	if err != nil {
 		return nil, fmt.Errorf("rule.NewEngine: %w", err)
 	}

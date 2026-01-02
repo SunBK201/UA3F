@@ -29,6 +29,12 @@ msgstr "统计信息"
 msgid "Rewrite Rules"
 msgstr "重写规则"
 
+msgid "Header Rewrite"
+msgstr "Header 重写"
+
+msgid "Rewrite HTTP Request and Response Headers"
+msgstr "重写 HTTP 请求和响应的 Header"
+
 msgid "Log"
 msgstr "运行日志"
 

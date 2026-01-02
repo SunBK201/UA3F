@@ -22,11 +22,10 @@ desync:
   inject: false
   inject-ttl: 3
 
-# Rules
 # type: HEADER-KEYWORD, HEADER-REGEX, DEST-PORT, IP-CIDR, SRC-IP, DOMAIN-SUFFIX, DOMAIN-KEYWORD, DOMAIN, URL-REGEX, FINAL
 # action: DIRECT, REPLACE, REPLACE-REGEX, DELETE, ADD, DROP
 # rewrite-direction: REQUEST, RESPONSE
-rules:
+header-rewrite:
   - type: DOMAIN-SUFFIX
     match-value: "ua-check.stagoh.com"
     action: ADD

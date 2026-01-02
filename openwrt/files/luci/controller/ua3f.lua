@@ -193,7 +193,7 @@ function save_rules()
 
     -- Save rules to UCI
     local rules_json = json.stringify(data.rules)
-    uci:set("ua3f", "main", "rules", rules_json)
+    uci:set("ua3f", "main", "header_rewrite", rules_json)
 
     http.write(json.stringify({
         success = true,
