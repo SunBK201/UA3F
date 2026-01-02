@@ -8,13 +8,13 @@
 
 [English](README_EN.md) | 简体中文
 
-UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP (例如 User-Agent) 进行透明重写。
+UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 流量数据 (例如 User-Agent) 进行高效透明重写。
 
 <table>
   <tr>
     <td>
       <ul>
-        <li>支持 HTTP Header、Body 双向重写</li>
+        <li>支持 HTTP 请求与响应的 Header、Body 双向重写</li>
         <li>应用层服务模式：HTTP、SOCKS5</li>
         <li>传输层服务模式：TPROXY、REDIRECT</li>
         <li>网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)</li>
