@@ -26,19 +26,19 @@ func (r *Replace) Execute(metadata *common.Metadata) (bool, error) {
 	switch r.direction {
 	case common.DirectionRequest:
 		if metadata.Request == nil {
-			return r.contine, fmt.Errorf("Request is nil")
+			return r.contine, fmt.Errorf("request is nil")
 		}
 		header = metadata.Request.Header.Get(r.header)
 		metadata.Request.Header.Set(r.header, r.value)
 	case common.DirectionResponse:
 		if metadata.Response == nil {
-			return r.contine, fmt.Errorf("Response is nil")
+			return r.contine, fmt.Errorf("response is nil")
 		}
 		header = metadata.Response.Header.Get(r.header)
 		metadata.Response.Header.Set(r.header, r.value)
 	case common.DirectionDual:
 	default:
-		return r.contine, fmt.Errorf("Unknown direction %s", r.direction)
+		return r.contine, fmt.Errorf("unknown direction %s", r.direction)
 	}
 
 	if header == "" {
