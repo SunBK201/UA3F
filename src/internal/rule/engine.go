@@ -19,7 +19,7 @@ type Engine struct {
 	ServeResponse bool
 }
 
-func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Recorder) (*Engine, error) {
+func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Recorder, target common.ActionTarget) (*Engine, error) {
 	var (
 		rules    []common.Rule
 		rulesCfg []*config.Rule
@@ -56,25 +56,25 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 
 		switch common.RuleType(rule.Type) {
 		case common.RuleTypeHeaderKeyword:
-			r = match.NewHeaderKeyword(rule, recorder)
+			r = match.NewHeaderKeyword(rule, recorder, target)
 		case common.RuleTypeHeaderRegex:
-			r = match.NewHeaderRegex(rule, recorder)
+			r = match.NewHeaderRegex(rule, recorder, target)
 		case common.RuleTypeIPCIDR:
-			r = match.NewIPCIDR(rule, recorder)
+			r = match.NewIPCIDR(rule, recorder, target)
 		case common.RuleTypeSrcIP:
-			r = match.NewSrcIP(rule, recorder)
+			r = match.NewSrcIP(rule, recorder, target)
 		case common.RuleTypeDestPort:
-			r = match.NewDestPort(rule, recorder)
+			r = match.NewDestPort(rule, recorder, target)
 		case common.RuleTypeDomain:
-			r = match.NewDomain(rule, recorder)
+			r = match.NewDomain(rule, recorder, target)
 		case common.RuleTypeDomainKeyword:
-			r = match.NewDomainKeyword(rule, recorder)
+			r = match.NewDomainKeyword(rule, recorder, target)
 		case common.RuleTypeDomainSuffix:
-			r = match.NewDomainSuffix(rule, recorder)
+			r = match.NewDomainSuffix(rule, recorder, target)
 		case common.RuleTypeURLRegex:
-			r = match.NewURLRegex(rule, recorder)
+			r = match.NewURLRegex(rule, recorder, target)
 		case common.RuleTypeFinal:
-			r = match.NewFinal(rule, recorder)
+			r = match.NewFinal(rule, recorder, target)
 		default:
 			slog.Warn("Unsupported rule type", slog.String("type", rule.Type))
 			continue
@@ -97,18 +97,6 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 	return &Engine{rules: rules, ServeRequest: serveRequest, ServeResponse: serveResponse}, nil
 }
 
-func (e *Engine) MatchWithRule(metadata *common.Metadata) common.Rule {
-	for _, rule := range e.rules {
-		matched := rule.Match(metadata)
-		if matched {
-			slog.Info("Rule matched", slog.Any("rule", rule), slog.Any("metadata", metadata))
-			return rule
-		}
-	}
-	slog.Warn("No rule matched", slog.Any("metadata", metadata))
-	return nil
-}
-
 func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int, direction common.Direction) (common.Rule, int) {
 	if startIndex < 0 || startIndex >= len(e.rules) {
 		return nil, -1
@@ -124,6 +112,10 @@ func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int, d
 			return rule, i
 		}
 	}
-	slog.Warn("No rule matched", slog.Any("metadata", metadata))
+	slog.Debug("No rule matched", slog.Any("metadata", metadata))
 	return nil, -1
+}
+
+func (e *Engine) RulesCount() int {
+	return len(e.rules)
 }

@@ -11,6 +11,13 @@ const (
 	ActionDrop         ActionType = "DROP"
 )
 
+type ActionTarget string
+
+const (
+	ActionTargetHeader ActionTarget = "HEADER"
+	ActionTargetBody   ActionTarget = "BODY"
+)
+
 type Direction string
 
 const (

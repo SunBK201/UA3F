@@ -32,14 +32,23 @@ func (f *final) LogValue() slog.Value {
 	)
 }
 
-func NewFinal(rule *config.Rule, recorder *statistics.Recorder) *final {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewFinal(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *final {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
 	return &final{
-		action: action,
+		action: a,
 	}
 }

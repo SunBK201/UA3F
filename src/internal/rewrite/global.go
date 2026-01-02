@@ -8,6 +8,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
 	"github.com/sunbk201/ua3f/internal/rule/action"
+	"github.com/sunbk201/ua3f/internal/rule/action/header"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -110,9 +111,9 @@ func NewGlobalRewriter(cfg *config.Config, recorder *statistics.Recorder) (*Glob
 
 	var rewriteAction common.Action
 	if cfg.UserAgentPartialReplace && cfg.UserAgentRegex != "" {
-		rewriteAction = action.NewReplaceRegex(recorder, "User-Agent", cfg.UserAgentRegex, cfg.UserAgent, false, common.DirectionRequest)
+		rewriteAction = header.NewReplaceRegex(recorder, "User-Agent", cfg.UserAgentRegex, cfg.UserAgent, false, common.DirectionRequest)
 	} else {
-		rewriteAction = action.NewReplace(recorder, "User-Agent", cfg.UserAgent, false, common.DirectionRequest)
+		rewriteAction = header.NewReplace(recorder, "User-Agent", cfg.UserAgent, false, common.DirectionRequest)
 	}
 	if rewriteAction == nil {
 		return nil, fmt.Errorf("failed to create rewrite action")

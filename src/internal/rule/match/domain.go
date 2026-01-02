@@ -34,15 +34,24 @@ func (d *Domain) LogValue() slog.Value {
 	)
 }
 
-func NewDomain(rule *config.Rule, recorder *statistics.Recorder) *Domain {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewDomain(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *Domain {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
 	return &Domain{
-		action: action,
+		action: a,
 		domain: rule.MatchValue,
 	}
 }

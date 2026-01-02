@@ -1,9 +1,13 @@
 package common
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -100,6 +104,118 @@ func (m *Metadata) UserAgent() string {
 	return ua
 }
 
+func (m *Metadata) RequestBody(decode bool) []byte {
+	if m.Request == nil || m.Request.Body == nil || m.Request.Body == http.NoBody {
+		return nil
+	}
+
+	body, err := io.ReadAll(m.Request.Body)
+	if err != nil {
+		slog.Error("RequestBody io.ReadAll", "error", err)
+		return nil
+	}
+
+	m.Request.Body = io.NopCloser(bytes.NewReader(body))
+	m.Request.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(body)), nil
+	}
+
+	b := bytes.Clone(body)
+
+	if decode {
+		encoding := m.Request.Header.Get("Content-Encoding")
+		decodedBody, err := decodeBody(b, encoding)
+		if err != nil {
+			slog.Warn("RequestBody decodeBody", "error", err)
+			return body
+		}
+		b = decodedBody
+	}
+
+	return b
+}
+
+func (m *Metadata) UpdateRequestBody(newBody []byte, encode bool) {
+	if m.Request == nil {
+		return
+	}
+
+	r := m.Request
+
+	if encode {
+		encoding := r.Header.Get("Content-Encoding")
+		encodedBody, err := encodeBody(newBody, encoding)
+		if err != nil {
+			slog.Warn("UpdateRequestBody encodeBody", "error", err)
+		} else {
+			newBody = encodedBody
+		}
+	}
+
+	r.Body = io.NopCloser(bytes.NewReader(newBody))
+	r.ContentLength = int64(len(newBody))
+
+	r.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(newBody)), nil
+	}
+
+	r.Header.Del("Transfer-Encoding")
+	r.Header.Set("Content-Length", strconv.Itoa(len(newBody)))
+}
+
+func (m *Metadata) ResponseBody(decode bool) []byte {
+	if m.Response == nil || m.Response.Body == nil || m.Response.Body == http.NoBody {
+		return nil
+	}
+
+	body, err := io.ReadAll(m.Response.Body)
+	if err != nil {
+		slog.Error("ResponseBody io.ReadAll", "error", err)
+		return nil
+	}
+
+	m.Response.Body = io.NopCloser(bytes.NewReader(body))
+	m.Response.ContentLength = int64(len(body))
+
+	b := bytes.Clone(body)
+
+	if decode {
+		encoding := m.Response.Header.Get("Content-Encoding")
+		decodedBody, err := decodeBody(b, encoding)
+		if err != nil {
+			slog.Warn("ResponseBody decodeBody", "error", err)
+			return body
+		}
+		b = decodedBody
+	}
+
+	return b
+}
+
+func (m *Metadata) UpdateResponseBody(newBody []byte, encode bool) {
+	if m.Response == nil {
+		return
+	}
+
+	r := m.Response
+
+	if encode {
+		encoding := r.Header.Get("Content-Encoding")
+		encodedBody, err := encodeBody(newBody, encoding)
+		if err != nil {
+			slog.Warn("UpdateResponseBody encodeBody", "error", err)
+		} else {
+			newBody = encodedBody
+		}
+	}
+
+	r.Body = io.NopCloser(bytes.NewReader(newBody))
+	r.ContentLength = int64(len(newBody))
+
+	r.Header.Del("Transfer-Encoding")
+	r.Header.Set("Content-Length", strconv.Itoa(len(newBody)))
+}
+
 func (m *Metadata) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("src_addr", m.SrcAddr()),
@@ -107,4 +223,45 @@ func (m *Metadata) LogValue() slog.Value {
 		slog.String("host", m.Host()),
 		slog.String("user_agent", m.UserAgent()),
 	)
+}
+
+func decodeBody(body []byte, encoding string) ([]byte, error) {
+	switch strings.ToLower(encoding) {
+	case "gzip":
+		r, err := gzip.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			_ = r.Close()
+		}()
+		return io.ReadAll(r)
+
+	case "", "identity":
+		return body, nil
+	default:
+		slog.Warn("unknown encoding", "encoding", encoding)
+		return body, nil
+	}
+}
+
+func encodeBody(body []byte, encoding string) ([]byte, error) {
+	switch strings.ToLower(encoding) {
+	case "gzip":
+		var buf bytes.Buffer
+		w := gzip.NewWriter(&buf)
+		if _, err := w.Write(body); err != nil {
+			return nil, err
+		}
+		if err := w.Close(); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+
+	case "", "identity":
+		return body, nil
+	default:
+		slog.Warn("unknown encoding", "encoding", encoding)
+		return body, nil
+	}
 }

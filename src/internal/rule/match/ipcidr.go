@@ -43,9 +43,18 @@ func (i *IPCIDR) LogValue() slog.Value {
 	)
 }
 
-func NewIPCIDR(rule *config.Rule, recorder *statistics.Recorder) *IPCIDR {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewIPCIDR(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *IPCIDR {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
@@ -61,7 +70,7 @@ func NewIPCIDR(rule *config.Rule, recorder *statistics.Recorder) *IPCIDR {
 	}
 
 	return &IPCIDR{
-		action: action,
+		action: a,
 		ipNet:  ipNet,
 	}
 }

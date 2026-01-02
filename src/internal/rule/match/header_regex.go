@@ -40,9 +40,18 @@ func (h *HeaderRegex) LogValue() slog.Value {
 	)
 }
 
-func NewHeaderRegex(rule *config.Rule, recorder *statistics.Recorder) *HeaderRegex {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewHeaderRegex(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *HeaderRegex {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
@@ -54,7 +63,7 @@ func NewHeaderRegex(rule *config.Rule, recorder *statistics.Recorder) *HeaderReg
 	}
 
 	return &HeaderRegex{
-		action: action,
+		action: a,
 		header: rule.MatchHeader,
 		regex:  regex,
 	}

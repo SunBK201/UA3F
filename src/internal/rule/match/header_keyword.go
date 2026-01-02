@@ -37,15 +37,24 @@ func (h *HeaderKeyword) LogValue() slog.Value {
 	)
 }
 
-func NewHeaderKeyword(rule *config.Rule, recorder *statistics.Recorder) *HeaderKeyword {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewHeaderKeyword(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *HeaderKeyword {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
 	return &HeaderKeyword{
-		action:  action,
+		action:  a,
 		header:  rule.MatchHeader,
 		keyword: rule.MatchValue,
 	}

@@ -44,9 +44,18 @@ func (h *URLRegex) LogValue() slog.Value {
 	)
 }
 
-func NewURLRegex(rule *config.Rule, recorder *statistics.Recorder) *URLRegex {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewURLRegex(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *URLRegex {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
@@ -58,7 +67,7 @@ func NewURLRegex(rule *config.Rule, recorder *statistics.Recorder) *URLRegex {
 	}
 
 	return &URLRegex{
-		action: action,
+		action: a,
 		regex:  regex,
 	}
 }

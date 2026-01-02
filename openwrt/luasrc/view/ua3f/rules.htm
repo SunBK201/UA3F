@@ -24,15 +24,11 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
             <th class="th" style="width: 50px"><%:Index%></th>
             <th class="th" style="width: 150px"><%:Type%></th>
             <th class="th"><%:Match Value%></th>
-            <th class="th" style="width: 100px"><%:Action%></th>
+            <th class="th" style="width: 130px"><%:Action%></th>
             <th class="th" style="width: 280px"><%:Actions%></th>
         </tr>
         <tbody id="headerRulesTableBody"></tbody>
     </table>
-
-    <div class="cbi-section-descr rule-section-description">
-        <%:Rules will be matched and executed in order from top to bottom. Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
-    </div>
 
     <div style="margin: 10px 0; padding: 5px 0;">
         <input type="button" class="cbi-button cbi-button-add" onclick="headerRuleManager.openAddDialog()" value="<%:Add Rule%>" />
@@ -40,9 +36,8 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
 </div>
 
 <!-- ============================================ -->
-<!-- Body Rewrite Rules Section (for future use) -->
+<!-- Body Rewrite Rules Section -->
 <!-- ============================================ -->
-<!--
 <div class="rule-section">
     <div class="cbi-section-descr rule-section-title"><%:Body Rewrite%></div>
     <div class="cbi-section-descr rule-section-description">
@@ -55,21 +50,20 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
             <th class="th" style="width: 50px"><%:Index%></th>
             <th class="th" style="width: 150px"><%:Type%></th>
             <th class="th"><%:Match Value%></th>
-            <th class="th" style="width: 100px"><%:Action%></th>
+            <th class="th" style="width: 130px"><%:Action%></th>
             <th class="th" style="width: 280px"><%:Actions%></th>
         </tr>
         <tbody id="bodyRulesTableBody"></tbody>
     </table>
 
-    <div class="cbi-section-descr rule-section-description">
-        <%:Body rewrite rules for modifying HTTP body content.%>
-    </div>
-
     <div style="margin: 10px 0; padding: 5px 0;">
         <input type="button" class="cbi-button cbi-button-add" onclick="bodyRuleManager.openAddDialog()" value="<%:Add Rule%>" />
     </div>
 </div>
--->
+
+<div class="cbi-section-descr rule-section-description">
+    <%:Rules will be matched and executed in order from top to bottom. Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
+</div>
 
 <script type="text/javascript">
 (function() {
@@ -135,7 +129,7 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
         containerId: 'header-rules-section',
         tableId: 'header-rules-table',
         tbodyId: 'headerRulesTableBody',
-        saveUrl: '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>',
+        saveUrl: '<%=luci.dispatcher.build_url("admin/services/ua3f/save_header_rules")%>',
         ruleKey: 'rules',
         initialRules: <%=header_rules_data%>,
         labels: UA3F_CONFIG.labels,
@@ -344,9 +338,8 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
     window.headerRuleManager = new HeaderRuleManager(headerConfig);
 
     // ============================================
-    // Body Rewrite Configuration (for future use)
+    // Body Rewrite Configuration
     // ============================================
-    /*
     var bodyConfig = {
         containerId: 'body-rules-section',
         tableId: 'body-rules-table',
@@ -361,17 +354,14 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
         ruleTypes: UA3F_CONFIG.ruleTypes,
         directionTypes: UA3F_CONFIG.directionTypes,
 
-        // Body-specific actions (can be customized)
+        // Body-specific actions
         actionTypes: [
-            { value: 'REPLACE', label: '<%:REPLACE%>' },
             { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
-            { value: 'INJECT', label: '<%:INJECT%>' },
             { value: 'DIRECT', label: '<%:DIRECT%>' },
-            { value: 'DROP', label: '<%:DROP%>' }
         ],
 
         finalActionTypes: [
-            { value: 'REPLACE', label: '<%:REPLACE%>' },
+            { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
             { value: 'DIRECT', label: '<%:DIRECT%>' }
         ],
 
@@ -390,6 +380,18 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
                 onChange: function(value) {
                     this.updateFieldVisibility();
                 }
+            },
+            {
+                id: 'match_header',
+                field: 'match_header',
+                type: 'text',
+                label: '<%:Match Header%>',
+                placeholder: 'User-Agent',
+                defaultValue: 'User-Agent',
+                hideForFinal: true,
+                visibilityRules: [
+                    { field: 'type', showWhen: ['HEADER-KEYWORD', 'HEADER-REGEX'] }
+                ]
             },
             {
                 id: 'match_value',
@@ -421,39 +423,23 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
                 ]
             },
             {
-                id: 'body_pattern',
-                field: 'body_pattern',
+                id: 'rewrite_regex',
+                field: 'rewrite_regex',
                 type: 'text',
-                label: '<%:Body Pattern%>',
-                placeholder: '<%:Enter pattern to match in body%>',
+                label: '<%:Rewrite Regex%>',
+                placeholder: '<%:Enter regex pattern to replace%>',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE-REGEX'] }
+                ]
+            },
+            {
+                id: 'rewrite_value',
+                field: 'rewrite_value',
+                type: 'text',
+                label: '<%:Rewrite Value%>',
+                placeholder: '<%:Enter rewrite value%>',
                 visibilityRules: [
                     { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX'] }
-                ]
-            },
-            {
-                id: 'body_replacement',
-                field: 'body_replacement',
-                type: 'text',
-                label: '<%:Body Replacement%>',
-                placeholder: '<%:Enter replacement value%>',
-                visibilityRules: [
-                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'INJECT'] }
-                ]
-            },
-            {
-                id: 'inject_position',
-                field: 'inject_position',
-                type: 'select',
-                label: '<%:Inject Position%>',
-                options: [
-                    { value: 'start', label: '<%:Start of Body%>' },
-                    { value: 'end', label: '<%:End of Body%>' },
-                    { value: 'before', label: '<%:Before Pattern%>' },
-                    { value: 'after', label: '<%:After Pattern%>' }
-                ],
-                defaultValue: 'end',
-                visibilityRules: [
-                    { field: 'action', showWhen: ['INJECT'] }
                 ]
             },
             {
@@ -463,7 +449,7 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
                 label: '<%:Continue Evaluation%>',
                 hideForFinal: true,
                 visibilityRules: [
-                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'INJECT'] }
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX'] }
                 ]
             },
             {
@@ -491,7 +477,5 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
 
     // Initialize Body Rule Manager
     window.bodyRuleManager = new RuleManager(bodyConfig);
-    */
-
 })();
 </script>

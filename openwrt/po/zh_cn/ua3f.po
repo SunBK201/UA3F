@@ -176,12 +176,6 @@ msgstr "重写正则表达式"
 msgid "Enter regex pattern to replace"
 msgstr "输入要替换的正则表达式"
 
-msgid "Pattern"
-msgstr "匹配模式"
-
-msgid "Replacement"
-msgstr "替换内容"
-
 msgid "Actions"
 msgstr "操作"
 
@@ -271,6 +265,12 @@ msgstr "匹配请求头"
 
 msgid "Continue Evaluation"
 msgstr "继续匹配后续规则"
+
+msgid "Body Rewrite"
+msgstr "Body 重写"
+
+msgid "Rewrite HTTP Request and Response Body"
+msgstr "重写 HTTP 请求和响应的 Body"
 
 msgid "Delete TCP Timestamps"
 msgstr "删除 TCP 时间戳"

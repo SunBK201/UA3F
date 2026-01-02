@@ -35,15 +35,24 @@ func (d *DomainSuffix) LogValue() slog.Value {
 	)
 }
 
-func NewDomainSuffix(rule *config.Rule, recorder *statistics.Recorder) *DomainSuffix {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewDomainSuffix(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *DomainSuffix {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
 	return &DomainSuffix{
-		action:       action,
+		action:       a,
 		domainSuffix: rule.MatchValue,
 	}
 }

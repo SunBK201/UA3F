@@ -34,15 +34,24 @@ func (d *DestPort) LogValue() slog.Value {
 	)
 }
 
-func NewDestPort(rule *config.Rule, recorder *statistics.Recorder) *DestPort {
-	action := action.NewAction(rule, recorder)
-	if action == nil {
+func NewDestPort(rule *config.Rule, recorder *statistics.Recorder, target common.ActionTarget) *DestPort {
+	var a common.Action
+	switch target {
+	case common.ActionTargetHeader:
+		a = action.NewHeaderAction(rule, recorder)
+	case common.ActionTargetBody:
+		a = action.NewBodyAction(rule, recorder)
+	default:
+		slog.Error("unknown target", "target", target)
+		return nil
+	}
+	if a == nil {
 		slog.Error("action.NewAction", "rule", rule)
 		return nil
 	}
 
 	return &DestPort{
-		action: action,
+		action: a,
 		port:   rule.MatchValue,
 	}
 }

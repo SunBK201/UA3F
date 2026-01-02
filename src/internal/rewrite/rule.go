@@ -2,6 +2,7 @@ package rewrite
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
@@ -12,22 +13,44 @@ import (
 )
 
 type RuleRewriter struct {
-	RuleEngine *rule.Engine
-	Recorder   *statistics.Recorder
+	HeaderRuleEngine *rule.Engine
+	BodyRuleEngine   *rule.Engine
+	Recorder         *statistics.Recorder
 }
 
 func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
 	ua := metadata.UserAgent()
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", ua))
 
+	var matchedRule common.Rule
+
 	decision = &RewriteDecision{
 		Action: action.DirectAction,
 	}
-
-	var matchedRule common.Rule
+	matchedRule = nil
 	index := -1
 	for {
-		matchedRule, index = r.RuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionRequest)
+		matchedRule, index = r.BodyRuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionRequest)
+		if matchedRule == nil {
+			break
+		}
+		decision.Action = matchedRule.Action()
+		contine, err := decision.Action.Execute(metadata)
+		if err != nil {
+			log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("decision.Action.Execute: %s", err.Error()))
+		}
+		if !contine {
+			break
+		}
+	}
+
+	decision = &RewriteDecision{
+		Action: action.DirectAction,
+	}
+	matchedRule = nil
+	index = -1
+	for {
+		matchedRule, index = r.HeaderRuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionRequest)
 		if matchedRule == nil {
 			_, _ = decision.Action.Execute(metadata)
 			return
@@ -48,14 +71,35 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 }
 
 func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
+	var matchedRule common.Rule
+
 	decision = &RewriteDecision{
 		Action: action.DirectAction,
 	}
-
-	var matchedRule common.Rule
+	matchedRule = nil
 	index := -1
 	for {
-		matchedRule, index = r.RuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionResponse)
+		matchedRule, index = r.BodyRuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionResponse)
+		if matchedRule == nil {
+			break
+		}
+		decision.Action = matchedRule.Action()
+		contine, err := decision.Action.Execute(metadata)
+		if err != nil {
+			log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("decision.Action.Execute: %s", err.Error()))
+		}
+		if !contine {
+			break
+		}
+	}
+
+	decision = &RewriteDecision{
+		Action: action.DirectAction,
+	}
+	matchedRule = nil
+	index = -1
+	for {
+		matchedRule, index = r.HeaderRuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionResponse)
 		if matchedRule == nil {
 			_, _ = decision.Action.Execute(metadata)
 			return
@@ -76,20 +120,29 @@ func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *Rew
 }
 
 func (r *RuleRewriter) ServeRequest() bool {
-	return r.RuleEngine.ServeRequest
+	return r.HeaderRuleEngine.ServeRequest || r.BodyRuleEngine.ServeRequest
 }
 
 func (r *RuleRewriter) ServeResponse() bool {
-	return r.RuleEngine.ServeResponse
+	return r.HeaderRuleEngine.ServeResponse || r.BodyRuleEngine.ServeResponse
 }
 
 func NewRuleRewriter(cfg *config.Config, recorder *statistics.Recorder) (*RuleRewriter, error) {
-	ruleEngine, err := rule.NewEngine(cfg.HeaderRulesJson, &cfg.Rules, recorder)
+	headerRuleEngine, err := rule.NewEngine(cfg.HeaderRulesJson, &cfg.HeaderRules, recorder, common.ActionTargetHeader)
 	if err != nil {
 		return nil, fmt.Errorf("rule.NewEngine: %w", err)
 	}
+	slog.Info("Header Rule Engine initialized", "rules_count", headerRuleEngine.RulesCount(), "serve_request", headerRuleEngine.ServeRequest, "serve_response", headerRuleEngine.ServeResponse)
+
+	bodyRuleEngine, err := rule.NewEngine(cfg.BodyRulesJson, &cfg.BodyRules, recorder, common.ActionTargetBody)
+	if err != nil {
+		return nil, fmt.Errorf("rule.NewEngine: %w", err)
+	}
+	slog.Info("Body Rule Engine initialized", "rules_count", bodyRuleEngine.RulesCount(), "serve_request", bodyRuleEngine.ServeRequest, "serve_response", bodyRuleEngine.ServeResponse)
+
 	return &RuleRewriter{
-		RuleEngine: ruleEngine,
-		Recorder:   recorder,
+		HeaderRuleEngine: headerRuleEngine,
+		BodyRuleEngine:   bodyRuleEngine,
+		Recorder:         recorder,
 	}, nil
 }

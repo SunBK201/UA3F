@@ -49,10 +49,11 @@ type Config struct {
 
 	Desync DesyncConfig `yaml:"desync"`
 
-	Rules []Rule `yaml:"rules,omitempty" validate:"dive"`
-
 	HeaderRules     []Rule `yaml:"header-rewrite" validate:"dive"`
 	HeaderRulesJson string `yaml:"header-rewrite-json,omitempty"`
+
+	BodyRules     []Rule `yaml:"body-rewrite" validate:"dive"`
+	BodyRulesJson string `yaml:"body-rewrite-json,omitempty"`
 }
 
 type DesyncConfig struct {
@@ -75,7 +76,7 @@ type Rule struct {
 
 	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD"`
 
-	RewriteHeader    string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"`
+	RewriteHeader    string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty"` // validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"
 	RewriteValue     string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action ADD"`
 	RewriteDirection string `json:"rewrite_direction,omitempty" yaml:"rewrite-direction,omitempty" validate:"omitempty,oneof=REQUEST RESPONSE"`
 
@@ -96,6 +97,7 @@ func Parse() (*Config, bool, error) {
 		partial          bool
 		rewriteMode      string
 		headerRewrite    string
+		bodyRewrite      string
 		showVer          bool
 		genConfig        bool
 		ttl              bool
@@ -122,6 +124,7 @@ func Parse() (*Config, bool, error) {
 	flag.BoolVar(&showVer, "v", false, "Show version")
 	flag.BoolVar(&genConfig, "g", false, "Generate template config file")
 	flag.StringVar(&headerRewrite, "header-rewrite", "", "Header rewrite json rules")
+	flag.StringVar(&bodyRewrite, "body-rewrite", "", "Body rewrite json rules")
 	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
 	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
 	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
@@ -207,6 +210,9 @@ func Parse() (*Config, bool, error) {
 	}
 	if cliSet["header-rewrite"] {
 		cfg.HeaderRulesJson = headerRewrite
+	}
+	if cliSet["body-rewrite"] {
+		cfg.BodyRulesJson = bodyRewrite
 	}
 	if cliSet["ttl"] {
 		cfg.TTL = ttl
@@ -332,6 +338,10 @@ func applyEnvConfig(cfg *Config) {
 
 	if os.Getenv("UA3F_HEADER_REWRITE") != "" {
 		cfg.HeaderRulesJson = os.Getenv("UA3F_HEADER_REWRITE")
+	}
+
+	if os.Getenv("UA3F_BODY_REWRITE") != "" {
+		cfg.BodyRulesJson = os.Getenv("UA3F_BODY_REWRITE")
 	}
 }
 

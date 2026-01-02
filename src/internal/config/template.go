@@ -42,6 +42,17 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 				RewriteValue:  "FFF",
 			},
 		},
+
+		BodyRules: []Rule{
+			{
+				Type:             "URL-REGEX",
+				MatchValue:       "^http://ua-check.stagoh.com",
+				Action:           "REPLACE-REGEX",
+				RewriteDirection: "RESPONSE",
+				RewriteRegex:     "User-Agent",
+				RewriteValue:     "UA3F",
+			},
+		},
 	}
 
 	if writeToFile {

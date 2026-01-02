@@ -4,7 +4,7 @@ port: 1080
 
 log-level: info # debug, info, warn, error
 
-rewrite-mode: GLOBAL # GLOBAL, DIRECT, RULE
+rewrite-mode: RULE # GLOBAL, DIRECT, RULE
 
 user-agent: "FFF"
 user-agent-regex: ""
@@ -29,9 +29,9 @@ header-rewrite:
   - type: DOMAIN-SUFFIX
     match-value: "ua-check.stagoh.com"
     action: ADD
+    rewrite-direction: REQUEST
     rewrite-header: "User-Agent"
     rewrite-value: "UA3F"
-    rewrite-direction: REQUEST
   - type: DEST-PORT
     match-value: "22"
     action: DIRECT
@@ -64,3 +64,11 @@ header-rewrite:
     action: REPLACE
     rewrite-header: "User-Agent"
     rewrite-value: "FFF"
+
+body-rewrite:
+  - type: URL-REGEX
+    match-value: "^http://ua-check.stagoh.com"
+    action: REPLACE-REGEX
+    rewrite-direction: RESPONSE
+    rewrite-regex: "UA2F"
+    rewrite-value: "UA3F"
