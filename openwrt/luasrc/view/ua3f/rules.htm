@@ -1,0 +1,497 @@
+<%
+local uci = require("luci.model.uci").cursor()
+local json = require("luci.jsonc")
+
+local header_rules_data = uci:get("ua3f", "main", "header_rewrite") or "[]"
+local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
+%>
+
+<link rel="stylesheet" href="<%=resource%>/ua3f/rule-manager.css" />
+<script src="<%=resource%>/ua3f/rule-manager.js"></script>
+
+<!-- ============================================ -->
+<!-- Header Rewrite Rules Section -->
+<!-- ============================================ -->
+<div class="rule-section">
+    <div class="cbi-section-descr rule-section-title"><%:Header Rewrite%></div>
+    <div class="cbi-section-descr rule-section-description">
+        <%:Rewrite HTTP Request and Response Headers%>
+    </div>
+
+    <table id="header-rules-table" class="table cbi-section-table">
+        <tr class="tr table-titles">
+            <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
+            <th class="th" style="width: 50px"><%:Index%></th>
+            <th class="th" style="width: 150px"><%:Type%></th>
+            <th class="th"><%:Match Value%></th>
+            <th class="th" style="width: 100px"><%:Action%></th>
+            <th class="th" style="width: 280px"><%:Actions%></th>
+        </tr>
+        <tbody id="headerRulesTableBody"></tbody>
+    </table>
+
+    <div class="cbi-section-descr rule-section-description">
+        <%:Rules will be matched and executed in order from top to bottom. Rewrite rules only take effect in rule mode. NFQUEUE mode is temporarily unavailable.%>
+    </div>
+
+    <div style="margin: 10px 0; padding: 5px 0;">
+        <input type="button" class="cbi-button cbi-button-add" onclick="headerRuleManager.openAddDialog()" value="<%:Add Rule%>" />
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- Body Rewrite Rules Section (for future use) -->
+<!-- ============================================ -->
+<!--
+<div class="rule-section">
+    <div class="cbi-section-descr rule-section-title"><%:Body Rewrite%></div>
+    <div class="cbi-section-descr rule-section-description">
+        <%:Rewrite HTTP Request and Response Body%>
+    </div>
+
+    <table id="body-rules-table" class="table cbi-section-table">
+        <tr class="tr table-titles">
+            <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
+            <th class="th" style="width: 50px"><%:Index%></th>
+            <th class="th" style="width: 150px"><%:Type%></th>
+            <th class="th"><%:Match Value%></th>
+            <th class="th" style="width: 100px"><%:Action%></th>
+            <th class="th" style="width: 280px"><%:Actions%></th>
+        </tr>
+        <tbody id="bodyRulesTableBody"></tbody>
+    </table>
+
+    <div class="cbi-section-descr rule-section-description">
+        <%:Body rewrite rules for modifying HTTP body content.%>
+    </div>
+
+    <div style="margin: 10px 0; padding: 5px 0;">
+        <input type="button" class="cbi-button cbi-button-add" onclick="bodyRuleManager.openAddDialog()" value="<%:Add Rule%>" />
+    </div>
+</div>
+-->
+
+<script type="text/javascript">
+(function() {
+    'use strict';
+
+    // ============================================
+    // Shared Configuration
+    // ============================================
+    var UA3F_CONFIG = {
+        // Common labels (i18n)
+        labels: {
+            enabled: '<%:Enabled%>',
+            index: '<%:Index%>',
+            type: '<%:Type%>',
+            matchValue: '<%:Match Value%>',
+            action: '<%:Action%>',
+            actions: '<%:Actions%>',
+            edit: '<%:Edit%>',
+            up: '<%:Up%>',
+            down: '<%:Down%>',
+            delete: '<%:Delete%>',
+            save: '<%:Save%>',
+            cancel: '<%:Cancel%>',
+            optional: '<%:Optional%>',
+            final: '<%:FINAL%>',
+            addRule: '<%:Add Rewrite Rule%>',
+            editRule: '<%:Edit Rewrite Rule%>',
+            editFinalRule: '<%:Edit FINAL Rule%>',
+            emptyMessage: '<%:No rules configured. Click「Add Rule」to create one%>',
+            confirmDelete: '<%:Are you sure you want to delete this rule?%>',
+            cannotDeleteFinal: '<%:FINAL rule cannot be deleted%>',
+            saveFailed: '<%:Failed to save rule%>',
+            defaultFinalDescription: '<%:Default fallback rule%>',
+            matchValueRequired: '<%:Match value is required%>',
+            rewriteValueRequired: '<%:Rewrite value is required for REPLACE, REPLACE-REGEX and ADD actions%>',
+            rewriteRegexRequired: '<%:Rewrite regex is required for REPLACE-REGEX action%>'
+        },
+
+        // Common rule types
+        ruleTypes: [
+            { value: 'DOMAIN', label: '<%:DOMAIN%>', placeholder: '<%:example.com%>' },
+            { value: 'DOMAIN-SUFFIX', label: '<%:DOMAIN-SUFFIX%>', placeholder: '<%:example.com%>' },
+            { value: 'DOMAIN-KEYWORD', label: '<%:DOMAIN-KEYWORD%>', placeholder: '<%:example%>' },
+            { value: 'HEADER-KEYWORD', label: '<%:HEADER-KEYWORD%>', placeholder: '<%:Mac%>' },
+            { value: 'HEADER-REGEX', label: '<%:HEADER-REGEX%>', placeholder: '<%:Mac.*Chrome%>' },
+            { value: 'URL-REGEX', label: '<%:URL-REGEX%>', placeholder: '<%:^http://example.com/api/%>' },
+            { value: 'IP-CIDR', label: '<%:IP-CIDR%>', placeholder: '<%:10.0.0.0/8%>' },
+            { value: 'SRC-IP', label: '<%:SRC-IP%>', placeholder: '<%:192.168.1.100%>' },
+            { value: 'DEST-PORT', label: '<%:DEST-PORT%>', placeholder: '<%:443%>' }
+        ],
+
+        // Common direction types
+        directionTypes: [
+            { value: 'REQUEST', label: '<%:HTTP Request%>' },
+            { value: 'RESPONSE', label: '<%:HTTP Response%>' }
+        ]
+    };
+
+    // ============================================
+    // Header Rewrite Configuration
+    // ============================================
+    var headerConfig = {
+        containerId: 'header-rules-section',
+        tableId: 'header-rules-table',
+        tbodyId: 'headerRulesTableBody',
+        saveUrl: '<%=luci.dispatcher.build_url("admin/services/ua3f/save_rules")%>',
+        ruleKey: 'rules',
+        initialRules: <%=header_rules_data%>,
+        labels: UA3F_CONFIG.labels,
+        ruleTypes: UA3F_CONFIG.ruleTypes,
+        directionTypes: UA3F_CONFIG.directionTypes,
+
+        // Header-specific actions
+        actionTypes: [
+            { value: 'DELETE', label: '<%:DELETE%>' },
+            { value: 'ADD', label: '<%:ADD%>' },
+            { value: 'REPLACE', label: '<%:REPLACE%>' },
+            { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
+            { value: 'DIRECT', label: '<%:DIRECT%>' },
+            { value: 'DROP', label: '<%:DROP%>' }
+        ],
+
+        finalActionTypes: [
+            { value: 'DELETE', label: '<%:DELETE%>' },
+            { value: 'ADD', label: '<%:ADD%>' },
+            { value: 'REPLACE', label: '<%:REPLACE%>' },
+            { value: 'DIRECT', label: '<%:DIRECT%>' }
+        ],
+
+        // Table columns
+        columns: [
+            { type: 'checkbox', style: { width: '50px' } },
+            { type: 'index', style: { width: '50px' } },
+            { 
+                type: 'label', 
+                field: 'type', 
+                style: { width: '150px' },
+                labelMap: function(value) { return this.getRuleTypeLabel(value); }
+            },
+            { 
+                type: 'value', 
+                field: 'match_value', 
+                hideForFinal: true,
+                maxWidth: '150px'
+            },
+            { 
+                type: 'label', 
+                field: 'action', 
+                style: { width: '100px' },
+                labelMap: function(value) { return this.getActionLabel(value); }
+            },
+            { type: 'actions', style: { width: '280px' } }
+        ],
+
+        // Dialog fields configuration
+        dialogFields: [
+            {
+                id: 'type',
+                field: 'type',
+                type: 'select',
+                label: '<%:Type%>',
+                optionsKey: 'ruleTypes',
+                hideForFinal: true,
+                onChange: function(value) {
+                    this.updateFieldVisibility();
+                    this.updateMatchValuePlaceholder(value);
+                }
+            },
+            {
+                id: 'match_header',
+                field: 'match_header',
+                type: 'text',
+                label: '<%:Match Header%>',
+                placeholder: 'User-Agent',
+                defaultValue: 'User-Agent',
+                hideForFinal: true,
+                visibilityRules: [
+                    { field: 'type', showWhen: ['HEADER-KEYWORD', 'HEADER-REGEX'] }
+                ]
+            },
+            {
+                id: 'match_value',
+                field: 'match_value',
+                type: 'text',
+                label: '<%:Match Value%>',
+                placeholder: '<%:Enter match value%>',
+                hideForFinal: true
+            },
+            {
+                id: 'action',
+                field: 'action',
+                type: 'select',
+                label: '<%:Action%>',
+                optionsKey: 'actionTypes',
+                onChange: function(value) {
+                    this.updateFieldVisibility();
+                }
+            },
+            {
+                id: 'rewrite_direction',
+                field: 'rewrite_direction',
+                type: 'select',
+                label: '<%:Direction%>',
+                optionsKey: 'directionTypes',
+                defaultValue: 'REQUEST',
+                visibilityRules: [
+                    { field: 'action', hideWhen: ['DIRECT', 'DROP'] }
+                ]
+            },
+            {
+                id: 'rewrite_header',
+                field: 'rewrite_header',
+                type: 'text',
+                label: '<%:Rewrite Header%>',
+                placeholder: 'User-Agent',
+                defaultValue: 'User-Agent',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'ADD', 'DELETE'] }
+                ]
+            },
+            {
+                id: 'rewrite_regex',
+                field: 'rewrite_regex',
+                type: 'text',
+                label: '<%:Rewrite Regex%>',
+                placeholder: '<%:Enter regex pattern to replace%>',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE-REGEX'] }
+                ]
+            },
+            {
+                id: 'rewrite_value',
+                field: 'rewrite_value',
+                type: 'text',
+                label: '<%:Rewrite Value%>',
+                placeholder: '<%:Enter rewrite value%>',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'ADD'] }
+                ]
+            },
+            {
+                id: 'continue',
+                field: 'continue',
+                type: 'checkbox',
+                label: '<%:Continue Evaluation%>',
+                hideForFinal: true,
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'ADD', 'DELETE'] }
+                ]
+            },
+            {
+                id: 'description',
+                field: 'description',
+                type: 'text',
+                label: '<%:Description%>',
+                placeholder: '<%:Enter rule description%>',
+                optional: true
+            }
+        ],
+
+        // Custom validation
+        onValidate: function(rule, isFinal) {
+            if (!isFinal && !rule.match_value) {
+                return this.config.labels.matchValueRequired;
+            }
+            if ((rule.action === 'REPLACE' || rule.action === 'REPLACE-REGEX' || rule.action === 'ADD') && !rule.rewrite_value) {
+                return this.config.labels.rewriteValueRequired;
+            }
+            if (rule.action === 'REPLACE-REGEX' && !rule.rewrite_regex) {
+                return this.config.labels.rewriteRegexRequired;
+            }
+            return null;
+        },
+
+        hasFinalRule: true,
+        allowMove: true,
+        allowDelete: true,
+        allowToggle: true
+    };
+
+    // Extend RuleManager for header-specific functionality
+    function HeaderRuleManager(config) {
+        RuleManager.call(this, config);
+    }
+
+    HeaderRuleManager.prototype = Object.create(RuleManager.prototype);
+    HeaderRuleManager.prototype.constructor = HeaderRuleManager;
+
+    // Override updateFieldVisibility to handle match value placeholder
+    HeaderRuleManager.prototype.updateFieldVisibility = function() {
+        RuleManager.prototype.updateFieldVisibility.call(this);
+        
+        var typeSelect = document.getElementById('modal_type');
+        if (typeSelect) {
+            this.updateMatchValuePlaceholder(typeSelect.value);
+        }
+    };
+
+    // Update match value placeholder based on rule type
+    HeaderRuleManager.prototype.updateMatchValuePlaceholder = function(type) {
+        var matchInput = document.getElementById('modal_match_value');
+        if (!matchInput) return;
+
+        var ruleType = this.config.ruleTypes.find(function(t) {
+            return t.value === type;
+        });
+
+        matchInput.placeholder = ruleType ? ruleType.placeholder : '<%:Enter match value%>';
+    };
+
+    // Initialize Header Rule Manager
+    window.headerRuleManager = new HeaderRuleManager(headerConfig);
+
+    // ============================================
+    // Body Rewrite Configuration (for future use)
+    // ============================================
+    /*
+    var bodyConfig = {
+        containerId: 'body-rules-section',
+        tableId: 'body-rules-table',
+        tbodyId: 'bodyRulesTableBody',
+        saveUrl: '<%=luci.dispatcher.build_url("admin/services/ua3f/save_body_rules")%>',
+        ruleKey: 'rules',
+        initialRules: <%=body_rules_data%>,
+        labels: Object.assign({}, UA3F_CONFIG.labels, {
+            addRule: '<%:Add Body Rule%>',
+            editRule: '<%:Edit Body Rule%>'
+        }),
+        ruleTypes: UA3F_CONFIG.ruleTypes,
+        directionTypes: UA3F_CONFIG.directionTypes,
+
+        // Body-specific actions (can be customized)
+        actionTypes: [
+            { value: 'REPLACE', label: '<%:REPLACE%>' },
+            { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
+            { value: 'INJECT', label: '<%:INJECT%>' },
+            { value: 'DIRECT', label: '<%:DIRECT%>' },
+            { value: 'DROP', label: '<%:DROP%>' }
+        ],
+
+        finalActionTypes: [
+            { value: 'REPLACE', label: '<%:REPLACE%>' },
+            { value: 'DIRECT', label: '<%:DIRECT%>' }
+        ],
+
+        // Similar column configuration as header...
+        columns: headerConfig.columns,
+
+        // Body-specific dialog fields
+        dialogFields: [
+            {
+                id: 'type',
+                field: 'type',
+                type: 'select',
+                label: '<%:Type%>',
+                optionsKey: 'ruleTypes',
+                hideForFinal: true,
+                onChange: function(value) {
+                    this.updateFieldVisibility();
+                }
+            },
+            {
+                id: 'match_value',
+                field: 'match_value',
+                type: 'text',
+                label: '<%:Match Value%>',
+                placeholder: '<%:Enter match value%>',
+                hideForFinal: true
+            },
+            {
+                id: 'action',
+                field: 'action',
+                type: 'select',
+                label: '<%:Action%>',
+                optionsKey: 'actionTypes',
+                onChange: function(value) {
+                    this.updateFieldVisibility();
+                }
+            },
+            {
+                id: 'rewrite_direction',
+                field: 'rewrite_direction',
+                type: 'select',
+                label: '<%:Direction%>',
+                optionsKey: 'directionTypes',
+                defaultValue: 'REQUEST',
+                visibilityRules: [
+                    { field: 'action', hideWhen: ['DIRECT', 'DROP'] }
+                ]
+            },
+            {
+                id: 'body_pattern',
+                field: 'body_pattern',
+                type: 'text',
+                label: '<%:Body Pattern%>',
+                placeholder: '<%:Enter pattern to match in body%>',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX'] }
+                ]
+            },
+            {
+                id: 'body_replacement',
+                field: 'body_replacement',
+                type: 'text',
+                label: '<%:Body Replacement%>',
+                placeholder: '<%:Enter replacement value%>',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'INJECT'] }
+                ]
+            },
+            {
+                id: 'inject_position',
+                field: 'inject_position',
+                type: 'select',
+                label: '<%:Inject Position%>',
+                options: [
+                    { value: 'start', label: '<%:Start of Body%>' },
+                    { value: 'end', label: '<%:End of Body%>' },
+                    { value: 'before', label: '<%:Before Pattern%>' },
+                    { value: 'after', label: '<%:After Pattern%>' }
+                ],
+                defaultValue: 'end',
+                visibilityRules: [
+                    { field: 'action', showWhen: ['INJECT'] }
+                ]
+            },
+            {
+                id: 'continue',
+                field: 'continue',
+                type: 'checkbox',
+                label: '<%:Continue Evaluation%>',
+                hideForFinal: true,
+                visibilityRules: [
+                    { field: 'action', showWhen: ['REPLACE', 'REPLACE-REGEX', 'INJECT'] }
+                ]
+            },
+            {
+                id: 'description',
+                field: 'description',
+                type: 'text',
+                label: '<%:Description%>',
+                placeholder: '<%:Enter rule description%>',
+                optional: true
+            }
+        ],
+
+        onValidate: function(rule, isFinal) {
+            if (!isFinal && !rule.match_value) {
+                return this.config.labels.matchValueRequired;
+            }
+            return null;
+        },
+
+        hasFinalRule: true,
+        allowMove: true,
+        allowDelete: true,
+        allowToggle: true
+    };
+
+    // Initialize Body Rule Manager
+    window.bodyRuleManager = new RuleManager(bodyConfig);
+    */
+
+})();
+</script>

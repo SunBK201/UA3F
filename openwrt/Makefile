@@ -37,7 +37,6 @@ endef
 
 define Build/Prepare
 	$(CP) ../src/* $(PKG_BUILD_DIR)
-	$(CP) ./files $(PKG_BUILD_DIR)/
 	po2lmo ./po/zh_cn/ua3f.po $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo
 endef
 
@@ -49,17 +48,22 @@ define Package/ua3f/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 
 	$(INSTALL_DIR) $(1)/usr/bin/
-	# $(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/ua3f $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/ua3f $(1)/usr/bin/
+	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/ua3f $(1)/usr/bin/ua3f
+
+	$(INSTALL_DIR) $(1)/etc/config/
+	$(INSTALL_CONF) ./files/ua3f.conf $(1)/etc/config/ua3f
+
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_BIN) ./files/ua3f.init $(1)/etc/init.d/ua3f
-	$(INSTALL_DIR) $(1)/etc/config/
-	$(INSTALL_CONF) ./files/ua3f.uci $(1)/etc/config/ua3f
+
 	$(INSTALL_DIR) $(1)/etc/uci-defaults/
 	$(INSTALL_BIN) ./files/uci-defaults $(1)/etc/uci-defaults/luci-ua3f
+
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/ua3f.zh-cn.lmo
-	$(CP) $(PKG_BUILD_DIR)/files/luci/* $(1)/usr/lib/lua/luci/
+
+	$(CP) ./luasrc/* $(1)/usr/lib/lua/luci/
+	$(CP) ./htdocs/* $(1)/
 endef
 
 define Package/ua3f/postrm

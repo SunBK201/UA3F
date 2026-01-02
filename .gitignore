@@ -25,4 +25,5 @@ bin/
 dist/
 scripts/ipkg/etc/
 scripts/ipkg/usr/
+scripts/ipkg/www/
 test/

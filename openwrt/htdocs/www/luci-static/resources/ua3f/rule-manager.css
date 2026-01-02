@@ -1,0 +1,75 @@
+/**
+ * UA3F Rule Manager Styles
+ */
+
+.rule-actions button {
+    margin: 0 2px;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Modal Styles */
+.cbi-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.cbi-modal-dialog {
+    background: var(--background-color-high, #fff);
+    color: var(--text-color-primary, #000);
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.cbi-modal-dialog-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color-medium, #ddd);
+}
+
+.cbi-modal-dialog-header h3 {
+    margin: 0;
+}
+
+.cbi-modal-dialog-body {
+    padding: 20px;
+}
+
+/* Rule Section */
+.rule-section {
+    margin-bottom: 20px;
+}
+
+.rule-section-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.rule-section-description {
+    color: #999;
+    font-size: 90%;
+    margin-bottom: 10px;
+}
+
+/* Table cell overflow handling */
+.td-ellipsis {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
