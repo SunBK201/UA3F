@@ -73,3 +73,68 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* Drag Handle Styles */
+.drag-handle {
+    cursor: grab;
+    user-select: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+    color: #888;
+}
+
+.drag-handle:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle svg {
+    display: block;
+}
+
+.drag-handle-cell {
+    vertical-align: middle;
+}
+
+/* Drag States */
+.cbi-section-table-row.dragging {
+    opacity: 0.5;
+    background-color: #e3f2fd !important;
+}
+
+.cbi-section-table-row.drag-over-top {
+    border-top: 2px solid #2196f3 !important;
+}
+
+.cbi-section-table-row.drag-over-bottom {
+    border-bottom: 2px solid #2196f3 !important;
+}
+
+/* Ensure draggable rows show proper cursor */
+.cbi-section-table-row[draggable="true"] {
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .drag-handle {
+        color: #aaa;
+    }
+
+    .drag-handle:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .cbi-section-table-row.dragging {
+        background-color: #1a3a5c !important;
+    }
+}

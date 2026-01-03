@@ -70,6 +70,157 @@
                 this.ensureFinalRule();
             }
             this.renderTable();
+            this.initDragAndDrop();
+        },
+
+        /**
+         * Initialize drag and drop functionality
+         */
+        initDragAndDrop: function () {
+            var self = this;
+            this.dragState = {
+                dragging: false,
+                draggedIndex: -1,
+                draggedRow: null,
+                placeholder: null
+            };
+        },
+
+        /**
+         * Handle drag start
+         */
+        handleDragStart: function (e, index) {
+            var self = this;
+            if (this.isFinalRule(index)) {
+                e.preventDefault();
+                return;
+            }
+
+            this.dragState.dragging = true;
+            this.dragState.draggedIndex = index;
+            this.dragState.draggedRow = e.target.closest('tr');
+
+            if (this.dragState.draggedRow) {
+                this.dragState.draggedRow.classList.add('dragging');
+            }
+
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', index.toString());
+        },
+
+        /**
+         * Handle drag over
+         */
+        handleDragOver: function (e, index) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            var targetRow = e.target.closest('tr');
+            if (!targetRow) return;
+
+            // Don't allow dropping on FINAL rule or after it
+            if (this.isFinalRule(index)) {
+                return;
+            }
+
+            var tbody = document.getElementById(this.config.tbodyId);
+            var rows = tbody.querySelectorAll('tr.cbi-section-table-row');
+
+            rows.forEach(function (row) {
+                row.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+
+            var rect = targetRow.getBoundingClientRect();
+            var midY = rect.top + rect.height / 2;
+
+            if (e.clientY < midY) {
+                targetRow.classList.add('drag-over-top');
+            } else {
+                targetRow.classList.add('drag-over-bottom');
+            }
+        },
+
+        /**
+         * Handle drag leave
+         */
+        handleDragLeave: function (e) {
+            var targetRow = e.target.closest('tr');
+            if (targetRow) {
+                targetRow.classList.remove('drag-over-top', 'drag-over-bottom');
+            }
+        },
+
+        /**
+         * Handle drop
+         */
+        handleDrop: function (e, targetIndex) {
+            e.preventDefault();
+            var self = this;
+
+            var tbody = document.getElementById(this.config.tbodyId);
+            var rows = tbody.querySelectorAll('tr.cbi-section-table-row');
+            rows.forEach(function (row) {
+                row.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+            });
+
+            var sourceIndex = this.dragState.draggedIndex;
+            if (sourceIndex === -1 || sourceIndex === targetIndex) {
+                this.resetDragState();
+                return;
+            }
+
+            // Don't allow dropping on or after FINAL rule
+            if (this.isFinalRule(targetIndex)) {
+                this.resetDragState();
+                return;
+            }
+
+            // Calculate the actual target position based on drop position
+            var targetRow = e.target.closest('tr');
+            var rect = targetRow.getBoundingClientRect();
+            var dropAfter = e.clientY > rect.top + rect.height / 2;
+
+            // Move the rule
+            var rule = this.rules.splice(sourceIndex, 1)[0];
+            var newIndex = targetIndex;
+            if (sourceIndex < targetIndex) {
+                newIndex = dropAfter ? targetIndex : targetIndex - 1;
+            } else {
+                newIndex = dropAfter ? targetIndex + 1 : targetIndex;
+            }
+
+            // Ensure we don't place after FINAL rule
+            var maxIndex = this.config.hasFinalRule ? this.rules.length - 1 : this.rules.length;
+            if (newIndex > maxIndex) {
+                newIndex = maxIndex;
+            }
+
+            this.rules.splice(newIndex, 0, rule);
+            this.resetDragState();
+            this.saveRules();
+        },
+
+        /**
+         * Handle drag end
+         */
+        handleDragEnd: function (e) {
+            var tbody = document.getElementById(this.config.tbodyId);
+            if (tbody) {
+                var rows = tbody.querySelectorAll('tr.cbi-section-table-row');
+                rows.forEach(function (row) {
+                    row.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+                });
+            }
+            this.resetDragState();
+        },
+
+        /**
+         * Reset drag state
+         */
+        resetDragState: function () {
+            this.dragState.dragging = false;
+            this.dragState.draggedIndex = -1;
+            this.dragState.draggedRow = null;
         },
 
         /**
@@ -147,6 +298,34 @@
             tr.className = 'tr cbi-section-table-row';
             var isFinal = this.isFinalRule(index);
 
+            // Add drag attributes
+            if (this.config.allowMove && !isFinal) {
+                tr.draggable = true;
+                tr.ondragstart = function (e) { self.handleDragStart(e, index); };
+                tr.ondragend = function (e) { self.handleDragEnd(e); };
+            }
+            tr.ondragover = function (e) { self.handleDragOver(e, index); };
+            tr.ondragleave = function (e) { self.handleDragLeave(e); };
+            tr.ondrop = function (e) { self.handleDrop(e, index); };
+
+            // Add drag handle as first column if allowMove is enabled
+            if (this.config.allowMove) {
+                var dragTd = document.createElement('td');
+                dragTd.className = 'td drag-handle-cell';
+                dragTd.style.width = '30px';
+                dragTd.style.textAlign = 'center';
+
+                if (!isFinal) {
+                    var dragHandle = document.createElement('span');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.title = 'Drag to reorder';
+                    // Use inline SVG for better compatibility
+                    dragHandle.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2" rx="1"/><rect x="2" y="7" width="12" height="2" rx="1"/><rect x="2" y="11" width="12" height="2" rx="1"/></svg>';
+                    dragTd.appendChild(dragHandle);
+                }
+                tr.appendChild(dragTd);
+            }
+
             this.config.columns.forEach(function (column) {
                 var td = document.createElement('td');
                 td.className = 'td';
@@ -223,28 +402,6 @@
             td.appendChild(editBtn);
 
             if (!isFinal) {
-                if (this.config.allowMove) {
-                    td.appendChild(document.createTextNode(' '));
-
-                    var upBtn = document.createElement('button');
-                    upBtn.type = 'button';
-                    upBtn.className = 'cbi-button cbi-button-neutral';
-                    upBtn.textContent = this.config.labels.up || 'Up';
-                    upBtn.disabled = index === 0;
-                    upBtn.onclick = function () { self.moveRuleUp(index); };
-                    td.appendChild(upBtn);
-
-                    td.appendChild(document.createTextNode(' '));
-
-                    var downBtn = document.createElement('button');
-                    downBtn.type = 'button';
-                    downBtn.className = 'cbi-button cbi-button-neutral';
-                    downBtn.textContent = this.config.labels.down || 'Down';
-                    downBtn.disabled = index >= this.rules.length - 2;
-                    downBtn.onclick = function () { self.moveRuleDown(index); };
-                    td.appendChild(downBtn);
-                }
-
                 if (this.config.allowDelete) {
                     td.appendChild(document.createTextNode(' '));
 
@@ -556,12 +713,8 @@
             if (index >= 0) {
                 this.rules[index] = newRule;
             } else {
-                // Insert before FINAL rule
-                if (this.config.hasFinalRule) {
-                    this.rules.splice(this.rules.length - 1, 0, newRule);
-                } else {
-                    this.rules.push(newRule);
-                }
+                // Insert at the beginning of the list
+                this.rules.unshift(newRule);
             }
 
             this.closeDialog();

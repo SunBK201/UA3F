@@ -7,8 +7,8 @@ local body_rules_data = uci:get("ua3f", "main", "body_rewrite") or "[]"
 local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
 %>
 
-<link rel="stylesheet" href="<%=resource%>/ua3f/rule-manager.css" />
-<script src="<%=resource%>/ua3f/rule-manager.js"></script>
+<link rel="stylesheet" href="<%=resource%>/ua3f/rule.css" />
+<script src="<%=resource%>/ua3f/rule.js"></script>
 
 <!-- ============================================ -->
 <!-- Header Rewrite Rules Section -->
@@ -21,12 +21,13 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
 
     <table id="header-rules-table" class="table cbi-section-table">
         <tr class="tr table-titles">
+            <th class="th" style="width: 30px"></th>
             <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
             <th class="th" style="width: 50px"><%:Index%></th>
             <th class="th" style="width: 150px"><%:Type%></th>
             <th class="th"><%:Match Value%></th>
             <th class="th" style="width: 130px"><%:Action%></th>
-            <th class="th" style="width: 280px"><%:Actions%></th>
+            <th class="th" style="width: 150px"><%:Actions%></th>
         </tr>
         <tbody id="headerRulesTableBody"></tbody>
     </table>
@@ -47,12 +48,13 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
 
     <table id="body-rules-table" class="table cbi-section-table">
         <tr class="tr table-titles">
+            <th class="th" style="width: 30px"></th>
             <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
             <th class="th" style="width: 50px"><%:Index%></th>
             <th class="th" style="width: 150px"><%:Type%></th>
             <th class="th"><%:Match Value%></th>
             <th class="th" style="width: 130px"><%:Action%></th>
-            <th class="th" style="width: 280px"><%:Actions%></th>
+            <th class="th" style="width: 150px"><%:Actions%></th>
         </tr>
         <tbody id="bodyRulesTableBody"></tbody>
     </table>
@@ -73,12 +75,13 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
 
     <table id="url-redirect-rules-table" class="table cbi-section-table">
         <tr class="tr table-titles">
+            <th class="th" style="width: 30px"></th>
             <th class="th" style="width: 50px; text-align: center"><%:Enabled%></th>
             <th class="th" style="width: 50px"><%:Index%></th>
             <th class="th" style="width: 150px"><%:Type%></th>
             <th class="th"><%:Match Value%></th>
             <th class="th" style="width: 130px"><%:Action%></th>
-            <th class="th" style="width: 280px"><%:Actions%></th>
+            <th class="th" style="width: 150px"><%:Actions%></th>
         </tr>
         <tbody id="urlRedirectRulesTableBody"></tbody>
     </table>
@@ -245,7 +248,7 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
                 style: { width: '100px' },
                 labelMap: function(value) { return this.getActionLabel(value); }
             },
-            { type: 'actions', style: { width: '280px' } }
+            { type: 'actions', style: { width: '150px' } }
         ],
 
         // Dialog fields configuration
