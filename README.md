@@ -15,6 +15,7 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
     <td>
       <ul>
         <li>支持 HTTP 请求与响应的 Header、Body 双向重写</li>
+        <li>支持 HTTP URL 重定向：302、307、Header</li>
         <li>应用层服务模式：HTTP、SOCKS5</li>
         <li>传输层服务模式：TPROXY、REDIRECT</li>
         <li>网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)</li>

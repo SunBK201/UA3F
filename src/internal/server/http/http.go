@@ -86,6 +86,9 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	if req == nil {
+		return // Redirected
+	}
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
@@ -115,6 +118,9 @@ func (s *Server) rewriteRequest(metadata *common.Metadata) (*http.Request, error
 	if decision.Action == action.DropRequestAction {
 		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
+	}
+	if decision.Redirect {
+		return nil, nil
 	}
 	if decision.NeedCache {
 		s.Cache.Add(metadata.DestAddr(), struct{}{})

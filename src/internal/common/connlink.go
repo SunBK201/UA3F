@@ -20,9 +20,18 @@ type ConnLink struct {
 	Metadata *Metadata
 
 	SniffDone *sync.WaitGroup // For waiting ProcessLR First Sniff
+	SniffOnce sync.Once       // Ensures SniffDone.Done() is called only once
 }
 
 var one = make([]byte, 1)
+
+func (c *ConnLink) DoneSniff() {
+	if c.SniffDone != nil {
+		c.SniffOnce.Do(func() {
+			c.SniffDone.Done()
+		})
+	}
+}
 
 func (c *ConnLink) LIP() string {
 	if tcpAddr, ok := c.LConn.RemoteAddr().(*net.TCPAddr); ok {

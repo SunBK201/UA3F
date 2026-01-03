@@ -70,7 +70,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 
 	decision = &RewriteDecision{
 		Action:   action.DirectAction,
-		Continue: true,
+		Redirect: false,
 	}
 	matchedRule = nil
 	index = -1
@@ -86,7 +86,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 			log.LogErrorWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("decision.Action.Execute: %s", err.Error()))
 			return
 		}
-		decision.Continue = contine
+		decision.Redirect = contine
 		if !contine {
 			break
 		}

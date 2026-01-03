@@ -18,7 +18,7 @@ type RewriteDecision struct {
 	MatchedRule common.Rule
 	NeedCache   bool
 	NeedSkip    bool
-	Continue    bool // URL Redirect
+	Redirect    bool // URL Redirect
 
 	Modified bool // NFQUEUE
 	HasUA    bool // NFQUEUE

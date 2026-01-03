@@ -87,6 +87,8 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	}()
 
 	defer func() {
+		c.DoneSniff()
+
 		if err != nil {
 			c.LogDebugf("ProcessLR: %s", err.Error())
 		}
@@ -134,16 +136,13 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		return
 	}
 
-	if s.Cfg.RewriteMode == config.RewriteModeRule && s.Rewriter.ServeResponse() {
-		c.SniffDone.Done()
-	}
-
 	c.Protocol = sniff.HTTP
 	s.Recorder.AddRecord(&statistics.ConnectionRecord{
 		Protocol: sniff.HTTP,
 		SrcAddr:  c.LAddr,
 		DestAddr: c.RAddr,
 	})
+	c.DoneSniff()
 
 	var req *http.Request
 
@@ -173,7 +172,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		c.Metadata.UpdateRequest(req)
 
 		decision := s.Rewriter.RewriteRequest(c.Metadata)
-		if decision.Action == action.DropRequestAction || !decision.Continue {
+		if decision.Action == action.DropRequestAction || decision.Redirect {
 			continue
 		}
 		if decision.NeedCache {
@@ -234,9 +233,11 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 		}
 	}
 
-	c.SniffDone.Wait()
-	if c.Protocol != sniff.HTTP {
-		return
+	if c.SniffDone != nil {
+		c.SniffDone.Wait()
+		if c.Protocol != sniff.HTTP {
+			return
+		}
 	}
 
 	var (
@@ -250,7 +251,7 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 			return
 		}
 		if !isHTTP {
-			c.LogWarn("sniff subsequent request is not http, switch to direct forward")
+			c.LogWarn("sniff subsequent response is not http, switch to direct forward")
 			return
 		}
 
