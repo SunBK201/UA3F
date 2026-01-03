@@ -13,6 +13,7 @@ UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agen
 ## Features
 
 - Supports bidirectional rewriting of HTTP Headers and Body
+- Supports HTTP URL redirection: 302, 307, Header
 - Multiple server modes: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
 - Highly flexible rewriting rule system with multiple rule types and rewriting strategies
 - Real-time statistics dashboard with traffic modification monitoring and analysis
@@ -150,6 +151,13 @@ Rewrite Actions:
 | REPLACE       | Replace the specified header with the given content           |
 | REPLACE-REGEX | Replace the part of the specified header that matches a regex |
 | DROP          | Drop the request                                              |
+
+URL Redirection Actions:
+| Action Type | Description |
+| ----------------- | ------------------------------- |
+| REDIRECT-302 | Return a 302 redirect response |
+| REDIRECT-307 | Return a 307 redirect response |
+| REDIRECT-HEADER | Modify request Header for redirection, transparent to client |
 
 ## Clash Configuration
 
