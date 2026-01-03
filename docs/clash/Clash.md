@@ -30,31 +30,31 @@ rules:
   </tr>
   <tr>
     <td>国内版</td>
-    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-cn.yaml">ua3f-socks5-cn.yaml</a></td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/docs/clash/ua3f-socks5-cn.yaml">ua3f-socks5-cn.yaml</a></td>
     <td>SOCKS5</td>
     <td>无需进行任何修改，可直接使用</td>
   </tr>
   <tr>
     <td>代理支持</td>
-    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global.yaml">ua3f-socks5-global.yaml</a></td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/docs/clash/ua3f-socks5-global.yaml">ua3f-socks5-global.yaml</a></td>
     <td>SOCKS5</td>
     <td>注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理订阅链接</td>
   </tr>
   <tr>
     <td>抗 DPI + 代理支持</td>
-    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-socks5-global-dpi.yaml">ua3f-socks5-global-dpi.yaml</a></td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/docs/clash/ua3f-socks5-global-dpi.yaml">ua3f-socks5-global-dpi.yaml</a></td>
     <td>SOCKS5</td>
     <td>注意需要在 proxy-providers > Global-ISP > url 中（第 23 行）加入你的代理订阅链接</td>
   </tr>
   <tr>
     <td>代理支持</td>
-    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-tproxy-cn-dpi.yaml">ua3f-tproxy-cn-dpi.yaml</a></td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/docs/clash/ua3f-tproxy-cn-dpi.yaml">ua3f-tproxy-cn-dpi.yaml</a></td>
     <td>TPROXY/REDIRECT/NFQUEUE</td>
     <td>注意需要在 proxy-providers > Global-ISP > url 中（第 13 行）加入你的代理订阅链接</td>
   </tr>
   <tr>
     <td>抗 DPI + 代理支持</td>
-    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/clash/ua3f-tproxy-global-dpi.yaml">ua3f-tproxy-global-dpi.yaml</a></td>
+    <td><a href="https://cdn.jsdelivr.net/gh/SunBK201/UA3F@master/docs/clash/ua3f-tproxy-global-dpi.yaml">ua3f-tproxy-global-dpi.yaml</a></td>
     <td>TPROXY/REDIRECT/NFQUEUE</td>
     <td>注意需要在 proxy-providers > Global-ISP > url 中（第 18 行）加入你的代理订阅链接</td>
   </tr>

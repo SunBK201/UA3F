@@ -172,7 +172,7 @@ URL 重定向动作：
 
 ## Clash 配置建议
 
-见 [Clash 配置](docs/Clash.md)
+见 [Clash 配置](docs/clash/Clash.md)
 
 ## References & Thanks
 

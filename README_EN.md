@@ -164,7 +164,7 @@ URL Redirection Actions:
 
 ## Clash Configuration
 
-See [Clash Configuration](docs/Clash.md)
+See [Clash Configuration](docs/clash/Clash.md)
 
 ## References & Thanks
 
