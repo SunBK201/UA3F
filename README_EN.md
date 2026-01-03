@@ -28,18 +28,18 @@ UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agen
 
 <table>
   <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci160.png" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-luci.png" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-rule.png" alt="UA3F-Rules"></td>
   </tr>
 </table>
 
 ## Deployment
 
-Three deployment methods are available:
+Four deployment methods are available:
 
-- **IPK Package Installation:**
+- **OpenWrt Package Installation:**
 
-  Pre-compiled versions for common architectures are available on the [Release](https://github.com/SunBK201/UA3F/releases) page. Download the appropriate version for your device architecture and install it on OpenWrt using `opkg install`.
+  Pre-compiled versions for common architectures are available on the [Release](https://github.com/SunBK201/UA3F/releases) page. Download the appropriate version for your device architecture and install it on OpenWrt.
 
 - **OpenWrt Compilation:**
 
@@ -58,6 +58,9 @@ Three deployment methods are available:
   ```sh
   docker run -p 1080:1080 sunbk201/ua3f -f FFF
   ```
+
+- **Binary Download**
+  Pre-compiled binaries for common architectures are available on the [Release](https://github.com/SunBK201/UA3F/releases) page. Download the appropriate binary for your device architecture.
 
 ## Usage
 

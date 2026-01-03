@@ -8,7 +8,7 @@
 
 [English](README_EN.md) | 简体中文
 
-UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 流量数据 (例如 User-Agent) 进行高效透明重写。
+UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 流量 (例如 User-Agent) 进行高效透明重写。
 
 <table>
   <tr>
@@ -35,18 +35,18 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
 
 <table>
   <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-luci160.png" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-rule160.png" alt="UA3F-Rules"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-luci.png" alt="UA3F-LuCI"></td>
+    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-rule.png" alt="UA3F-Rules"></td>
   </tr>
 </table>
 
 ## 部署
 
-提供 3 种部署方式：
+提供 4 种部署方式：
 
-- 使用 ipk 安装包进行部署：
+- 使用 OpenWrt 安装包进行部署：
 
-  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己设备的架构下载到 OpenWrt 上使用 `opkg install` 进行安装。
+  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的打包版本，可以根据自己设备的架构下载到 OpenWrt 上进行安装。
 
 - OpenWrt 编译安装：
 
@@ -57,7 +57,7 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
   git clone https://github.com/SunBK201/UA3F.git package/UA3F
   make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
   make download -j$(nproc) V=s
-  make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 编译单个包
+  make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 单独编译 UA3F
   ```
 
 - Docker 部署：
@@ -65,6 +65,10 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
   ```sh
   docker run -p 1080:1080 sunbk201/ua3f -f FFF
   ```
+
+- 二进制文件下载
+
+  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己设备的架构下载对应的二进制文件使用。
 
 ## 使用
 
