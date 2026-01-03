@@ -54,6 +54,9 @@ type Config struct {
 
 	BodyRules     []Rule `yaml:"body-rewrite" validate:"dive"`
 	BodyRulesJson string `yaml:"body-rewrite-json,omitempty"`
+
+	URLRedirectRules []Rule `yaml:"url-redirect" validate:"dive"`
+	URLRedirectJson  string `yaml:"url-redirect-json,omitempty"`
 }
 
 type DesyncConfig struct {
@@ -74,7 +77,7 @@ type Rule struct {
 	MatchHeader string `json:"match_header,omitempty" yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
 	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP,required_if=Type DOMAIN-SUFFIX,required_if=Type DOMAIN-KEYWORD,required_if=Type DOMAIN,required_if=Type URL-REGEX"`
 
-	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD"`
+	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD REDIRECT-302 REDIRECT-307 REDIRECT-HEADER"`
 
 	RewriteHeader    string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty"` // validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"
 	RewriteValue     string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action ADD"`
@@ -98,6 +101,7 @@ func Parse() (*Config, bool, error) {
 		rewriteMode      string
 		headerRewrite    string
 		bodyRewrite      string
+		urlRedirect      string
 		showVer          bool
 		genConfig        bool
 		ttl              bool
@@ -125,6 +129,7 @@ func Parse() (*Config, bool, error) {
 	flag.BoolVar(&genConfig, "g", false, "Generate template config file")
 	flag.StringVar(&headerRewrite, "header-rewrite", "", "Header rewrite json rules")
 	flag.StringVar(&bodyRewrite, "body-rewrite", "", "Body rewrite json rules")
+	flag.StringVar(&urlRedirect, "url-redirect", "", "URL redirect json rules")
 	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
 	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
 	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
@@ -213,6 +218,9 @@ func Parse() (*Config, bool, error) {
 	}
 	if cliSet["body-rewrite"] {
 		cfg.BodyRulesJson = bodyRewrite
+	}
+	if cliSet["url-redirect"] {
+		cfg.URLRedirectJson = urlRedirect
 	}
 	if cliSet["ttl"] {
 		cfg.TTL = ttl
@@ -342,6 +350,10 @@ func applyEnvConfig(cfg *Config) {
 
 	if os.Getenv("UA3F_BODY_REWRITE") != "" {
 		cfg.BodyRulesJson = os.Getenv("UA3F_BODY_REWRITE")
+	}
+
+	if os.Getenv("UA3F_URL_REDIRECT") != "" {
+		cfg.URLRedirectJson = os.Getenv("UA3F_URL_REDIRECT")
 	}
 }
 

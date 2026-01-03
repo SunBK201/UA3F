@@ -182,11 +182,11 @@ msgstr "操作"
 msgid "No rules configured. Click「Add Rule」to create one"
 msgstr "暂无配置规则，点击「添加规则」创建新规则"
 
-msgid "Add Rewrite Rule"
-msgstr "添加重写规则"
+msgid "Add Rule"
+msgstr "添加规则"
 
-msgid "Edit Rewrite Rule"
-msgstr "编辑重写规则"
+msgid "Edit Rule"
+msgstr "编辑规则"
 
 msgid "Enter match value"
 msgstr "输入匹配值"
@@ -361,3 +361,9 @@ msgstr "HTTP 请求"
 
 msgid "HTTP Response"
 msgstr "HTTP 响应"
+
+msgid "URL Redirect"
+msgstr "URL 重定向"
+
+msgid "Redirect HTTP Requests to Different URLs"
+msgstr "重定向 HTTP 请求"

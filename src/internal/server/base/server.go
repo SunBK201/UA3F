@@ -173,7 +173,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		c.Metadata.UpdateRequest(req)
 
 		decision := s.Rewriter.RewriteRequest(c.Metadata)
-		if decision.Action == action.DropRequestAction {
+		if decision.Action == action.DropRequestAction || !decision.Continue {
 			continue
 		}
 		if decision.NeedCache {

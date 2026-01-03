@@ -8,6 +8,7 @@ function index()
     entry({ "admin", "services", "ua3f", "get_rules" }, call("get_rules")).leaf = true
     entry({ "admin", "services", "ua3f", "save_header_rules" }, call("save_header_rules")).leaf = true
     entry({ "admin", "services", "ua3f", "save_body_rules" }, call("save_body_rules")).leaf = true
+    entry({ "admin", "services", "ua3f", "save_url_redirect_rules" }, call("save_url_redirect_rules")).leaf = true
 end
 
 local fs = require("nixio.fs")
@@ -245,5 +246,51 @@ function save_body_rules()
     http.write(json.stringify({
         success = true,
         message = "Body rules saved successfully"
+    }))
+end
+
+function save_url_redirect_rules()
+    local http = require("luci.http")
+    local uci = require("luci.model.uci").cursor()
+    local json = require("luci.jsonc")
+
+    http.prepare_content("application/json")
+
+    -- Read POST data
+    local content_length = tonumber(http.getenv("CONTENT_LENGTH"))
+    if not content_length or content_length == 0 then
+        http.write(json.stringify({
+            success = false,
+            error = "No data provided"
+        }))
+        return
+    end
+
+    local post_data = http.content()
+    if not post_data then
+        http.write(json.stringify({
+            success = false,
+            error = "Failed to read request data"
+        }))
+        return
+    end
+
+    -- Parse JSON data
+    local success, data = pcall(json.parse, post_data)
+    if not success or not data or not data.rules then
+        http.write(json.stringify({
+            success = false,
+            error = "Invalid JSON data"
+        }))
+        return
+    end
+
+    -- Save rules to UCI
+    local rules_json = json.stringify(data.rules)
+    uci:set("ua3f", "main", "url_redirect", rules_json)
+
+    http.write(json.stringify({
+        success = true,
+        message = "URL redirect rules saved successfully"
     }))
 end

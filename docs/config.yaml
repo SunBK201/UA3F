@@ -72,3 +72,10 @@ body-rewrite:
     rewrite-direction: RESPONSE
     rewrite-regex: "UA2F"
     rewrite-value: "UA3F"
+
+url-redirect:
+  - type: URL-REGEX
+    match-value: "^http://ua-check.stagoh.com/"
+    action: REDIRECT-307
+    rewrite-regex: "^http://ua-check.stagoh.com/(.*)"
+    rewrite-value: "http://ua-check.stagoh.com:2333/$1"

@@ -42,6 +42,8 @@ func NewDomainSuffix(rule *config.Rule, recorder *statistics.Recorder, target co
 		a = action.NewHeaderAction(rule, recorder)
 	case common.ActionTargetBody:
 		a = action.NewBodyAction(rule, recorder)
+	case common.ActionTargetURL:
+		a = action.NewURLAction(rule, recorder)
 	default:
 		slog.Error("unknown target", "target", target)
 		return nil

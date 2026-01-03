@@ -5,6 +5,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/rule/action/body"
 	"github.com/sunbk201/ua3f/internal/rule/action/header"
+	"github.com/sunbk201/ua3f/internal/rule/action/redirect"
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
@@ -75,6 +76,22 @@ func NewBodyAction(rule *config.Rule, recorder *statistics.Recorder) common.Acti
 		}
 	case common.ActionReplaceRegex:
 		return body.NewReplaceRegex(recorder, rule.RewriteRegex, rule.RewriteValue, rule.Continue, direction)
+	default:
+		return nil
+	}
+}
+
+func NewURLAction(rule *config.Rule, recorder *statistics.Recorder) common.Action {
+	switch common.ActionType(rule.Action) {
+	case common.ActionDirect:
+		DirectAction.SetRecorder(recorder)
+		return DirectAction
+	case common.ActionRedirect302:
+		return redirect.NewRedirect302(rule.RewriteRegex, rule.RewriteValue)
+	case common.ActionRedirect307:
+		return redirect.NewRedirect307(rule.RewriteRegex, rule.RewriteValue)
+	case common.ActionRedirectHeader:
+		return redirect.NewRedirectHeader(rule.RewriteRegex, rule.RewriteValue)
 	default:
 		return nil
 	}

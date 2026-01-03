@@ -53,6 +53,16 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 				RewriteValue:     "UA3F",
 			},
 		},
+
+		URLRedirectRules: []Rule{
+			{
+				Type:         "URL-REGEX",
+				MatchValue:   "^http://example.com/old-path",
+				Action:       "REDIRECT-302",
+				RewriteRegex: "http://example.com/old-path(.*)",
+				RewriteValue: "http://example.com/new-path$1",
+			},
+		},
 	}
 
 	if writeToFile {
