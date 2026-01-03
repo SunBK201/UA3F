@@ -26,13 +26,13 @@ define Package/ua3f
 	SECTION:=net
 	CATEGORY:=Network
 	SUBMENU:=Web Servers/Proxies
-	TITLE:=Advanced HTTP Header Rewriting Tool
+	TITLE:=Advanced HTTP Rewriting Tool
 	URL:=https://github.com/SunBK201/UA3F
 	DEPENDS:=$(GO_ARCH_DEPENDS) +luci-compat +ipset +iptables +iptables-mod-tproxy +iptables-mod-extra +iptables-mod-ipopt +iptables-mod-nfqueue +iptables-mod-conntrack-extra +kmod-nf-conntrack-netlink
 endef
 
 define Package/ua3f/description
-	Advanced HTTP Header Rewriting Tool
+	Advanced HTTP Rewriting Tool
 endef
 
 define Build/Prepare
