@@ -33,13 +33,6 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
   </tr>
 </table>
 
-<table>
-  <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-luci.png" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-rule.png" alt="UA3F-Rules"></td>
-  </tr>
-</table>
-
 ## 部署
 
 提供 4 种部署方式：

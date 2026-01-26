@@ -26,13 +26,6 @@ UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agen
 <img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" style="width:40%;">
 </div>
 
-<table>
-  <tr>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-luci.png" alt="UA3F-LuCI"></td>
-    <td><img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-270-rule.png" alt="UA3F-Rules"></td>
-  </tr>
-</table>
-
 ## Deployment
 
 Four deployment methods are available:
