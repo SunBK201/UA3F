@@ -712,8 +712,8 @@ user-agent: "FileUA"
 func TestEnvVarOverridesDefault(t *testing.T) {
 	resetViper(t)
 
-	viper.BindEnv("user-agent", "UA3F_PAYLOAD_UA")
-	viper.BindEnv("port", "UA3F_PORT")
+	_ = viper.BindEnv("user-agent", "UA3F_PAYLOAD_UA")
+	_ = viper.BindEnv("port", "UA3F_PORT")
 
 	t.Setenv("UA3F_PAYLOAD_UA", "EnvUA")
 	t.Setenv("UA3F_PORT", "3333")
