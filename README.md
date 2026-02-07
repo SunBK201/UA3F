@@ -71,6 +71,8 @@ UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关
 
 UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [config.yaml](docs/config.yaml)
 
+详细命令行配置说明见 [Configuration.md](docs/Configuration.md)
+
 设备与系统信息正则表达式参考：
 
 ```regex
