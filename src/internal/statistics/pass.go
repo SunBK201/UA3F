@@ -19,6 +19,9 @@ type PassThroughRecordList struct {
 	dumpRecords []*PassThroughRecord
 	dumpFile    string
 	dumpWriter  *bufio.Writer
+
+	dumpInterval    time.Duration
+	cleanupInterval time.Duration
 }
 
 type PassThroughRecord struct {
@@ -26,30 +29,37 @@ type PassThroughRecord struct {
 	DestAddr string
 	UA       string
 	Count    int
+	LastSeen time.Time
 }
 
 func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {
 	return &PassThroughRecordList{
-		recordAddChan: make(chan *PassThroughRecord, 100),
-		records:       make(map[string]*PassThroughRecord, 100),
-		mu:            sync.RWMutex{},
-		dumpRecords:   make([]*PassThroughRecord, 0, 100),
-		dumpFile:      dumpFile,
-		dumpWriter:    bufio.NewWriter(nil),
+		recordAddChan:   make(chan *PassThroughRecord, 100),
+		records:         make(map[string]*PassThroughRecord, 100),
+		mu:              sync.RWMutex{},
+		dumpRecords:     make([]*PassThroughRecord, 0, 100),
+		dumpFile:        dumpFile,
+		dumpWriter:      bufio.NewWriter(nil),
+		dumpInterval:    5 * time.Second,
+		cleanupInterval: 24 * time.Hour,
 	}
 }
 
 func (l *PassThroughRecordList) Run() {
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
+		dumpTicker := time.NewTicker(l.dumpInterval)
+		cleanupTicker := time.NewTicker(l.cleanupInterval)
+		defer dumpTicker.Stop()
+		defer cleanupTicker.Stop()
 
 		for {
 			select {
 			case record := <-l.recordAddChan:
 				l.Add(record)
-			case <-ticker.C:
+			case <-dumpTicker.C:
 				l.Dump()
+			case <-cleanupTicker.C:
+				l.Cleanup()
 			}
 		}
 	}()
@@ -67,16 +77,33 @@ func (l *PassThroughRecordList) Add(record *PassThroughRecord) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	now := time.Now()
+
 	if r, exists := l.records[record.UA]; exists {
 		r.Count++
 		r.SrcAddr = record.SrcAddr
 		r.DestAddr = record.DestAddr
+		r.LastSeen = now
 	} else {
 		l.records[record.UA] = &PassThroughRecord{
 			SrcAddr:  record.SrcAddr,
 			DestAddr: record.DestAddr,
 			UA:       record.UA,
 			Count:    1,
+			LastSeen: now,
+		}
+	}
+}
+
+func (l *PassThroughRecordList) Cleanup() {
+	cutoff := time.Now().Add(-l.cleanupInterval)
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for ua, record := range l.records {
+		if record.LastSeen.Before(cutoff) {
+			delete(l.records, ua)
 		}
 	}
 }

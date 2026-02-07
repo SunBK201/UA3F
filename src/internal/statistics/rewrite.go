@@ -18,6 +18,9 @@ type RewriteRecordList struct {
 	dumpRecords []*RewriteRecord
 	dumpFile    string
 	dumpWriter  *bufio.Writer
+
+	dumpInterval    time.Duration
+	cleanupInterval time.Duration
 }
 
 type RewriteRecord struct {
@@ -25,36 +28,45 @@ type RewriteRecord struct {
 	Count      int
 	OriginalUA string
 	MockedUA   string
+	LastSeen   time.Time
 }
 
 func NewRewriteRecordList(dumpFile string) *RewriteRecordList {
 	return &RewriteRecordList{
-		recordAddChan: make(chan *RewriteRecord, 100),
-		records:       make(map[string]*RewriteRecord, 300),
-		mu:            sync.RWMutex{},
-		dumpRecords:   make([]*RewriteRecord, 0, 300),
-		dumpFile:      dumpFile,
-		dumpWriter:    bufio.NewWriter(nil),
+		recordAddChan:   make(chan *RewriteRecord, 100),
+		records:         make(map[string]*RewriteRecord, 300),
+		mu:              sync.RWMutex{},
+		dumpRecords:     make([]*RewriteRecord, 0, 300),
+		dumpFile:        dumpFile,
+		dumpWriter:      bufio.NewWriter(nil),
+		dumpInterval:    5 * time.Second,
+		cleanupInterval: 24 * time.Hour,
 	}
 }
 
 func (l *RewriteRecordList) Run() {
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
+		dumpTicker := time.NewTicker(l.dumpInterval)
+		cleanupTicker := time.NewTicker(l.cleanupInterval)
+		defer dumpTicker.Stop()
+		defer cleanupTicker.Stop()
 
 		for {
 			select {
 			case record := <-l.recordAddChan:
 				l.Add(record)
-			case <-ticker.C:
+			case <-dumpTicker.C:
 				l.Dump()
+			case <-cleanupTicker.C:
+				l.Cleanup()
 			}
 		}
 	}()
 }
 
 func (l *RewriteRecordList) Add(record *RewriteRecord) {
+	now := time.Now()
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -62,12 +74,27 @@ func (l *RewriteRecordList) Add(record *RewriteRecord) {
 		r.Count++
 		r.OriginalUA = record.OriginalUA
 		r.MockedUA = record.MockedUA
+		r.LastSeen = now
 	} else {
 		l.records[record.Host] = &RewriteRecord{
 			Host:       record.Host,
 			Count:      1,
 			OriginalUA: record.OriginalUA,
 			MockedUA:   record.MockedUA,
+			LastSeen:   now,
+		}
+	}
+}
+
+func (l *RewriteRecordList) Cleanup() {
+	cutoff := time.Now().Add(-l.cleanupInterval)
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for host, record := range l.records {
+		if record.LastSeen.Before(cutoff) {
+			delete(l.records, host)
 		}
 	}
 }
