@@ -1,14 +1,13 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"go.yaml.in/yaml/v3"
+	"github.com/go-viper/mapstructure/v2"
+	"github.com/spf13/viper"
 )
 
 type ServerMode string
@@ -88,289 +87,30 @@ type Rule struct {
 	Continue bool `json:"continue,omitempty" yaml:"continue,omitempty"`
 }
 
-func Parse() (*Config, bool, error) {
-	var (
-		configFile       string
-		serverMode       string
-		bindAddr         string
-		port             int
-		loglevel         string
-		payloadUA        string
-		uaRegx           string
-		partial          bool
-		rewriteMode      string
-		headerRewrite    string
-		bodyRewrite      string
-		urlRedirect      string
-		showVer          bool
-		genConfig        bool
-		ttl              bool
-		ipid             bool
-		tcpTimestamp     bool
-		tcpInitialWindow bool
-		desyncReorder    bool
-		reorderBytes     uint
-		reorderPackets   uint
-		desyncInject     bool
-		injectTTL        uint
-		desyncPorts      string
-	)
-
-	flag.StringVar(&configFile, "c", "", "Config file path")
-	flag.StringVar(&serverMode, "m", "", "Server mode: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE")
-	flag.StringVar(&bindAddr, "b", "", "Bind address")
-	flag.IntVar(&port, "p", 0, "Port")
-	flag.StringVar(&loglevel, "l", "", "Log level")
-	flag.StringVar(&payloadUA, "f", "", "User-Agent")
-	flag.StringVar(&uaRegx, "r", "", "User-Agent regex")
-	flag.BoolVar(&partial, "s", false, "Enable regex partial replace")
-	flag.StringVar(&rewriteMode, "x", "", "Rewrite mode: GLOBAL, DIRECT, RULE")
-	flag.BoolVar(&showVer, "v", false, "Show version")
-	flag.BoolVar(&genConfig, "g", false, "Generate template config file")
-	flag.StringVar(&headerRewrite, "header-rewrite", "", "Header rewrite json rules")
-	flag.StringVar(&bodyRewrite, "body-rewrite", "", "Body rewrite json rules")
-	flag.StringVar(&urlRedirect, "url-redirect", "", "URL redirect json rules")
-	flag.BoolVar(&ttl, "ttl", false, "Set TTL")
-	flag.BoolVar(&ipid, "ipid", false, "Set IP ID")
-	flag.BoolVar(&tcpTimestamp, "tcpts", false, "Delete TCP Timestamp")
-	flag.BoolVar(&tcpInitialWindow, "tcpwin", false, "Set TCP Initial Window")
-	flag.BoolVar(&desyncReorder, "desync-reorder", false, "Enable desync reorder")
-	flag.UintVar(&reorderBytes, "desync-reorder-bytes", 0, "Desync reorder bytes")
-	flag.UintVar(&reorderPackets, "desync-reorder-packets", 0, "Desync reorder packets")
-	flag.BoolVar(&desyncInject, "desync-inject", false, "Enable desync inject")
-	flag.UintVar(&injectTTL, "desync-inject-ttl", 0, "Desync inject TTL")
-	flag.StringVar(&desyncPorts, "desync-ports", "", "Desync ports")
-	flag.Parse()
-
-	if genConfig {
-		_, err := GenerateTemplateConfig(true)
-		if err != nil {
-			return nil, false, fmt.Errorf("failed to generate template config: %w", err)
-		}
-		fmt.Println("Template config file 'config.yaml' generated successfully.")
-		return nil, false, nil
+// BuildConfigFromViper constructs a Config from viper settings.
+// Viper merges values from defaults, config file, env vars and CLI flags
+// with the correct priority: defaults < config file < env vars < CLI flags.
+func BuildConfigFromViper() (*Config, error) {
+	var cfg Config
+	if err := viper.Unmarshal(&cfg, func(dc *mapstructure.DecoderConfig) {
+		dc.TagName = "yaml"
+	}); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if showVer {
-		return nil, true, nil
-	}
-
-	// Track which CLI flags were explicitly set
-	cliSet := make(map[string]bool)
-	flag.Visit(func(f *flag.Flag) {
-		cliSet[f.Name] = true
-	})
-
-	// 1. Start with default values (lowest priority)
-	cfg := &Config{
-		ServerMode:  ServerModeSocks5,
-		BindAddress: "127.0.0.1",
-		Port:        1080,
-		LogLevel:    "info",
-		UserAgent:   "FFF",
-		RewriteMode: RewriteModeGlobal,
-		Desync: DesyncConfig{
-			ReorderBytes:   8,
-			ReorderPackets: 1500,
-			InjectTTL:      3,
-		},
-	}
-
-	// 2. Apply config file values (if provided)
-	if configFile != "" {
-		fileCfg, err := LoadConfig(configFile)
-		if err != nil {
-			return nil, false, err
-		}
-		cfg = fileCfg
-	}
-
-	// 3. Apply environment variables (overrides config file)
-	applyEnvConfig(cfg)
-
-	// 4. Apply CLI arguments (highest priority, only if explicitly set)
-	if cliSet["m"] {
-		cfg.ServerMode = ServerMode(strings.ToUpper(serverMode))
-	}
-	if cliSet["b"] {
-		cfg.BindAddress = bindAddr
-	}
-	if cliSet["p"] {
-		cfg.Port = port
-	}
-	if cliSet["l"] {
-		cfg.LogLevel = loglevel
-	}
-	if cliSet["f"] {
-		cfg.UserAgent = payloadUA
-	}
-	if cliSet["r"] {
-		cfg.UserAgentRegex = uaRegx
-	}
-	if cliSet["s"] {
-		cfg.UserAgentPartialReplace = partial
-	}
-	if cliSet["x"] {
-		cfg.RewriteMode = RewriteMode(strings.ToUpper(rewriteMode))
-	}
-	if cliSet["header-rewrite"] {
-		cfg.HeaderRulesJson = headerRewrite
-	}
-	if cliSet["body-rewrite"] {
-		cfg.BodyRulesJson = bodyRewrite
-	}
-	if cliSet["url-redirect"] {
-		cfg.URLRedirectJson = urlRedirect
-	}
-	if cliSet["ttl"] {
-		cfg.TTL = ttl
-	}
-	if cliSet["ipid"] {
-		cfg.IPID = ipid
-	}
-	if cliSet["tcpts"] {
-		cfg.TCPTimeStamp = tcpTimestamp
-	}
-	if cliSet["tcpwin"] {
-		cfg.TCPInitialWindow = tcpInitialWindow
-	}
-	if cliSet["desync-reorder"] {
-		cfg.Desync.Reorder = desyncReorder
-	}
-	if cliSet["desync-reorder-bytes"] {
-		cfg.Desync.ReorderBytes = uint32(reorderBytes)
-	}
-	if cliSet["desync-reorder-packets"] {
-		cfg.Desync.ReorderPackets = uint32(reorderPackets)
-	}
-	if cliSet["desync-inject"] {
-		cfg.Desync.Inject = desyncInject
-	}
-	if cliSet["desync-inject-ttl"] {
-		cfg.Desync.InjectTTL = uint8(injectTTL)
-	}
-	if cliSet["desync-ports"] {
-		cfg.Desync.DesyncPorts = desyncPorts
-	}
+	// Normalize case
+	cfg.ServerMode = ServerMode(strings.ToUpper(string(cfg.ServerMode)))
+	cfg.LogLevel = strings.ToLower(cfg.LogLevel)
+	cfg.RewriteMode = RewriteMode(strings.ToUpper(string(cfg.RewriteMode)))
 
 	// Backwards compatibility: convert deprecated "RULES" value to "RULE".
 	if cfg.RewriteMode == "RULES" {
 		cfg.RewriteMode = RewriteModeRule
 	}
 
-	return cfg, showVer, nil
-}
-
-// applyEnvConfig applies environment variables to the config
-func applyEnvConfig(cfg *Config) {
-	if os.Getenv("UA3F_SERVER_MODE") != "" {
-		cfg.ServerMode = ServerMode(strings.ToUpper(os.Getenv("UA3F_SERVER_MODE")))
-	}
-
-	if os.Getenv("UA3F_BIND_ADDRESS") != "" {
-		cfg.BindAddress = os.Getenv("UA3F_BIND_ADDRESS")
-	}
-
-	if os.Getenv("UA3F_PORT") != "" {
-		var p int
-		_, err := fmt.Sscanf(os.Getenv("UA3F_PORT"), "%d", &p)
-		if err == nil {
-			cfg.Port = p
-		}
-	}
-
-	if os.Getenv("UA3F_LOG_LEVEL") != "" {
-		cfg.LogLevel = strings.ToLower(os.Getenv("UA3F_LOG_LEVEL"))
-	}
-
-	if os.Getenv("UA3F_REWRITE_MODE") != "" {
-		cfg.RewriteMode = RewriteMode(strings.ToUpper(os.Getenv("UA3F_REWRITE_MODE")))
-	}
-
-	if os.Getenv("UA3F_PAYLOAD_UA") != "" {
-		cfg.UserAgent = os.Getenv("UA3F_PAYLOAD_UA")
-	}
-
-	if os.Getenv("UA3F_UA_REGEX") != "" {
-		cfg.UserAgentRegex = os.Getenv("UA3F_UA_REGEX")
-	}
-
-	if os.Getenv("UA3F_PARTIAL_REPLACE") == "1" {
-		cfg.UserAgentPartialReplace = true
-	}
-
-	if os.Getenv("UA3F_TCPTS") == "1" {
-		cfg.TCPTimeStamp = true
-	}
-	if os.Getenv("UA3F_TTL") == "1" {
-		cfg.TTL = true
-	}
-	if os.Getenv("UA3F_IPID") == "1" {
-		cfg.IPID = true
-	}
-	if os.Getenv("UA3F_TCP_INIT_WINDOW") == "1" {
-		cfg.TCPInitialWindow = true
-	}
-
-	if os.Getenv("UA3F_DESYNC_REORDER") == "1" {
-		cfg.Desync.Reorder = true
-	}
-	if val := os.Getenv("UA3F_DESYNC_REORDER_BYTES"); val != "" {
-		var bytes uint32
-		_, err := fmt.Sscanf(val, "%d", &bytes)
-		if err == nil {
-			cfg.Desync.ReorderBytes = bytes
-		}
-	}
-	if val := os.Getenv("UA3F_DESYNC_REORDER_PACKETS"); val != "" {
-		var packets uint32
-		_, err := fmt.Sscanf(val, "%d", &packets)
-		if err == nil {
-			cfg.Desync.ReorderPackets = packets
-		}
-	}
-
-	if os.Getenv("UA3F_DESYNC_INJECT") == "1" {
-		cfg.Desync.Inject = true
-	}
-	if val := os.Getenv("UA3F_DESYNC_INJECT_TTL"); val != "" {
-		var ttl uint8
-		_, err := fmt.Sscanf(val, "%d", &ttl)
-		if err == nil {
-			cfg.Desync.InjectTTL = ttl
-		}
-	}
-	if os.Getenv("UA3F_DESYNC_PORTS") != "" {
-		cfg.Desync.DesyncPorts = os.Getenv("UA3F_DESYNC_PORTS")
-	}
-
-	if os.Getenv("UA3F_HEADER_REWRITE") != "" {
-		cfg.HeaderRulesJson = os.Getenv("UA3F_HEADER_REWRITE")
-	}
-
-	if os.Getenv("UA3F_BODY_REWRITE") != "" {
-		cfg.BodyRulesJson = os.Getenv("UA3F_BODY_REWRITE")
-	}
-
-	if os.Getenv("UA3F_URL_REDIRECT") != "" {
-		cfg.URLRedirectJson = os.Getenv("UA3F_URL_REDIRECT")
-	}
-}
-
-func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-
 	validate := validator.New()
-	if err := validate.Struct(cfg); err != nil {
-		return nil, err
+	if err := validate.Struct(&cfg); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
 	return &cfg, nil

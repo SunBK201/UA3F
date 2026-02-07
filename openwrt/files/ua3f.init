@@ -55,9 +55,9 @@ start_service() {
     procd_append_param command -r "$ua_regex"
     procd_append_param command -l "$log_level"
     procd_append_param command -x "$rewrite_mode"
-    procd_append_param command -header-rewrite "$header_rewrite"
-    procd_append_param command -body-rewrite "$body_rewrite"
-    procd_append_param command -url-redirect "$url_redirect"
+    procd_append_param command --header-rewrite "$header_rewrite"
+    procd_append_param command --body-rewrite "$body_rewrite"
+    procd_append_param command --url-redirect "$url_redirect"
     [ "$partial_replace" = "1" ] && procd_append_param command -s
     procd_append_param env UA3F_TTL="$set_ttl"
     procd_append_param env UA3F_IPID="$set_ipid"
