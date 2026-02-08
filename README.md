@@ -1,37 +1,30 @@
 # UA3F
 
+
 ![Release](https://img.shields.io/github/v/release/SunBK201/UA3F?display_name=tag&label=UA3F&link=https%3A%2F%2Fgithub.com%2FSunBK201%2FUA3F%2Freleases%2Flatest)
 [![CodeQL](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql)
 [![License](https://img.shields.io/github/license/SunBK201/UA3F)](https://github.com/SunBK201/UA3F/blob/master/LICENSE)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/SunBK201/UA3F/total?label=GitHub%20Downloads&link=https%3A%2F%2Fgithub.com%2FSunBK201%2FUA3F%2Freleases)
 [![Telegram group](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Ftelegram%2Fcrack_campus_network&query=count&color=2CA5E0&label=Telegram%20Group&logo=telegram&cacheSeconds=3600)](https://t.me/crack_campus_network)
 
+<img align="right" src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" width="300">
+
 [English](README_EN.md) | 简体中文
 
 UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 流量 (例如 User-Agent) 进行高效透明重写。
 
-<table>
-  <tr>
-    <td>
-      <ul>
-        <li>支持 HTTP 请求与响应的 Header、Body 双向重写</li>
-        <li>支持 HTTP URL 重定向：302、307、Header</li>
-        <li>应用层服务模式：HTTP、SOCKS5</li>
-        <li>传输层服务模式：TPROXY、REDIRECT</li>
-        <li>网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)</li>
-        <li>高度灵活的重写规则系统，支持多种规则类型与重写策略</li>
-        <li>实时统计面板，支持流量修改监控与分析</li>
-        <li>支持 opkg 安装、编译安装、Docker 部署多种方式</li>
-        <li>兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行</li>
-        <li>支持 TTL，TCP Timestamp，TCP Window，IPID 伪装</li>
-        <li>支持 TCP Desync 分片乱序发射，用于对抗深度包检测（DPI）</li>
-      </ul>
-    </td>
-    <td>
-      <img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" width="300">
-    </td>
-  </tr>
-</table>
+- 支持 HTTP 请求与响应的 Header、Body 双向重写
+- 支持 HTTP URL 重定向：302、307、Header
+- 应用层服务模式：HTTP、SOCKS5
+- 传输层服务模式：TPROXY、REDIRECT
+- 网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)
+- 高度灵活的重写规则系统，支持多种规则类型与重写策略
+- 实时统计面板，支持流量修改监控与分析
+- 支持 opkg 安装、编译安装、Docker 部署多种方式
+- 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
+- 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
+- 支持 TCP Desync 分片乱序发射，用于对抗深度包检测（DPI）
+
 
 ## 部署
 

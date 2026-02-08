@@ -6,11 +6,11 @@
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/SunBK201/UA3F/total?label=GitHub%20Downloads&link=https%3A%2F%2Fgithub.com%2FSunBK201%2FUA3F%2Freleases)
 [![Telegram group](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Ftelegram%2Fcrack_campus_network&query=count&color=2CA5E0&label=Telegram%20Group&logo=telegram&cacheSeconds=3600)](https://t.me/crack_campus_network)
 
+<img align="right" src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" width="300">
+
 English | [简体中文](README.md)
 
 UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
-
-## Features
 
 - Supports bidirectional rewriting of HTTP Headers and Body
 - Supports HTTP URL redirection: 302, 307, Header
@@ -21,10 +21,6 @@ UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agen
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
 - Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
 - Supports TCP Desync fragment reordering to evade Deep Packet Inspection (DPI)
-
-<div align="center">
-<img src="https://sunbk201.oss-cn-beijing.aliyuncs.com/img/ua3f-210.png" alt="UA3F" style="width:40%;">
-</div>
 
 ## Deployment
 
@@ -53,6 +49,7 @@ Four deployment methods are available:
   ```
 
 - **Binary Download**
+
   Pre-compiled binaries for common architectures are available on the [Release](https://github.com/SunBK201/UA3F/releases) page. Download the appropriate binary for your device architecture.
 
 ## Usage
