@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/mitm"
 	"github.com/sunbk201/ua3f/internal/netfilter"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
@@ -35,7 +36,7 @@ type Server struct {
 	ignoreMark       []string
 }
 
-func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:        cfg,
@@ -48,6 +49,7 @@ func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Serv
 					return bufio.NewReaderSize(nil, 16*1024)
 				},
 			},
+			MiddleMan: middleMan,
 		},
 		so_mark:          base.SO_MARK,
 		tproxyFwMark:     "0x1c9",

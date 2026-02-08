@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/mitm"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/sniff"
@@ -26,6 +27,7 @@ type Server struct {
 	Cache           *expirable.LRU[string, struct{}]
 	SkipIpChan      chan *net.IP
 	BufioReaderPool sync.Pool
+	MiddleMan       *mitm.MiddleMan
 }
 
 var one = make([]byte, 1)
@@ -67,11 +69,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 		} else {
 			go connLink.CopyRL()
 		}
-		if s.Rewriter.ServeRequest() {
-			_ = s.ProcessLR(connLink)
-		} else {
-			connLink.CopyLR()
-		}
+		_ = s.ProcessLR(connLink)
 	default:
 		go connLink.CopyRL()
 		connLink.CopyLR()
@@ -79,11 +77,21 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 }
 
 func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
-	reader := s.BufioReaderPool.Get().(*bufio.Reader)
-	reader.Reset(c.LConn)
+	var (
+		sniffReader    *bufio.Reader
+		transferReader *bufio.Reader
+	)
+
+	sniffReader = s.BufioReaderPool.Get().(*bufio.Reader)
+	sniffReader.Reset(c.LConn)
+
 	defer func() {
-		reader.Reset(nil)
-		s.BufioReaderPool.Put(reader)
+		sniffReader.Reset(nil)
+		s.BufioReaderPool.Put(sniffReader)
+		if transferReader != nil && transferReader != sniffReader {
+			transferReader.Reset(nil)
+			s.BufioReaderPool.Put(transferReader)
+		}
 	}()
 
 	defer func() {
@@ -96,49 +104,78 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			_ = c.CloseLR()
 			return
 		}
-		if _, err = io.CopyBuffer(c.RConn, reader, one); err != nil {
+		if transferReader == nil {
+			transferReader = sniffReader
+		}
+		if _, err = io.CopyBuffer(c.RConn, transferReader, one); err != nil {
 			c.LogWarnf("ProcessLR io.CopyBuffer: %v", err)
 		}
 		_ = c.CloseLR()
 	}()
 
-	if c.RPort() == "443" {
-		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
-			s.Cache.Add(c.RAddr, struct{}{})
-			c.LogInfo("TLS client hello detected")
-			c.Protocol = sniff.HTTPS
-			s.Recorder.AddRecord(&statistics.ConnectionRecord{
-				Protocol: sniff.HTTPS,
-				SrcAddr:  c.LAddr,
-				DestAddr: c.RAddr,
-			})
-			return
+	if isTLS, _ := sniff.SniffTLS(sniffReader); isTLS {
+		s.Cache.Add(c.RAddr, struct{}{})
+		c.LogInfo("TLS client hello detected")
+		c.Protocol = sniff.TLS
+		s.Recorder.AddRecord(&statistics.ConnectionRecord{
+			Protocol: sniff.TLS,
+			SrcAddr:  c.LAddr,
+			DestAddr: c.RAddr,
+		})
+
+		// If MitM is enabled, intercept the TLS connection
+		if s.MiddleMan != nil {
+			var tlsInfo *sniff.TLSInfo
+			tlsInfo, err = sniff.SniffTLSClientHello(sniffReader)
+			if err != nil {
+				err = fmt.Errorf("sniff.SniffTLSClientHello: %w", err)
+				return
+			}
+			serverName := ""
+			if tlsInfo != nil && tlsInfo.ServerName != "" {
+				serverName = tlsInfo.ServerName
+			} else {
+				return // No SNI, skip MitM
+			}
+			mitmDone, mitmErr := s.MiddleMan.HandleTLS(c, sniffReader, serverName)
+			if mitmErr != nil {
+				c.LogWarnf("MitM HandleTLS error: %v", mitmErr)
+			}
+
+			if mitmDone {
+				transferReader = s.BufioReaderPool.Get().(*bufio.Reader)
+				transferReader.Reset(c.LConn)
+			} else {
+				// MitM decided not to intercept, use the original sniffReader for transfer tls
+				transferReader = sniffReader
+				return
+			}
 		}
+	}
+
+	if transferReader == nil {
+		transferReader = sniffReader // No MitM, use the sniffReader for transfer
 	}
 
 	var isHTTP bool
 
-	if isHTTP, err = sniff.SniffHTTPRequest(reader); err != nil {
+	if isHTTP, err = sniff.SniffHTTPRequest(transferReader); err != nil {
 		err = fmt.Errorf("sniff.SniffHTTP: %w", err)
 		return
 	}
 	if !isHTTP {
 		s.Cache.Add(c.RAddr, struct{}{})
 		c.LogInfo("Sniff first request is not http, switch to direct forward")
-		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
-			c.Protocol = sniff.TLS
-			s.Recorder.AddRecord(&statistics.ConnectionRecord{
-				Protocol: sniff.TLS,
-				SrcAddr:  c.LAddr,
-				DestAddr: c.RAddr,
-			})
-		}
 		return
 	}
 
-	c.Protocol = sniff.HTTP
+	protocol := sniff.HTTP
+	if c.Protocol == sniff.TLS {
+		protocol = sniff.HTTPS
+	}
+	c.Protocol = protocol
 	s.Recorder.AddRecord(&statistics.ConnectionRecord{
-		Protocol: sniff.HTTP,
+		Protocol: protocol,
 		SrcAddr:  c.LAddr,
 		DestAddr: c.RAddr,
 	})
@@ -147,12 +184,16 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	var req *http.Request
 
 	for {
-		if isHTTP, err = sniff.SniffHTTPFast(reader); err != nil {
+		if isHTTP, err = sniff.SniffHTTPFast(transferReader); err != nil {
 			err = fmt.Errorf("sniff.SniffHTTPFast: %w", err)
-			c.Protocol = sniff.TCP
+			if c.Protocol == sniff.HTTPS {
+				c.Protocol = sniff.TLS
+			} else {
+				c.Protocol = sniff.TCP
+			}
 			s.Recorder.AddRecord(
 				&statistics.ConnectionRecord{
-					Protocol: sniff.TCP,
+					Protocol: c.Protocol,
 					SrcAddr:  c.LAddr,
 					DestAddr: c.RAddr,
 				},
@@ -164,7 +205,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			return
 		}
 
-		if req, err = http.ReadRequest(reader); err != nil {
+		if req, err = http.ReadRequest(transferReader); err != nil {
 			err = fmt.Errorf("http.ReadRequest: %w", err)
 			return
 		}
@@ -211,7 +252,6 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 	reader := s.BufioReaderPool.Get().(*bufio.Reader)
-	reader.Reset(c.RConn)
 	defer func() {
 		reader.Reset(nil)
 		s.BufioReaderPool.Put(reader)
@@ -227,18 +267,15 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 		_ = c.CloseRL()
 	}()
 
-	if c.RPort() == "443" {
-		if isTLS, _ := sniff.SniffTLS(reader); isTLS {
+	if c.SniffDone != nil {
+		c.SniffDone.Wait()
+		if c.Protocol != sniff.HTTP && c.Protocol != sniff.HTTPS {
+			reader.Reset(c.RConn)
 			return
 		}
 	}
 
-	if c.SniffDone != nil {
-		c.SniffDone.Wait()
-		if c.Protocol != sniff.HTTP {
-			return
-		}
-	}
+	reader.Reset(c.RConn)
 
 	var (
 		isHTTP bool
@@ -255,7 +292,7 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 			return
 		}
 
-		if c.Protocol != sniff.HTTP {
+		if c.Protocol != sniff.HTTP && c.Protocol != sniff.HTTPS {
 			return
 		}
 

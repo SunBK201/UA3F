@@ -9,6 +9,8 @@ function index()
     entry({ "admin", "services", "ua3f", "save_header_rules" }, call("save_header_rules")).leaf = true
     entry({ "admin", "services", "ua3f", "save_body_rules" }, call("save_body_rules")).leaf = true
     entry({ "admin", "services", "ua3f", "save_url_redirect_rules" }, call("save_url_redirect_rules")).leaf = true
+    entry({ "admin", "services", "ua3f", "mitm_generate_cert" }, call("mitm_generate_cert")).leaf = true
+    entry({ "admin", "services", "ua3f", "mitm_export_cert" }, call("mitm_export_cert")).leaf = true
 end
 
 local fs = require("nixio.fs")
@@ -247,6 +249,79 @@ function save_body_rules()
         success = true,
         message = "Body rules saved successfully"
     }))
+end
+
+function mitm_generate_cert()
+    local http = require("luci.http")
+    local uci = require("luci.model.uci").cursor()
+    local json = require("luci.jsonc")
+    local sys = require("luci.sys")
+
+    http.prepare_content("application/json")
+
+    -- Get passphrase from POST data
+    local passphrase = http.formvalue("passphrase") or ""
+
+    -- Call ua3f cert generate to create a new CA
+    local cmd = "/usr/bin/ua3f cert generate"
+    if passphrase ~= "" then
+        cmd = cmd .. " --passphrase '" .. passphrase:gsub("'", "'\\''") .. "'"
+    end
+    local p12_base64 = sys.exec(cmd .. " 2>/dev/null")
+    p12_base64 = p12_base64:gsub("%s+$", "")
+
+    if p12_base64 == "" then
+        http.write(json.stringify({
+            success = false,
+            error = "Failed to generate certificate. Check if ua3f binary exists."
+        }))
+        return
+    end
+
+    -- Save cert and passphrase to UCI
+    uci:set("ua3f", "main", "mitm_ca_p12_base64", p12_base64)
+    uci:set("ua3f", "main", "mitm_ca_passphrase", passphrase)
+    uci:commit("ua3f")
+
+    http.write(json.stringify({
+        success = true,
+        message = "Certificate generated successfully"
+    }))
+end
+
+function mitm_export_cert()
+    local http = require("luci.http")
+    local uci = require("luci.model.uci").cursor()
+    local sys = require("luci.sys")
+
+    local p12_base64 = uci:get("ua3f", "main", "mitm_ca_p12_base64") or ""
+    local passphrase = uci:get("ua3f", "main", "mitm_ca_passphrase") or ""
+
+    if p12_base64 == "" then
+        http.status(404, "Not Found")
+        http.prepare_content("text/plain")
+        http.write("No CA certificate configured. Please generate one first.")
+        return
+    end
+
+    -- Call ua3f cert export to get PEM
+    local cmd = "/usr/bin/ua3f cert export --p12-base64 '" .. p12_base64 .. "'"
+    if passphrase ~= "" then
+        cmd = cmd .. " --passphrase '" .. passphrase:gsub("'", "'\\''") .. "'"
+    end
+    local pem_data = sys.exec(cmd .. " 2>/dev/null")
+
+    if pem_data == "" then
+        http.status(500, "Internal Server Error")
+        http.prepare_content("text/plain")
+        http.write("Failed to export certificate")
+        return
+    end
+
+    http.header("Content-Type", "application/x-pem-file")
+    http.header("Content-Disposition", 'attachment; filename="ua3f-ca.pem"')
+    http.header("Content-Length", tostring(#pem_data))
+    http.write(pem_data)
 end
 
 function save_url_redirect_rules()

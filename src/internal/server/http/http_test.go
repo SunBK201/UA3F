@@ -158,7 +158,7 @@ func TestHTTPProxyUserAgentRewrite(t *testing.T) {
 			_ = listener.Close()
 
 			cfg.Port = port
-			server := New(cfg, rw, recorder)
+			server := New(cfg, rw, recorder, nil)
 
 			if err := server.Start(); err != nil {
 				t.Fatalf("failed to start server: %v", err)
@@ -234,7 +234,7 @@ func TestHTTPProxyCONNECT(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -318,7 +318,7 @@ func TestHTTPProxyConcurrentRequests(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -414,7 +414,7 @@ func TestHTTPProxyDifferentMethods(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -499,7 +499,7 @@ func TestHTTPProxyPartialRewrite(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -557,7 +557,7 @@ func TestServerNew(t *testing.T) {
 		t.Fatalf("failed to create rewriter: %v", err)
 	}
 
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if server == nil {
 		t.Fatal("expected non-nil server")

@@ -20,6 +20,7 @@ require (
 	golang.org/x/sys v0.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	sigs.k8s.io/knftables v0.0.19
+	software.sslmate.com/src/go-pkcs12 v0.7.0
 )
 
 require (

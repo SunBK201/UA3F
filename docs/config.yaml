@@ -47,6 +47,13 @@ header-rewrite:
     match-header: "User-Agent"
     match-value: "Valve/Steam HTTP Client 1.0"
     action: DIRECT
+    continue: true
+  - type: DOMAIN-KEYWORD
+    match-value: "httpbin.org"
+    action: REPLACE
+    rewrite-header: "Server"
+    rewrite-value: "FFF"
+    rewrite-direction: RESPONSE
   - type: HEADER-KEYWORD
     match-header: "User-Agent"
     match-value: "Mac"
@@ -79,3 +86,10 @@ url-redirect:
     action: REDIRECT-307
     rewrite-regex: "^http://ua-check.stagoh.com/(.*)"
     rewrite-value: "http://ua-check.stagoh.com:2333/$1"
+
+mitm:
+  enabled: false
+  hostname: "*.httpbin.com, example.com:8000"
+  insecure-skip-verify: true
+  ca-passphrase: ""
+  ca-p12-base64: ""

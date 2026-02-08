@@ -70,6 +70,20 @@ start_service() {
     procd_append_param env UA3F_DESYNC_INJECT_TTL="$desync_inject_ttl"
     procd_append_param env UA3F_DESYNC_PORTS="$desync_ports"
 
+    local mitm_enabled mitm_ca_p12_base64 mitm_ca_passphrase mitm_hostname mitm_skip_verify
+    config_get_bool mitm_enabled "main" "mitm_enabled" 0
+    if [ "$mitm_enabled" -eq "1" ]; then
+        config_get mitm_ca_p12_base64 "main" "mitm_ca_p12_base64" ""
+        config_get mitm_ca_passphrase "main" "mitm_ca_passphrase" ""
+        config_get mitm_hostname "main" "mitm_hostname" ""
+        config_get_bool mitm_skip_verify "main" "mitm_skip_verify" 0
+        procd_append_param command --mitm
+        [ -n "$mitm_ca_p12_base64" ] && procd_append_param command --mitm-ca-p12-base64 "$mitm_ca_p12_base64"
+        [ -n "$mitm_ca_passphrase" ] && procd_append_param command --mitm-ca-passphrase "$mitm_ca_passphrase"
+        [ -n "$mitm_hostname" ] && procd_append_param command --mitm-hostname "$mitm_hostname"
+        [ "$mitm_skip_verify" = "1" ] && procd_append_param command --mitm-insecure-skip-verify
+    fi
+
     procd_set_param respawn
     procd_set_param stdout 1
     procd_set_param stderr 1

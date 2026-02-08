@@ -101,7 +101,7 @@ func TestServerNew(t *testing.T) {
 		t.Fatalf("failed to create rewriter: %v", err)
 	}
 
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if server == nil {
 		t.Fatal("expected non-nil server")
@@ -193,7 +193,7 @@ func TestSocks5ProxyUserAgentRewrite(t *testing.T) {
 			_ = listener.Close()
 
 			cfg.Port = port
-			server := New(cfg, rw, recorder)
+			server := New(cfg, rw, recorder, nil)
 
 			if err := server.Start(); err != nil {
 				t.Fatalf("failed to start server: %v", err)
@@ -275,7 +275,7 @@ func TestSocks5ProxyConnect(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -346,7 +346,7 @@ func TestSocks5ProxyConcurrentRequests(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -446,7 +446,7 @@ func TestSocks5ProxyDifferentMethods(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -536,7 +536,7 @@ func TestSocks5ProxyPartialRewrite(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -607,7 +607,7 @@ func TestSocks5Handshake(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -693,7 +693,7 @@ func TestSocks5ServerClose(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -750,7 +750,7 @@ func TestSocks5MultipleConnections(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -831,7 +831,7 @@ func TestSocks5LargePayload(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -906,7 +906,7 @@ func TestSocks5UDPAssociate(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)
@@ -988,7 +988,7 @@ func TestSocks5BindCommand(t *testing.T) {
 	_ = listener.Close()
 
 	cfg.Port = port
-	server := New(cfg, rw, recorder)
+	server := New(cfg, rw, recorder, nil)
 
 	if err := server.Start(); err != nil {
 		t.Fatalf("failed to start server: %v", err)

@@ -46,6 +46,8 @@ type Config struct {
 	TCPTimeStamp     bool `yaml:"tcp_timestamp"`
 	TCPInitialWindow bool `yaml:"tcp_initial_window"`
 
+	MitM MitMConfig `yaml:"mitm"`
+
 	Desync DesyncConfig `yaml:"desync"`
 
 	HeaderRules     []Rule `yaml:"header-rewrite" validate:"dive"`
@@ -56,6 +58,15 @@ type Config struct {
 
 	URLRedirectRules []Rule `yaml:"url-redirect" validate:"dive"`
 	URLRedirectJson  string `yaml:"url-redirect-json,omitempty"`
+}
+
+type MitMConfig struct {
+	Enabled            bool   `yaml:"enabled"`
+	Hostname           string `yaml:"hostname"`
+	CAP12              string `yaml:"ca-p12"`
+	CAP12Base64        string `yaml:"ca-p12-base64"`
+	CAPassphrase       string `yaml:"ca-passphrase"`
+	InsecureSkipVerify bool   `yaml:"insecure-skip-verify"`
 }
 
 type DesyncConfig struct {
@@ -136,6 +147,13 @@ func (c *Config) LogValue() slog.Value {
 				slog.Uint64("Reorder Packets", uint64(c.Desync.ReorderPackets)),
 				slog.Bool("Inject", c.Desync.Inject),
 				slog.Uint64("Inject TTL", uint64(c.Desync.InjectTTL)),
+			),
+		},
+		slog.Attr{
+			Key: "MitM", Value: slog.GroupValue(
+				slog.Bool("Enabled", c.MitM.Enabled),
+				slog.String("Hostname", c.MitM.Hostname),
+				slog.Bool("Insecure Skip Verify", c.MitM.InsecureSkipVerify),
 			),
 		},
 	)

@@ -24,10 +24,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ua3f",
-	Short: "UA3F is an HTTP rewriting tool",
-	Long:  "UA3F is an HTTP rewriting tool that efficiently and transparently rewrites HTTP traffic (e.g., User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE service.",
-	RunE:  runRoot,
+	Use:          "ua3f",
+	Short:        "Advanced HTTP Rewriting Tool",
+	SilenceUsage: true,
+	RunE:         runRoot,
 }
 
 func init() {
@@ -61,6 +61,14 @@ func init() {
 	rootCmd.Flags().Uint("desync-inject-ttl", 0, "Desync inject TTL")
 	rootCmd.Flags().String("desync-ports", "", "Desync ports")
 
+	// MitM flags
+	rootCmd.Flags().Bool("mitm", false, "Enable HTTPS MitM")
+	rootCmd.Flags().String("mitm-hostname", "", "MitM hostname list (comma-separated, supports wildcard * and :port suffix)")
+	rootCmd.Flags().String("mitm-ca-p12", "", "Path to MitM CA PKCS#12 file")
+	rootCmd.Flags().String("mitm-ca-p12-base64", "", "Base64-encoded PKCS#12 data for MitM CA")
+	rootCmd.Flags().String("mitm-ca-passphrase", "", "Passphrase for MitM CA PKCS#12 file")
+	rootCmd.Flags().Bool("mitm-insecure-skip-verify", false, "Skip server certificate verification in MitM")
+
 	// Bind all flags to viper using consistent key names
 	_ = viper.BindPFlag("config", rootCmd.Flags().Lookup("config"))
 	_ = viper.BindPFlag("server-mode", rootCmd.Flags().Lookup("mode"))
@@ -84,6 +92,13 @@ func init() {
 	_ = viper.BindPFlag("desync.inject", rootCmd.Flags().Lookup("desync-inject"))
 	_ = viper.BindPFlag("desync.inject-ttl", rootCmd.Flags().Lookup("desync-inject-ttl"))
 	_ = viper.BindPFlag("desync.desync-ports", rootCmd.Flags().Lookup("desync-ports"))
+
+	_ = viper.BindPFlag("mitm.enabled", rootCmd.Flags().Lookup("mitm"))
+	_ = viper.BindPFlag("mitm.hostname", rootCmd.Flags().Lookup("mitm-hostname"))
+	_ = viper.BindPFlag("mitm.ca-p12", rootCmd.Flags().Lookup("mitm-ca-p12"))
+	_ = viper.BindPFlag("mitm.ca-p12-base64", rootCmd.Flags().Lookup("mitm-ca-p12-base64"))
+	_ = viper.BindPFlag("mitm.ca-passphrase", rootCmd.Flags().Lookup("mitm-ca-passphrase"))
+	_ = viper.BindPFlag("mitm.insecure-skip-verify", rootCmd.Flags().Lookup("mitm-insecure-skip-verify"))
 
 	// Bind environment variables
 	viper.SetEnvPrefix("UA3F")
@@ -109,6 +124,14 @@ func init() {
 	_ = viper.BindEnv("desync.inject", "UA3F_DESYNC_INJECT")
 	_ = viper.BindEnv("desync.inject-ttl", "UA3F_DESYNC_INJECT_TTL")
 	_ = viper.BindEnv("desync.desync-ports", "UA3F_DESYNC_PORTS")
+
+	_ = viper.BindEnv("mitm.enabled", "UA3F_MITM_ENABLED")
+	_ = viper.BindEnv("mitm.hostname", "UA3F_MITM_HOSTNAME")
+	_ = viper.BindEnv("mitm.ca-p12", "UA3F_MITM_CA_P12")
+	_ = viper.BindEnv("mitm.ca-p12-base64", "UA3F_MITM_CA_P12_BASE64")
+	_ = viper.BindEnv("mitm.ca-passphrase", "UA3F_MITM_CA_PASSPHRASE")
+	_ = viper.BindEnv("mitm.insecure-skip-verify", "UA3F_MITM_INSECURE_SKIP_VERIFY")
+
 	_ = viper.BindEnv("header-rewrite-json", "UA3F_HEADER_REWRITE")
 	_ = viper.BindEnv("body-rewrite-json", "UA3F_BODY_REWRITE")
 	_ = viper.BindEnv("url-redirect-json", "UA3F_URL_REDIRECT")

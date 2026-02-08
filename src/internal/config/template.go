@@ -34,6 +34,14 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 			InjectTTL:      3,
 		},
 
+		MitM: MitMConfig{
+			Enabled:            false,
+			Hostname:           "",
+			CAP12:              "",
+			CAPassphrase:       "",
+			InsecureSkipVerify: false,
+		},
+
 		HeaderRules: []Rule{
 			{
 				Type:          "FINAL",

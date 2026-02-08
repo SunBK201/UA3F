@@ -367,3 +367,60 @@ msgstr "URL 重定向"
 
 msgid "Redirect HTTP Requests to Different URLs"
 msgstr "重定向 HTTP 请求"
+
+msgid "MitM Settings"
+msgstr "MitM 设置"
+
+msgid "Enable HTTPS MitM"
+msgstr "启用 HTTPS MitM"
+
+msgid "Enable HTTPS Man-in-the-Middle to decrypt and rewrite HTTPS traffic. Requires installing the CA certificate on client devices"
+msgstr "启用 HTTPS 中间人代理以解密和重写 HTTPS 流量，需要在客户端设备上安装 CA 证书"
+
+msgid "MitM Hostname"
+msgstr "MitM 主机名"
+
+msgid "Skip Server Certificate Verification"
+msgstr "跳过服务端证书验证"
+
+msgid "Skip verifying the upstream server's TLS certificate during MitM"
+msgstr "MitM 时跳过对上游服务器 TLS 证书的验证"
+
+msgid "Only hosts in this list will be decrypted, supports glob patterns, use :port to specify port, default port is 443, :0 matches all ports"
+msgstr "只有该列表中的主机名会被解密，支持 glob 模式，使用 :port 指定端口，默认端口为 443，:0 匹配所有端口"
+
+msgid "Certificate Status"
+msgstr "证书状态"
+
+msgid "CA certificate is configured"
+msgstr "CA 证书已配置"
+
+msgid "No CA certificate. Please generate one."
+msgstr "尚未配置 CA 证书，请生成新证书"
+
+msgid "Certificate Management"
+msgstr "证书管理"
+
+msgid "Generate New Certificate"
+msgstr "生成新证书"
+
+msgid "Export Certificate"
+msgstr "导出证书"
+
+msgid "Generate a new CA certificate? The old certificate will be replaced and all clients will need to re-install the new certificate."
+msgstr "确定要生成新的 CA 证书吗？旧证书将被替换，所有客户端需要重新安装新证书。"
+
+msgid "Enter an optional passphrase for the CA certificate (leave empty for none):"
+msgstr "请输入 CA 证书的密码（留空表示不设密码）："
+
+msgid "Generating..."
+msgstr "正在生成..."
+
+msgid "Certificate generated successfully! Please export and install it on client devices."
+msgstr "证书生成成功！请导出并安装到客户端设备上。"
+
+msgid "Failed to generate certificate"
+msgstr "生成证书失败"
+
+msgid "Network error"
+msgstr "网络错误"

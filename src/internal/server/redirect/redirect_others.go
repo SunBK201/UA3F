@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/sunbk201/ua3f/internal/config"
+	"github.com/sunbk201/ua3f/internal/mitm"
 	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/server/base"
 	"github.com/sunbk201/ua3f/internal/statistics"
@@ -16,13 +17,9 @@ type Server struct {
 	base.Server
 }
 
-func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
 	return &Server{
-		Server: base.Server{
-			Cfg:      cfg,
-			Rewriter: rw,
-			Recorder: rc,
-		},
+		Server: base.Server{Cfg: cfg, Rewriter: rw, Recorder: rc, MiddleMan: middleMan},
 	}
 }
 
