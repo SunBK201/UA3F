@@ -39,6 +39,18 @@ func (r *DirectRewriter) ServeResponse() bool {
 	return false
 }
 
+func (r *DirectRewriter) HeaderRules() []common.Rule {
+	return nil
+}
+
+func (r *DirectRewriter) BodyRules() []common.Rule {
+	return nil
+}
+
+func (r *DirectRewriter) RedirectRules() []common.Rule {
+	return nil
+}
+
 func NewDirectRewriter() *DirectRewriter {
 	return &DirectRewriter{}
 }

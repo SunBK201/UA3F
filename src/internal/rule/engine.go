@@ -14,7 +14,7 @@ import (
 )
 
 type Engine struct {
-	rules         []common.Rule
+	Rules         []common.Rule
 	ServeRequest  bool
 	ServeResponse bool
 }
@@ -32,7 +32,7 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 		}
 	} else {
 		if rulesJSON == "" {
-			return &Engine{rules: []common.Rule{}}, nil
+			return &Engine{Rules: []common.Rule{}}, nil
 		}
 		if err := json.Unmarshal([]byte(rulesJSON), &rulesCfg); err != nil {
 			return nil, fmt.Errorf("failed to parse rules JSON: %w", err)
@@ -94,15 +94,15 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 		}
 	}
 
-	return &Engine{rules: rules, ServeRequest: serveRequest, ServeResponse: serveResponse}, nil
+	return &Engine{Rules: rules, ServeRequest: serveRequest, ServeResponse: serveResponse}, nil
 }
 
 func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int, direction common.Direction) (common.Rule, int) {
-	if startIndex < 0 || startIndex >= len(e.rules) {
+	if startIndex < 0 || startIndex >= len(e.Rules) {
 		return nil, -1
 	}
-	for i := startIndex; i < len(e.rules); i++ {
-		rule := e.rules[i]
+	for i := startIndex; i < len(e.Rules); i++ {
+		rule := e.Rules[i]
 		if rule.Action().Direction() != common.DirectionDual && rule.Action().Direction() != direction {
 			continue
 		}
@@ -117,5 +117,5 @@ func (e *Engine) MatchWithRuleIndex(metadata *common.Metadata, startIndex int, d
 }
 
 func (e *Engine) RulesCount() int {
-	return len(e.rules)
+	return len(e.Rules)
 }

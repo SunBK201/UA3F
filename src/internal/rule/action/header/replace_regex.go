@@ -1,6 +1,7 @@
 package header
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -78,6 +79,21 @@ func (r *ReplaceRegex) Execute(metadata *common.Metadata) (bool, error) {
 
 func (r *ReplaceRegex) Direction() common.Direction {
 	return r.direction
+}
+
+func (r *ReplaceRegex) MarshalJSON() ([]byte, error) {
+	var regex string
+	if r.replaceRegex != nil {
+		regex = r.replaceRegex.String()
+	}
+	return json.Marshal(map[string]any{
+		"type":      r.Type(),
+		"header":    r.replaceHeader,
+		"regex":     regex,
+		"value":     r.replaceValue,
+		"continue":  r.contine,
+		"direction": r.direction,
+	})
 }
 
 func (r *ReplaceRegex) LogValue() slog.Value {

@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 
 	"github.com/dlclark/regexp2"
@@ -28,6 +29,18 @@ func (h *URLRegex) Match(metadata *common.Metadata) bool {
 
 func (h *URLRegex) Action() common.Action {
 	return h.action
+}
+
+func (h *URLRegex) MarshalJSON() ([]byte, error) {
+	var regex string
+	if h.regex != nil {
+		regex = h.regex.String()
+	}
+	return json.Marshal(map[string]any{
+		"type":      h.Type(),
+		"url_regex": regex,
+		"action":    h.action,
+	})
 }
 
 func (h *URLRegex) LogValue() slog.Value {

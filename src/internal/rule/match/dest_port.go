@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/common"
@@ -24,6 +25,14 @@ func (d *DestPort) Match(metadata *common.Metadata) bool {
 
 func (d *DestPort) Action() common.Action {
 	return d.action
+}
+
+func (d *DestPort) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":   d.Type(),
+		"port":   d.port,
+		"action": d.action,
+	})
 }
 
 func (d *DestPort) LogValue() slog.Value {

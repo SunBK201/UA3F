@@ -1,6 +1,7 @@
 package action
 
 import (
+	"encoding/json"
 	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/common"
@@ -24,6 +25,13 @@ func (d *Drop) Execute(metadata *common.Metadata) (bool, error) {
 
 func (d *Drop) Direction() common.Direction {
 	return d.direction
+}
+
+func (d *Drop) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":      d.Type(),
+		"direction": d.direction,
+	})
 }
 
 func (d *Drop) LogValue() slog.Value {

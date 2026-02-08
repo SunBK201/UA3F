@@ -152,6 +152,18 @@ func (r *RuleRewriter) ServeResponse() bool {
 	return r.HeaderRuleEngine.ServeResponse || r.BodyRuleEngine.ServeResponse
 }
 
+func (r *RuleRewriter) HeaderRules() []common.Rule {
+	return r.HeaderRuleEngine.Rules
+}
+
+func (r *RuleRewriter) BodyRules() []common.Rule {
+	return r.BodyRuleEngine.Rules
+}
+
+func (r *RuleRewriter) RedirectRules() []common.Rule {
+	return r.URLRedirectEngine.Rules
+}
+
 func NewRuleRewriter(cfg *config.Config, recorder *statistics.Recorder) (*RuleRewriter, error) {
 	headerRuleEngine, err := rule.NewEngine(cfg.HeaderRulesJson, &cfg.HeaderRules, recorder, common.ActionTargetHeader)
 	if err != nil {

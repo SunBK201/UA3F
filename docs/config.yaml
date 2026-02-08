@@ -1,3 +1,6 @@
+api-server: "127.0.0.1:9000" # RESTful API server listen address, empty to disable
+api-server-secret: "" # api-server secret for authentication
+
 server-mode: SOCKS5 # HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE
 bind-address: 127.0.0.1
 port: 1080

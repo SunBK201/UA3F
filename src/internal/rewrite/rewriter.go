@@ -11,6 +11,9 @@ type Rewriter interface {
 	RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision)
 	ServeRequest() bool
 	ServeResponse() bool
+	HeaderRules() []common.Rule
+	BodyRules() []common.Rule
+	RedirectRules() []common.Rule
 }
 
 type RewriteDecision struct {

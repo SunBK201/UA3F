@@ -58,6 +58,18 @@ func (r *PacketRewriter) ServeResponse() bool {
 	return false
 }
 
+func (r *PacketRewriter) HeaderRules() []common.Rule {
+	return nil
+}
+
+func (r *PacketRewriter) BodyRules() []common.Rule {
+	return nil
+}
+
+func (r *PacketRewriter) RedirectRules() []common.Rule {
+	return nil
+}
+
 func NewPacketRewriter(cfg *config.Config, recorder *statistics.Recorder) (*PacketRewriter, error) {
 	var regex *regexp2.Regexp
 	var err error

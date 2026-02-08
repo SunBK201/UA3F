@@ -11,7 +11,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func SetLogConf(level string) {
+func SetLogConf(level string) (*Broadcaster, error) {
 	writer2 := os.Stdout
 	writer3 := &lumberjack.Logger{
 		Filename:   GetLogFilePath(),
@@ -22,7 +22,8 @@ func SetLogConf(level string) {
 		Compress:   true,
 	}
 
-	multiWriter := io.MultiWriter(writer2, writer3)
+	broadcaster := NewBroadcaster()
+	multiWriter := io.MultiWriter(writer2, writer3, broadcaster)
 
 	var logLevel slog.Level
 	switch strings.ToLower(level) {
@@ -51,6 +52,7 @@ func SetLogConf(level string) {
 	}
 	logger := slog.New(slog.NewTextHandler(multiWriter, opts))
 	slog.SetDefault(logger)
+	return broadcaster, nil
 }
 
 func LogHeader(version string, cfg *config.Config) {

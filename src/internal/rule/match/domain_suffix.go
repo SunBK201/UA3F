@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 	"strings"
 
@@ -25,6 +26,14 @@ func (d *DomainSuffix) Match(metadata *common.Metadata) bool {
 
 func (d *DomainSuffix) Action() common.Action {
 	return d.action
+}
+
+func (d *DomainSuffix) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":          d.Type(),
+		"domain_suffix": d.domainSuffix,
+		"action":        d.action,
+	})
 }
 
 func (d *DomainSuffix) LogValue() slog.Value {

@@ -89,6 +89,18 @@ func (r *GlobalRewriter) ServeResponse() bool {
 	return false
 }
 
+func (r *GlobalRewriter) HeaderRules() []common.Rule {
+	return nil
+}
+
+func (r *GlobalRewriter) BodyRules() []common.Rule {
+	return nil
+}
+
+func (r *GlobalRewriter) RedirectRules() []common.Rule {
+	return nil
+}
+
 func (r *GlobalRewriter) inWhitelist(ua string) bool {
 	for _, w := range r.whitelist {
 		if w == ua {

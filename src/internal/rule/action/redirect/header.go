@@ -1,6 +1,7 @@
 package redirect
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/url"
 
@@ -62,6 +63,18 @@ func (r *RedirectHeader) Execute(metadata *common.Metadata) (bool, error) {
 
 func (r *RedirectHeader) Direction() common.Direction {
 	return common.DirectionRequest
+}
+
+func (r *RedirectHeader) MarshalJSON() ([]byte, error) {
+	var regex string
+	if r.regex != nil {
+		regex = r.regex.String()
+	}
+	return json.Marshal(map[string]any{
+		"type":          r.Type(),
+		"regex":         regex,
+		"replace_value": r.replaceValue,
+	})
 }
 
 func (r *RedirectHeader) LogValue() slog.Value {

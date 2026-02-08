@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net"
 	"strings"
@@ -33,6 +34,18 @@ func (i *IPCIDR) Match(metadata *common.Metadata) bool {
 
 func (i *IPCIDR) Action() common.Action {
 	return i.action
+}
+
+func (i *IPCIDR) MarshalJSON() ([]byte, error) {
+	var cidr string
+	if i.ipNet != nil {
+		cidr = i.ipNet.String()
+	}
+	return json.Marshal(map[string]any{
+		"type":    i.Type(),
+		"ip_cidr": cidr,
+		"action":  i.action,
+	})
 }
 
 func (i *IPCIDR) LogValue() slog.Value {

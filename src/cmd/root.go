@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/sunbk201/ua3f/internal/api"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/daemon"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -43,6 +44,8 @@ func init() {
 	rootCmd.Flags().StringP("ua-regex", "r", "", "User-Agent regex")
 	rootCmd.Flags().BoolP("partial", "s", false, "Enable regex partial replace")
 	rootCmd.Flags().StringP("rewrite-mode", "x", "", "Rewrite mode: GLOBAL, DIRECT, RULE")
+	rootCmd.Flags().String("api-server", "", "api-server listen address (e.g. 127.0.0.1:9000), empty to disable")
+	rootCmd.Flags().String("api-server-secret", "", "api-server secret for authentication, empty to disable auth")
 	rootCmd.Flags().BoolP("version", "v", false, "Show version")
 	rootCmd.Flags().BoolP("generate-config", "g", false, "Generate template config file")
 
@@ -93,6 +96,9 @@ func init() {
 	_ = viper.BindPFlag("desync.inject-ttl", rootCmd.Flags().Lookup("desync-inject-ttl"))
 	_ = viper.BindPFlag("desync.desync-ports", rootCmd.Flags().Lookup("desync-ports"))
 
+	_ = viper.BindPFlag("api-server", rootCmd.Flags().Lookup("api-server"))
+	_ = viper.BindPFlag("api-server-secret", rootCmd.Flags().Lookup("api-server-secret"))
+
 	_ = viper.BindPFlag("mitm.enabled", rootCmd.Flags().Lookup("mitm"))
 	_ = viper.BindPFlag("mitm.hostname", rootCmd.Flags().Lookup("mitm-hostname"))
 	_ = viper.BindPFlag("mitm.ca-p12", rootCmd.Flags().Lookup("mitm-ca-p12"))
@@ -131,6 +137,9 @@ func init() {
 	_ = viper.BindEnv("mitm.ca-p12-base64", "UA3F_MITM_CA_P12_BASE64")
 	_ = viper.BindEnv("mitm.ca-passphrase", "UA3F_MITM_CA_PASSPHRASE")
 	_ = viper.BindEnv("mitm.insecure-skip-verify", "UA3F_MITM_INSECURE_SKIP_VERIFY")
+
+	_ = viper.BindEnv("api-server", "UA3F_API_SERVER")
+	_ = viper.BindEnv("api-server-secret", "UA3F_API_SERVER_SECRET")
 
 	_ = viper.BindEnv("header-rewrite-json", "UA3F_HEADER_REWRITE")
 	_ = viper.BindEnv("body-rewrite-json", "UA3F_BODY_REWRITE")
@@ -182,7 +191,10 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("config error: %w", err)
 	}
 
-	log.SetLogConf(cfg.LogLevel)
+	logBroadcaster, err := log.SetLogConf(cfg.LogLevel)
+	if err != nil {
+		return fmt.Errorf("log setup error: %w", err)
+	}
 	log.LogHeader(AppVersion, cfg)
 
 	if err := daemon.DaemonSetup(cfg); err != nil {
@@ -219,6 +231,16 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		slog.Error("srv.Start", slog.Any("error", err))
 		shutdown()
 		return err
+	}
+
+	if cfg.APIServer != "" {
+		apiSrv := api.New(cfg.APIServer, AppVersion, cfg, srv, logBroadcaster)
+		addShutdown("apiSrv.Close", apiSrv.Close)
+		if err := apiSrv.Start(); err != nil {
+			slog.Error("apiSrv.Start", slog.Any("error", err))
+			shutdown()
+			return err
+		}
 	}
 
 	cleanup := make(chan os.Signal, 1)

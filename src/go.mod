@@ -6,10 +6,12 @@ require (
 	github.com/coreos/go-iptables v0.8.0
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/florianl/go-nfqueue/v2 v2.0.2
+	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/gonetx/ipset v0.1.0
 	github.com/google/gopacket v1.1.19
+	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/luyuhuang/subsocks v0.5.0
 	github.com/mdlayher/netlink v1.8.0

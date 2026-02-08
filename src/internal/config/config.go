@@ -33,6 +33,9 @@ type Config struct {
 	BindAddress string     `yaml:"bind-address" validate:"ip"`
 	Port        int        `yaml:"port" default:"1080" validate:"required,min=1,max=65535"`
 
+	APIServer       string `yaml:"api-server"`
+	APIServerSecret string `yaml:"api-server-secret"`
+
 	LogLevel string `yaml:"log-level" default:"info" validate:"required,oneof=debug info warn error"`
 
 	RewriteMode RewriteMode `yaml:"rewrite-mode" default:"GLOBAL" validate:"required,oneof=GLOBAL DIRECT RULE"`

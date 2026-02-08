@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 	"strings"
 
@@ -26,6 +27,15 @@ func (h *HeaderKeyword) Match(metadata *common.Metadata) bool {
 
 func (h *HeaderKeyword) Action() common.Action {
 	return h.action
+}
+
+func (h *HeaderKeyword) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":    h.Type(),
+		"header":  h.header,
+		"keyword": h.keyword,
+		"action":  h.action,
+	})
 }
 
 func (h *HeaderKeyword) LogValue() slog.Value {

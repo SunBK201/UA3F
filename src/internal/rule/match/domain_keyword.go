@@ -1,6 +1,7 @@
 package match
 
 import (
+	"encoding/json"
 	"log/slog"
 	"strings"
 
@@ -25,6 +26,14 @@ func (d *DomainKeyword) Match(metadata *common.Metadata) bool {
 
 func (d *DomainKeyword) Action() common.Action {
 	return d.action
+}
+
+func (d *DomainKeyword) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":           d.Type(),
+		"domain_keyword": d.domainKeyword,
+		"action":         d.action,
+	})
 }
 
 func (d *DomainKeyword) LogValue() slog.Value {

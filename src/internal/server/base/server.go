@@ -30,6 +30,10 @@ type Server struct {
 	MiddleMan       *mitm.MiddleMan
 }
 
+func (s *Server) GetRewriter() rewrite.Rewriter {
+	return s.Rewriter
+}
+
 var one = make([]byte, 1)
 
 func (s *Server) ServeConnLink(connLink *common.ConnLink) {

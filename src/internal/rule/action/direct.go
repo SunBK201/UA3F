@@ -1,6 +1,7 @@
 package action
 
 import (
+	"encoding/json"
 	"log/slog"
 
 	"github.com/sunbk201/ua3f/internal/common"
@@ -29,6 +30,12 @@ func (d *Direct) SetRecorder(recorder *statistics.Recorder) {
 
 func (d *Direct) Direction() common.Direction {
 	return common.DirectionDual
+}
+
+func (d *Direct) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type": d.Type(),
+	})
 }
 
 func (d *Direct) LogValue() slog.Value {

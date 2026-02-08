@@ -1,6 +1,7 @@
 package header
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -52,6 +53,16 @@ func (a *Add) Execute(metadata *common.Metadata) (bool, error) {
 
 func (a *Add) Direction() common.Direction {
 	return a.direction
+}
+
+func (a *Add) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type":      a.Type(),
+		"header":    a.header,
+		"value":     a.value,
+		"continue":  a.contine,
+		"direction": a.direction,
+	})
 }
 
 func (a *Add) LogValue() slog.Value {
