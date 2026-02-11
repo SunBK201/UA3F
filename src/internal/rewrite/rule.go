@@ -19,13 +19,13 @@ type RuleRewriter struct {
 	Recorder          *statistics.Recorder
 }
 
-func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *common.RewriteDecision) {
 	ua := metadata.UserAgent()
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", ua))
 
 	var matchedRule common.Rule
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 	matchedRule = nil
@@ -45,7 +45,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 		}
 	}
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 	matchedRule = nil
@@ -68,7 +68,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 		}
 	}
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action:   action.DirectAction,
 		Redirect: false,
 	}
@@ -95,10 +95,10 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *Rewr
 	return
 }
 
-func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *common.RewriteDecision) {
 	var matchedRule common.Rule
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 	matchedRule = nil
@@ -118,7 +118,7 @@ func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *Rew
 		}
 	}
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 	matchedRule = nil

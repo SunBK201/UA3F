@@ -25,27 +25,27 @@ var (
 	uaTag = []byte("\r\nUser-Agent:")
 )
 
-func (r *PacketRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *PacketRewriter) RewriteRequest(metadata *common.Metadata) (decision *common.RewriteDecision) {
 	if r.rewriteMode == config.RewriteModeDirect {
-		return &RewriteDecision{
+		return &common.RewriteDecision{
 			Modified: false,
 		}
 	}
 	if len(metadata.Packet.TCP.Payload) == 0 {
-		return &RewriteDecision{
+		return &common.RewriteDecision{
 			Modified: false,
 		}
 	}
 	hasUA, modified, skip := r.RewritePacketUserAgent(metadata.Packet.TCP.Payload, metadata.SrcAddr(), metadata.DestAddr())
-	return &RewriteDecision{
+	return &common.RewriteDecision{
 		Modified: modified,
 		HasUA:    hasUA,
 		NeedSkip: skip,
 	}
 }
 
-func (r *PacketRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
-	return &RewriteDecision{
+func (r *PacketRewriter) RewriteResponse(metadata *common.Metadata) (decision *common.RewriteDecision) {
+	return &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 }

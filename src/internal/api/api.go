@@ -12,31 +12,39 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	applog "github.com/sunbk201/ua3f/internal/log"
-	"github.com/sunbk201/ua3f/internal/server"
+	"github.com/sunbk201/ua3f/internal/server/desync"
+	"github.com/sunbk201/ua3f/internal/server/netlink"
 )
 
 type APIServer struct {
 	version        string
 	cfg            *config.Config
 	addr           string
-	server         server.Server
 	httpServer     *http.Server
 	logBroadcaster *applog.Broadcaster
+
+	Server common.Server
+	Helper *netlink.Server
+	Desync *desync.Server
 }
 
-func New(addr string, version string, cfg *config.Config, srv server.Server, lb *applog.Broadcaster) *APIServer {
+func New(version string, cfg *config.Config, lb *applog.Broadcaster) *APIServer {
 	return &APIServer{
 		version:        version,
 		cfg:            cfg,
-		addr:           addr,
-		server:         srv,
+		addr:           cfg.APIServer,
 		logBroadcaster: lb,
 	}
 }
 
 func (s *APIServer) Start() error {
+	if s.cfg.APIServer == "" {
+		return nil
+	}
+
 	r := chi.NewRouter()
 
 	r.Use(slogMiddleware)
@@ -57,6 +65,8 @@ func (s *APIServer) Start() error {
 	r.Get("/rules/redirect", s.handleRedirectRules)
 
 	r.Get("/logs", s.handleLogs)
+
+	r.Get("/restart", s.handleRestart)
 
 	// pprof routes
 	r.Route("/debug/pprof", func(r chi.Router) {
@@ -106,6 +116,38 @@ func (s *APIServer) Close() error {
 	defer cancel()
 	slog.Info("api-server shutting down")
 	return s.httpServer.Shutdown(ctx)
+}
+
+func (s *APIServer) RestartSystem() error {
+	newCfg, err := config.ReloadFromFile()
+	if err != nil {
+		return err
+	}
+	slog.Info("config reloaded successfully")
+
+	if s.Server != nil {
+		if newServer, err := s.Server.Restart(newCfg); err != nil {
+			return err
+		} else {
+			s.Server = newServer
+		}
+	}
+	if s.Desync != nil {
+		if newDesync, err := s.Desync.Restart(newCfg); err != nil {
+			return err
+		} else {
+			s.Desync = newDesync
+		}
+	}
+	if s.Helper != nil {
+		if newHelper, err := s.Helper.Restart(newCfg); err != nil {
+			return err
+		} else {
+			s.Helper = newHelper
+		}
+	}
+	slog.Info("ua3f restarted successfully")
+	return nil
 }
 
 func slogMiddleware(next http.Handler) http.Handler {

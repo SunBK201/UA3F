@@ -28,7 +28,7 @@ type Server struct {
 	so_mark  int
 }
 
-func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
@@ -44,13 +44,6 @@ func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder, middl
 		},
 		so_mark: base.SO_MARK,
 	}
-}
-
-func (s *Server) Close() (err error) {
-	if s.listener != nil {
-		err = s.listener.Close()
-	}
-	return
 }
 
 func (s *Server) Start() (err error) {
@@ -77,6 +70,37 @@ func (s *Server) Start() (err error) {
 		}
 	}()
 	return nil
+}
+
+func (s *Server) Close() (err error) {
+	if s.listener != nil {
+		err = s.listener.Close()
+	}
+	return
+}
+
+func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
+	if err := s.Close(); err != nil {
+		return nil, err
+	}
+
+	newRewriter, err := rewrite.New(cfg, s.Recorder)
+	if err != nil {
+		slog.Error("rewrite.New", slog.Any("error", err))
+		return nil, err
+	}
+
+	newMiddleMan, err := mitm.NewMiddleMan(cfg)
+	if err != nil {
+		slog.Error("mitm.NewMiddleMan", slog.Any("error", err))
+		return nil, err
+	}
+
+	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+	if err := newServer.Start(); err != nil {
+		return nil, err
+	}
+	return newServer, nil
 }
 
 func (s *Server) HandleClient(conn net.Conn) {

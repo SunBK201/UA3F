@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
 	"github.com/sunbk201/ua3f/internal/rewrite"
@@ -15,23 +16,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/statistics"
 )
 
-type ServerMode string
-
-const (
-	ServerModeHTTP     ServerMode = "HTTP"
-	ServerModeSocks5   ServerMode = "SOCKS5"
-	ServerModeTProxy   ServerMode = "TPROXY"
-	ServerModeRedirect ServerMode = "REDIRECT"
-	ServerModeNFQueue  ServerMode = "NFQUEUE"
-)
-
-type Server interface {
-	Start() error
-	Close() error
-	GetRewriter() rewrite.Rewriter
-}
-
-func NewServer(cfg *config.Config) (Server, error) {
+func NewServer(cfg *config.Config) (common.Server, error) {
 	rc := statistics.New()
 
 	rw, err := rewrite.New(cfg, rc)
@@ -40,19 +25,10 @@ func NewServer(cfg *config.Config) (Server, error) {
 		return nil, err
 	}
 
-	var middleMan *mitm.MiddleMan
-	if cfg.MitM.Enabled {
-		ca, err := mitm.LoadCA(cfg.MitM.CAP12Base64, cfg.MitM.CAPassphrase)
-		if err != nil {
-			return nil, fmt.Errorf("MitM CA init failed: %w", err)
-		}
-		slog.Info("MitM enabled, CA certificate loaded")
-		certManager := mitm.NewCertManager(ca)
-		hostnameFilter, err := mitm.NewHostnameFilter(cfg.MitM.Hostname)
-		if err != nil {
-			return nil, fmt.Errorf("MitM hostname filter init failed: %w", err)
-		}
-		middleMan = mitm.NewMiddleMan(certManager, hostnameFilter, cfg.MitM.InsecureSkipVerify)
+	middleMan, err := mitm.NewMiddleMan(cfg)
+	if err != nil {
+		slog.Error("mitm.NewMiddleMan", slog.Any("error", err))
+		return nil, err
 	}
 
 	switch cfg.ServerMode {

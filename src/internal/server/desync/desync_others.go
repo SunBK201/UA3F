@@ -28,3 +28,10 @@ func (s *Server) Start() (err error) {
 func (s *Server) Close() (err error) {
 	return nil
 }
+
+func (s *Server) Restart(cfg *config.Config) (*Server, error) {
+	if err := s.Close(); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}

@@ -31,7 +31,9 @@ func (s *APIServer) handleLogsWS(w http.ResponseWriter, r *http.Request) {
 		slog.Error("websocket upgrade failed", slog.Any("error", err))
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	ch := s.logBroadcaster.Subscribe()
 	defer s.logBroadcaster.Unsubscribe(ch)
@@ -53,7 +55,7 @@ func (s *APIServer) handleLogsWS(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				return
 			}

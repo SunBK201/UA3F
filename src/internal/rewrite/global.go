@@ -23,7 +23,7 @@ type GlobalRewriter struct {
 	Recorder *statistics.Recorder
 }
 
-func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *RewriteDecision) {
+func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *common.RewriteDecision) {
 	defer func() {
 		_, err := decision.Action.Execute(metadata)
 		if err != nil {
@@ -35,7 +35,7 @@ func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *Re
 	ua := metadata.UserAgent()
 	log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), fmt.Sprintf("Original User-Agent: (%s)", ua))
 
-	decision = &RewriteDecision{
+	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 
@@ -75,8 +75,8 @@ func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *Re
 	return decision
 }
 
-func (r *GlobalRewriter) RewriteResponse(metadata *common.Metadata) (decision *RewriteDecision) {
-	return &RewriteDecision{
+func (r *GlobalRewriter) RewriteResponse(metadata *common.Metadata) (decision *common.RewriteDecision) {
+	return &common.RewriteDecision{
 		Action: action.DirectAction,
 	}
 }

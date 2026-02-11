@@ -101,6 +101,18 @@ type Rule struct {
 	Continue bool `json:"continue,omitempty" yaml:"continue,omitempty"`
 }
 
+// ReloadFromFile re-reads the config file (if one was set) and builds a new Config.
+// This is used by the /restart API to pick up configuration changes without
+// restarting the entire process.
+func ReloadFromFile() (*Config, error) {
+	if viper.ConfigFileUsed() != "" {
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to re-read config file: %w", err)
+		}
+	}
+	return BuildConfigFromViper()
+}
+
 // BuildConfigFromViper constructs a Config from viper settings.
 // Viper merges values from defaults, config file, env vars and CLI flags
 // with the correct priority: defaults < config file < env vars < CLI flags.

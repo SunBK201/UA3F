@@ -153,6 +153,18 @@ func (s *Server) Close() error {
 	return err
 }
 
+func (s *Server) Restart(cfg *config.Config) (*Server, error) {
+	if err := s.Close(); err != nil {
+		return nil, err
+	}
+
+	newServer := New(cfg)
+	if err := newServer.Start(); err != nil {
+		return nil, err
+	}
+	return newServer, nil
+}
+
 func parsePorts(s string) ([]uint16, error) {
 	parts := strings.Split(s, ",")
 	ports := make([]uint16, 0, len(parts))

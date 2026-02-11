@@ -14,7 +14,6 @@ import (
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
-	"github.com/sunbk201/ua3f/internal/rewrite"
 	"github.com/sunbk201/ua3f/internal/rule/action"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
@@ -22,7 +21,7 @@ import (
 
 type Server struct {
 	Cfg             *config.Config
-	Rewriter        rewrite.Rewriter
+	Rewriter        common.Rewriter
 	Recorder        *statistics.Recorder
 	Cache           *expirable.LRU[string, struct{}]
 	SkipIpChan      chan *net.IP
@@ -30,7 +29,7 @@ type Server struct {
 	MiddleMan       *mitm.MiddleMan
 }
 
-func (s *Server) GetRewriter() rewrite.Rewriter {
+func (s *Server) GetRewriter() common.Rewriter {
 	return s.Rewriter
 }
 

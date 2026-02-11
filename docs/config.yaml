@@ -31,7 +31,7 @@ desync:
 header-rewrite:
   - type: DOMAIN-SUFFIX
     match-value: "ua-check.stagoh.com"
-    action: ADD
+    action: REPLACE
     rewrite-direction: REQUEST
     rewrite-header: "User-Agent"
     rewrite-value: "UA3F"
@@ -85,10 +85,10 @@ body-rewrite:
 
 url-redirect:
   - type: URL-REGEX
-    match-value: "^http://ua-check.stagoh.com/"
+    match-value: "^http://example.com/"
     action: REDIRECT-307
-    rewrite-regex: "^http://ua-check.stagoh.com/(.*)"
-    rewrite-value: "http://ua-check.stagoh.com:2333/$1"
+    rewrite-regex: "^http://example.com/(.*)"
+    rewrite-value: "https://example.com/$1"
 
 mitm:
   enabled: false

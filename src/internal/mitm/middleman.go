@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/sunbk201/ua3f/internal/common"
+	"github.com/sunbk201/ua3f/internal/config"
 )
 
 // MiddleMan performs HTTPS MitM by terminating client TLS, decrypting traffic,
@@ -17,12 +19,27 @@ type MiddleMan struct {
 	InsecureSkipVerify bool
 }
 
-func NewMiddleMan(certManager *CertManager, hostnameFilter *HostnameFilter, insecureSkipVerify bool) *MiddleMan {
-	return &MiddleMan{
-		CertManager:        certManager,
-		HostnameFilter:     hostnameFilter,
-		InsecureSkipVerify: insecureSkipVerify,
+func NewMiddleMan(cfg *config.Config) (*MiddleMan, error) {
+	if !cfg.MitM.Enabled {
+		return nil, nil
 	}
+
+	ca, err := LoadCA(cfg.MitM.CAP12Base64, cfg.MitM.CAPassphrase)
+	if err != nil {
+		return nil, fmt.Errorf("MitM CA init failed: %w", err)
+	}
+	slog.Info("MitM enabled, CA certificate loaded")
+
+	hostnameFilter, err := NewHostnameFilter(cfg.MitM.Hostname)
+	if err != nil {
+		return nil, fmt.Errorf("MitM hostname filter init failed: %w", err)
+	}
+
+	return &MiddleMan{
+		CertManager:        NewCertManager(ca),
+		HostnameFilter:     hostnameFilter,
+		InsecureSkipVerify: cfg.MitM.InsecureSkipVerify,
+	}, nil
 }
 
 // HandleTLS intercepts a TLS connection given the original ConnLink.

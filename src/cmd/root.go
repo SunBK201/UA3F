@@ -202,6 +202,14 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	apiSrv := api.New(AppVersion, cfg, logBroadcaster)
+	addShutdown("apiSrv.Close", apiSrv.Close)
+	if err := apiSrv.Start(); err != nil {
+		slog.Error("apiSrv.Start", slog.Any("error", err))
+		shutdown()
+		return err
+	}
+
 	helper := netlink.New(cfg)
 	addShutdown("helper.Close", helper.Close)
 	if err := helper.Start(); err != nil {
@@ -209,6 +217,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		shutdown()
 		return err
 	}
+	apiSrv.Helper = helper
 
 	if cfg.Desync.Reorder || cfg.Desync.Inject {
 		d := desync.New(cfg)
@@ -218,6 +227,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 			shutdown()
 			return err
 		}
+		apiSrv.Desync = d
 	}
 
 	srv, err := server.NewServer(cfg)
@@ -232,16 +242,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		shutdown()
 		return err
 	}
-
-	if cfg.APIServer != "" {
-		apiSrv := api.New(cfg.APIServer, AppVersion, cfg, srv, logBroadcaster)
-		addShutdown("apiSrv.Close", apiSrv.Close)
-		if err := apiSrv.Start(); err != nil {
-			slog.Error("apiSrv.Start", slog.Any("error", err))
-			shutdown()
-			return err
-		}
-	}
+	apiSrv.Server = srv
 
 	cleanup := make(chan os.Signal, 1)
 	signal.Notify(cleanup, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
@@ -253,6 +254,9 @@ func runRoot(cmd *cobra.Command, args []string) error {
 			shutdown()
 			return nil
 		case syscall.SIGHUP:
+			if err := apiSrv.RestartSystem(); err != nil {
+				slog.Error("Failed to restart ua3f", slog.Any("error", err))
+			}
 		default:
 			return nil
 		}

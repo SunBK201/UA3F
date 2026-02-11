@@ -31,7 +31,7 @@ type Server struct {
 	NotHTTPCtMark    uint32
 }
 
-func New(cfg *config.Config, rw rewrite.Rewriter, rc *statistics.Recorder) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:        cfg,
@@ -80,6 +80,24 @@ func (s *Server) Close() error {
 	return err
 }
 
+func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
+	if err := s.Close(); err != nil {
+		return nil, err
+	}
+
+	newRewriter, err := rewrite.New(cfg, s.Recorder)
+	if err != nil {
+		slog.Error("rewrite.New", slog.Any("error", err))
+		return nil, err
+	}
+
+	newServer := New(cfg, newRewriter, s.Recorder)
+	if err := newServer.Start(); err != nil {
+		return nil, err
+	}
+	return newServer, nil
+}
+
 // handlePacket processes a single NFQUEUE packet
 func (s *Server) handlePacket(packet *common.Packet) {
 	if s.Cfg.RewriteMode == config.RewriteModeDirect || packet.TCP == nil {
@@ -87,7 +105,7 @@ func (s *Server) handlePacket(packet *common.Packet) {
 		return
 	}
 	if s.Cache.Contains(packet.DstAddr) {
-		s.sendVerdict(packet, &rewrite.RewriteDecision{Modified: false, NeedCache: true})
+		s.sendVerdict(packet, &common.RewriteDecision{Modified: false, NeedCache: true})
 		log.LogDebugWithAddr(packet.SrcAddr, packet.DstAddr, "Destination in cache, direct forwrard")
 		return
 	}
@@ -103,7 +121,7 @@ func (s *Server) handlePacket(packet *common.Packet) {
 	s.sendVerdict(packet, result)
 }
 
-func (s *Server) sendVerdict(packet *common.Packet, result *rewrite.RewriteDecision) {
+func (s *Server) sendVerdict(packet *common.Packet, result *common.RewriteDecision) {
 	nf := s.nfqServer.Nf
 	id := *packet.A.PacketID
 	setMark, nextMark := s.getNextMark(packet, result)
@@ -142,7 +160,7 @@ func (s *Server) sendVerdict(packet *common.Packet, result *rewrite.RewriteDecis
 	}
 }
 
-func (s *Server) getNextMark(packet *common.Packet, result *rewrite.RewriteDecision) (setMark bool, mark uint32) {
+func (s *Server) getNextMark(packet *common.Packet, result *common.RewriteDecision) (setMark bool, mark uint32) {
 	if result.NeedSkip {
 		return true, s.NotHTTPCtMark
 	}

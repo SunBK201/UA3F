@@ -18,9 +18,9 @@ func (s *APIServer) handleConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) handleRules(w http.ResponseWriter, r *http.Request) {
-	header := s.server.GetRewriter().HeaderRules()
-	body := s.server.GetRewriter().BodyRules()
-	redirect := s.server.GetRewriter().RedirectRules()
+	header := s.Server.GetRewriter().HeaderRules()
+	body := s.Server.GetRewriter().BodyRules()
+	redirect := s.Server.GetRewriter().RedirectRules()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"header":   header,
@@ -30,19 +30,28 @@ func (s *APIServer) handleRules(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) handleHeaderRules(w http.ResponseWriter, r *http.Request) {
-	header := s.server.GetRewriter().HeaderRules()
+	header := s.Server.GetRewriter().HeaderRules()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(header)
 }
 
 func (s *APIServer) handleBodyRules(w http.ResponseWriter, r *http.Request) {
-	body := s.server.GetRewriter().BodyRules()
+	body := s.Server.GetRewriter().BodyRules()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(body)
 }
 
 func (s *APIServer) handleRedirectRules(w http.ResponseWriter, r *http.Request) {
-	redirect := s.server.GetRewriter().RedirectRules()
+	redirect := s.Server.GetRewriter().RedirectRules()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(redirect)
+}
+
+func (s *APIServer) handleRestart(w http.ResponseWriter, r *http.Request) {
+	if err := s.RestartSystem(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("success"))
 }

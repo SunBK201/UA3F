@@ -64,6 +64,18 @@ func (s *Server) Close() error {
 	return err
 }
 
+func (s *Server) Restart(cfg *config.Config) (*Server, error) {
+	if err := s.Close(); err != nil {
+		return nil, err
+	}
+
+	newServer := New(cfg)
+	if err := newServer.Start(); err != nil {
+		return nil, err
+	}
+	return newServer, nil
+}
+
 // handlePacket processes a single NFQUEUE packet
 func (s *Server) handlePacket(packet *common.Packet) {
 	nf := s.nfqServer.Nf
