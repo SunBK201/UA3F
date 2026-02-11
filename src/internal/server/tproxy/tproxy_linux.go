@@ -134,12 +134,7 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) HandleClient(client net.Conn) {
-	addr, err := base.GetOriginalDstAddr(client)
-	if err != nil {
-		_ = client.Close()
-		slog.Error("base.GetOriginalDstAddr", slog.Any("error", err))
-		return
-	}
+	addr := client.LocalAddr().String()
 
 	target, err := base.Connect(addr, s.so_mark)
 	if err != nil {
