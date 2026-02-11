@@ -10,10 +10,11 @@
 
 [English](README_EN.md) | 简体中文
 
-UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP 流量 (例如 User-Agent) 进行高效透明重写。
+UA3F 是一个 HTTP(S) 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP(S) 流量 (例如 User-Agent) 进行高效透明重写。
 
-- 支持 HTTP 请求与响应的 Header、Body 双向重写
-- 支持 HTTP URL 重定向：302、307、Header
+- 支持 HTTP(S) 请求与响应的 Header、Body 双向重写
+- 支持 HTTP(S) URL 重定向：302、307、Header
+- 支持 HTTPS MitM 流量解密重写
 - 应用层服务模式：HTTP、SOCKS5
 - 传输层服务模式：TPROXY、REDIRECT
 - 网络层服务模式：NFQUEUE(<a href="https://github.com/Zxilly/UA2F">UA2F</a>)
@@ -22,7 +23,7 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
-- 支持 TCP Desync 分片乱序发射，用于对抗深度包检测（DPI）
+- 支持 Desync 分片乱序发射与混淆，用于对抗深度包检测（DPI）
 
 ## 部署
 

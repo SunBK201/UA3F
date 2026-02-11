@@ -10,17 +10,18 @@
 
 English | [简体中文](README.md)
 
-UA3F is an HTTP rewriting tool that transparently rewrites HTTP (e.g., User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
+UA3F is an HTTP(S) rewriting tool that transparently rewrites HTTP(S) (e.g., User-Agent) as an HTTP, SOCKS5, TPROXY, REDIRECT, or NFQUEUE server.
 
-- Supports bidirectional rewriting of HTTP Headers and Body
-- Supports HTTP URL redirection: 302, 307, Header
+- Supports bidirectional rewriting of HTTP(S) Headers and Body
+- Supports HTTP(S) URL redirection: 302, 307, Header
+- Supports HTTPS MitM traffic decryption and rewriting
 - Multiple server modes: HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE([UA2F](https://github.com/Zxilly/UA2F))
 - Highly flexible rewriting rule system with multiple rule types and rewriting strategies
 - Real-time statistics dashboard with traffic modification monitoring and analysis
 - Multiple deployment options: opkg installation, compilation, and Docker deployment
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
 - Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
-- Supports TCP Desync fragment reordering to evade Deep Packet Inspection (DPI)
+- Supports Desync fragment reordering and obfuscation to evade Deep Packet Inspection (DPI)
 
 ## Deployment
 
