@@ -1,6 +1,5 @@
 # UA3F
 
-
 ![Release](https://img.shields.io/github/v/release/SunBK201/UA3F?display_name=tag&label=UA3F&link=https%3A%2F%2Fgithub.com%2FSunBK201%2FUA3F%2Freleases%2Flatest)
 [![CodeQL](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SunBK201/UA3F/actions/workflows/github-code-scanning/codeql)
 [![License](https://img.shields.io/github/license/SunBK201/UA3F)](https://github.com/SunBK201/UA3F/blob/master/LICENSE)
@@ -24,7 +23,6 @@ UA3F 是一个 HTTP 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIREC
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
 - 支持 TCP Desync 分片乱序发射，用于对抗深度包检测（DPI）
-
 
 ## 部署
 
@@ -64,7 +62,7 @@ UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关
 
 UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [config.yaml](docs/config.yaml)
 
-详细命令行配置说明见 [Configuration.md](docs/Configuration.md)
+详细命令行配置说明见 [Configuration.md](docs/cli.md)
 
 设备与系统信息正则表达式参考：
 
@@ -158,14 +156,18 @@ URL 重定向动作：
 | REDIRECT-307 | 返回 307 重定向响应 |
 | REDIRECT-HEADER | 修改请求 Header 进行重定向，客户端无感知 |
 
+## Desync 说明
+
+详见 [UA3F Desync](docs/desync.md)
+
 ## Clash 配置建议
 
 见 [Clash 配置](docs/clash/Clash.md)
 
-## References & Thanks
+## Credits
 
-- [UA2F](https://github.com/Zxilly/UA2F)
-- [uaProxy](https://github.com/huhu415/uaProxy)
-- [xmurp-ua](https://github.com/CHN-beta/xmurp-ua)
-- [Clash](https://github.com/Dreamacro/clash)
-- [mihomo](https://github.com/MetaCubeX/mihomo)
+- [Zxilly/UA2F](https://github.com/Zxilly/UA2F)
+- [huhu415/uaProxy](https://github.com/huhu415/uaProxy)
+- [CHN-beta/xmurp-ua](https://github.com/CHN-beta/xmurp-ua)
+- [Dreamacro/clash](https://github.com/Dreamacro/clash)
+- [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo)

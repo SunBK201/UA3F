@@ -156,10 +156,10 @@ URL Redirection Actions:
 
 See [Clash Configuration](docs/clash/Clash.md)
 
-## References & Thanks
+## Credits
 
-- [UA2F](https://github.com/Zxilly/UA2F)
-- [uaProxy](https://github.com/huhu415/uaProxy)
-- [xmurp-ua](https://github.com/CHN-beta/xmurp-ua)
-- [Clash](https://github.com/Dreamacro/clash)
-- [mihomo](https://github.com/MetaCubeX/mihomo)
+- [Zxilly/UA2F](https://github.com/Zxilly/UA2F)
+- [huhu415/uaProxy](https://github.com/huhu415/uaProxy)
+- [CHN-beta/xmurp-ua](https://github.com/CHN-beta/xmurp-ua)
+- [Dreamacro/clash](https://github.com/Dreamacro/clash)
+- [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo)
