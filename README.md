@@ -62,7 +62,7 @@ UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关
 
 UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [config.yaml](docs/config.yaml)
 
-详细命令行配置说明见 [Configuration.md](docs/cli.md)
+详细命令行配置说明见 [cli.md](docs/cli.md)
 
 设备与系统信息正则表达式参考：
 
@@ -101,6 +101,12 @@ sudo -u shellcrash /usr/bin/ua3f
 - `-z`: 重写规则，json string 格式，仅在 RULE 重写策略模式下生效
 
 </details>
+
+### API Server
+
+UA3F 内置 API Server 控制器，提供 UA3F 运行状态、配置规则等信息查询与控制接口，可以通过 `--api-server <addr:port>` 参数启用。
+
+API 文档见 [API.md](docs/api.md)
 
 ### 服务模式说明
 
