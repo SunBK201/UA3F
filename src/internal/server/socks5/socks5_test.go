@@ -1357,4 +1357,3 @@ func TestSocks5RestartRaceConditions(t *testing.T) {
 
 	t.Logf("Successfully completed %d rapid restarts with zero connection failures", numRestarts)
 }
-

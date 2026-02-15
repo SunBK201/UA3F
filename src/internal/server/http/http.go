@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -22,7 +21,6 @@ import (
 	"github.com/sunbk201/ua3f/internal/server/base"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
-	"golang.org/x/sys/unix"
 )
 
 type Server struct {
@@ -52,18 +50,9 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 func (s *Server) Start() (err error) {
 	s.Recorder.Start()
 
-	lc := net.ListenConfig{
-		Control: func(network, address string, c syscall.RawConn) error {
-			return c.Control(func(fd uintptr) {
-				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
-				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
-			})
-		},
-	}
-
 	var listener net.Listener
 	listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
-	if listener, err = lc.Listen(context.TODO(), "tcp", listenAddr); err != nil {
+	if listener, err = net.Listen("tcp", listenAddr); err != nil {
 		return fmt.Errorf("lc.Listen: %w", err)
 	}
 
@@ -115,15 +104,13 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 
 	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
 
+	if err := s.Close(); err != nil {
+		slog.Error("old server shutdown error", slog.Any("error", err))
+	}
+
 	if err := newServer.Start(); err != nil {
 		return nil, err
 	}
-
-	go func() {
-		if err := s.Close(); err != nil {
-			slog.Error("old server shutdown error", slog.Any("error", err))
-		}
-	}()
 
 	return newServer, nil
 }
