@@ -1,11 +1,16 @@
 package statistics
 
-import "github.com/sunbk201/ua3f/internal/log"
+import (
+	"sync"
+
+	"github.com/sunbk201/ua3f/internal/log"
+)
 
 type Recorder struct {
 	RewriteRecordList     *RewriteRecordList
 	PassThroughRecordList *PassThroughRecordList
 	ConnectionRecordList  *ConnectionRecordList
+	once                  sync.Once
 }
 
 func New() *Recorder {
@@ -17,9 +22,11 @@ func New() *Recorder {
 }
 
 func (r *Recorder) Start() {
-	r.RewriteRecordList.Run()
-	r.PassThroughRecordList.Run()
-	r.ConnectionRecordList.Run()
+	r.once.Do(func() {
+		r.RewriteRecordList.Run()
+		r.PassThroughRecordList.Run()
+		r.ConnectionRecordList.Run()
+	})
 }
 
 func (r *Recorder) AddRecord(record any) {
