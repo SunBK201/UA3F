@@ -2,6 +2,7 @@ package base
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -111,7 +112,11 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			transferReader = sniffReader
 		}
 		if _, err = io.CopyBuffer(c.RConn, transferReader, one); err != nil {
-			c.LogWarnf("ProcessLR io.CopyBuffer: %v", err)
+			if errors.Is(err, net.ErrClosed) {
+				c.LogDebugf("ProcessRL io.CopyBuffer: %v", err)
+			} else {
+				c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+			}
 		}
 		_ = c.CloseLR()
 	}()
@@ -265,7 +270,11 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 			c.LogDebugf("ProcessRL: %s", err.Error())
 		}
 		if _, err = io.CopyBuffer(c.LConn, reader, one); err != nil {
-			c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+			if errors.Is(err, net.ErrClosed) {
+				c.LogDebugf("ProcessRL io.CopyBuffer: %v", err)
+			} else {
+				c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+			}
 		}
 		_ = c.CloseRL()
 	}()
