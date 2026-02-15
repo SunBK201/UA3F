@@ -71,6 +71,8 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 			r = match.NewDomainKeyword(rule, recorder, target)
 		case common.RuleTypeDomainSuffix:
 			r = match.NewDomainSuffix(rule, recorder, target)
+		case common.RuleTypeDomainSet:
+			r = match.NewDomainSet(rule, recorder, target)
 		case common.RuleTypeURLRegex:
 			r = match.NewURLRegex(rule, recorder, target)
 		case common.RuleTypeFinal:
