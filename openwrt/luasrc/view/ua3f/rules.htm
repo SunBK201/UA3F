@@ -216,7 +216,8 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
             { value: 'REPLACE', label: '<%:REPLACE%>' },
             { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
             { value: 'DIRECT', label: '<%:DIRECT%>' },
-            { value: 'DROP', label: '<%:DROP%>' }
+            { value: 'REJECT', label: '<%:REJECT%>' }
+            { value: 'DROP', label: '<%:DROP%>' },
         ],
 
         finalActionTypes: [
@@ -398,6 +399,8 @@ local url_redirect_rules_data = uci:get("ua3f", "main", "url_redirect") or "[]"
         actionTypes: [
             { value: 'REPLACE-REGEX', label: '<%:REPLACE-REGEX%>' },
             { value: 'DIRECT', label: '<%:DIRECT%>' },
+            { value: 'REJECT', label: '<%:REJECT%>' }
+            { value: 'DROP', label: '<%:DROP%>' },
         ],
 
         finalActionTypes: [
