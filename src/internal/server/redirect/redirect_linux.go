@@ -28,6 +28,7 @@ type Server struct {
 	netfilter.Firewall
 	listener net.Listener
 	so_mark  int
+	done     chan struct{}
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
@@ -46,6 +47,7 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 			MiddleMan: middleMan,
 		},
 		so_mark: base.SO_MARK,
+		done:    make(chan struct{}),
 	}
 	s.Firewall = netfilter.Firewall{
 		Nftable: &knftables.Table{
@@ -69,9 +71,11 @@ func (s *Server) Start() (err error) {
 		return err
 	}
 
-	listenAddr := fmt.Sprintf("0.0.0.0:%d", s.Cfg.Port)
-	if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
-		return fmt.Errorf("net.Listen: %w", err)
+	if s.listener == nil {
+		listenAddr := fmt.Sprintf("0.0.0.0:%d", s.Cfg.Port)
+		if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
+			return fmt.Errorf("net.Listen: %w", err)
+		}
 	}
 
 	s.Recorder.Start()
@@ -79,6 +83,12 @@ func (s *Server) Start() (err error) {
 	go func() {
 		var client net.Conn
 		for {
+			select {
+			case <-s.done:
+				return
+			default:
+			}
+
 			if client, err = s.listener.Accept(); err != nil {
 				if errors.Is(err, syscall.EMFILE) {
 					time.Sleep(time.Second)
@@ -97,6 +107,15 @@ func (s *Server) Start() (err error) {
 
 func (s *Server) Close() error {
 	_ = s.Firewall.Cleanup()
+
+	if s.done != nil {
+		select {
+		case <-s.done:
+		default:
+			close(s.done)
+		}
+	}
+
 	if s.listener != nil {
 		return s.listener.Close()
 	}
@@ -121,8 +140,17 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 	}
 
 	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+
+	newServer.listener = s.listener
 	if err := newServer.Start(); err != nil {
 		return nil, err
+	}
+	if s.done != nil {
+		select {
+		case <-s.done:
+		default:
+			close(s.done)
+		}
 	}
 	return newServer, nil
 }

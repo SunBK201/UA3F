@@ -2,11 +2,14 @@ package http
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -19,6 +22,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/server/base"
 	"github.com/sunbk201/ua3f/internal/sniff"
 	"github.com/sunbk201/ua3f/internal/statistics"
+	"golang.org/x/sys/unix"
 )
 
 type Server struct {
@@ -47,8 +51,23 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 
 func (s *Server) Start() (err error) {
 	s.Recorder.Start()
+
+	lc := net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+			})
+		},
+	}
+
+	var listener net.Listener
+	listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
+	if listener, err = lc.Listen(context.TODO(), "tcp", listenAddr); err != nil {
+		return fmt.Errorf("lc.Listen: %w", err)
+	}
+
 	server := &http.Server{
-		Addr: fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodConnect {
 				s.handleTunneling(w, req)
@@ -59,25 +78,29 @@ func (s *Server) Start() (err error) {
 	}
 	s.server = server
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("server.ListenAndServe", slog.Any("error", err))
+		if err := server.Serve(listener); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			} else {
+				slog.Error("server.Serve", slog.Any("error", err))
+			}
 		}
 	}()
 	return nil
 }
 
 func (s *Server) Close() (err error) {
-	if s.server != nil {
-		err = s.server.Close()
+	if s.server == nil {
+		return nil
 	}
-	return err
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return s.server.Shutdown(ctx)
 }
 
 func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
-	if err := s.Close(); err != nil {
-		return nil, err
-	}
-
 	newRewriter, err := rewrite.New(cfg, s.Recorder)
 	if err != nil {
 		slog.Error("rewrite.New", slog.Any("error", err))
@@ -91,9 +114,17 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 	}
 
 	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+
 	if err := newServer.Start(); err != nil {
 		return nil, err
 	}
+
+	go func() {
+		if err := s.Close(); err != nil {
+			slog.Error("old server shutdown error", slog.Any("error", err))
+		}
+	}()
+
 	return newServer, nil
 }
 

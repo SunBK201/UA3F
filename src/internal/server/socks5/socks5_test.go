@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1045,3 +1046,315 @@ func TestSocks5BindCommand(t *testing.T) {
 		t.Errorf("BIND failed with reply code: %d", response[1])
 	}
 }
+
+func TestSocks5GracefulRestartUnderHighConcurrency(t *testing.T) {
+	// Create echo server
+	echo := NewEchoServer(t)
+	defer echo.close()
+
+	// Initial configuration
+	cfg := &config.Config{
+		ServerMode:  config.ServerModeSocks5,
+		BindAddress: "127.0.0.1",
+		Port:        0, // Let OS assign port
+		LogLevel:    "error",
+		RewriteMode: config.RewriteModeGlobal,
+		UserAgent:   "StressTestUA/1.0",
+	}
+
+	recorder := mockRecorder()
+	rw, err := rewrite.New(cfg, recorder)
+	if err != nil {
+		t.Fatalf("failed to create rewriter: %v", err)
+	}
+
+	// Create and start the server
+	server := New(cfg, rw, recorder, nil)
+	if err := server.Start(); err != nil {
+		t.Fatalf("failed to start server: %v", err)
+	}
+
+	originalAddr := server.listener.Addr().String()
+	t.Logf("Server listening on: %s", originalAddr)
+
+	// Stress test parameters
+	const (
+		numWorkers     = 20  // Number of concurrent workers
+		totalPerWorker = 100 // Requests per worker across entire test
+	)
+
+	var (
+		successCount int32
+		failCount    int32
+		mu           sync.Mutex
+		failMsgs     []string
+		wg           sync.WaitGroup
+	)
+
+	// Start concurrent workers - each continuously sends requests.
+	// Workers will be active before, during, and after the restart.
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			for j := 0; j < totalPerWorker; j++ {
+				dialer, err := proxy.SOCKS5("tcp", originalAddr, nil, proxy.Direct)
+				if err != nil {
+					atomic.AddInt32(&failCount, 1)
+					mu.Lock()
+					failMsgs = append(failMsgs, fmt.Sprintf("Worker %d req %d: dialer error: %v", workerID, j, err))
+					mu.Unlock()
+					continue
+				}
+
+				client := &http.Client{
+					Transport: &http.Transport{
+						Dial: dialer.Dial,
+					},
+					Timeout: 5 * time.Second,
+				}
+
+				resp, err := client.Get(echo.URL("/"))
+				if err != nil {
+					atomic.AddInt32(&failCount, 1)
+					mu.Lock()
+					failMsgs = append(failMsgs, fmt.Sprintf("Worker %d req %d: %v", workerID, j, err))
+					mu.Unlock()
+					continue
+				}
+
+				_, _ = io.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+
+				if resp.StatusCode != http.StatusOK {
+					atomic.AddInt32(&failCount, 1)
+					mu.Lock()
+					failMsgs = append(failMsgs, fmt.Sprintf("Worker %d req %d: status %d", workerID, j, resp.StatusCode))
+					mu.Unlock()
+				} else {
+					atomic.AddInt32(&successCount, 1)
+				}
+
+				time.Sleep(5 * time.Millisecond)
+			}
+		}(i)
+	}
+
+	// Let workers warm up to ensure active load before restart
+	time.Sleep(300 * time.Millisecond)
+
+	// Perform graceful restart while workers are actively sending requests.
+	// Since the listener is inherited and never closed, all connections must
+	// continue to be accepted seamlessly.
+	t.Log("Performing graceful restart under high concurrent load...")
+	newCfg := &config.Config{
+		ServerMode:  config.ServerModeSocks5,
+		BindAddress: cfg.BindAddress,
+		Port:        cfg.Port,
+		LogLevel:    "error",
+		RewriteMode: config.RewriteModeGlobal,
+		UserAgent:   "StressTestUA/2.0",
+	}
+
+	result, err := server.Restart(newCfg)
+	if err != nil {
+		t.Fatalf("Failed to restart server: %v", err)
+	}
+	newServer, ok := result.(*Server)
+	if !ok {
+		t.Fatal("Expected *socks5.Server type from Restart")
+	}
+	defer func() { _ = newServer.Close() }()
+
+	// Verify listener address didn't change (same listener inherited)
+	if newServer.listener.Addr().String() != originalAddr {
+		t.Fatalf("Listener address changed after restart: got %s, want %s",
+			newServer.listener.Addr().String(), originalAddr)
+	}
+
+	// Verify old server's done channel is closed immediately after restart
+	select {
+	case <-server.done:
+		t.Log("Old server's done channel properly closed")
+	default:
+		t.Fatal("Old server's done channel not closed after restart")
+	}
+
+	t.Log("Server restarted, workers continue sending requests...")
+
+	// Wait for all workers to complete their remaining requests
+	wg.Wait()
+
+	// Collect and report statistics
+	total := atomic.LoadInt32(&successCount) + atomic.LoadInt32(&failCount)
+	fails := atomic.LoadInt32(&failCount)
+
+	t.Logf("=== Test Statistics ===")
+	t.Logf("Total requests: %d", total)
+	t.Logf("Successful:     %d", atomic.LoadInt32(&successCount))
+	t.Logf("Failed:         %d", fails)
+
+	// Graceful restart MUST guarantee zero connection failures.
+	// The listener is inherited and never closed, so all connections
+	// must be accepted seamlessly during the restart process.
+	if fails > 0 {
+		t.Logf("=== Failure Details ===")
+		mu.Lock()
+		for _, msg := range failMsgs {
+			t.Log(msg)
+		}
+		mu.Unlock()
+		t.Fatalf("Graceful restart requires ZERO connection failures, but got %d failures out of %d total requests", fails, total)
+	}
+
+	t.Log("High concurrency graceful restart test completed with zero failures")
+}
+
+func TestSocks5RestartRaceConditions(t *testing.T) {
+	// This test targets race conditions during multiple rapid restarts
+	// with continuous background load. Zero connection failures are acceptable.
+	echo := NewEchoServer(t)
+	defer echo.close()
+
+	cfg := &config.Config{
+		ServerMode:  config.ServerModeSocks5,
+		BindAddress: "127.0.0.1",
+		Port:        0,
+		LogLevel:    "error",
+		RewriteMode: config.RewriteModeGlobal,
+		UserAgent:   "RaceTestUA/1.0",
+	}
+
+	recorder := mockRecorder()
+	rw, err := rewrite.New(cfg, recorder)
+	if err != nil {
+		t.Fatalf("failed to create rewriter: %v", err)
+	}
+
+	server := New(cfg, rw, recorder, nil)
+	if err := server.Start(); err != nil {
+		t.Fatalf("failed to start server: %v", err)
+	}
+
+	originalAddr := server.listener.Addr().String()
+	t.Logf("Server listening on: %s", originalAddr)
+
+	// Test multiple rapid restarts under continuous load
+	const numRestarts = 5
+	var (
+		wg        sync.WaitGroup
+		failCount int32
+		mu        sync.Mutex
+		failMsgs  []string
+	)
+
+	// Start background workers that continuously send requests
+	stopWorkers := make(chan struct{})
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			for {
+				select {
+				case <-stopWorkers:
+					return
+				default:
+				}
+
+				dialer, err := proxy.SOCKS5("tcp", originalAddr, nil, proxy.Direct)
+				if err != nil {
+					atomic.AddInt32(&failCount, 1)
+					mu.Lock()
+					failMsgs = append(failMsgs, fmt.Sprintf("Worker %d: dialer error: %v", workerID, err))
+					mu.Unlock()
+					continue
+				}
+
+				client := &http.Client{
+					Transport: &http.Transport{
+						Dial: dialer.Dial,
+					},
+					Timeout: 3 * time.Second,
+				}
+
+				resp, err := client.Get(echo.URL("/"))
+				if err != nil {
+					atomic.AddInt32(&failCount, 1)
+					mu.Lock()
+					failMsgs = append(failMsgs, fmt.Sprintf("Worker %d: %v", workerID, err))
+					mu.Unlock()
+					continue
+				}
+				_, _ = io.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+
+				time.Sleep(10 * time.Millisecond)
+			}
+		}(i)
+	}
+
+	// Perform multiple rapid restarts while workers are active
+	currentServer := server
+	for i := 0; i < numRestarts; i++ {
+		time.Sleep(200 * time.Millisecond)
+		t.Logf("Restart %d/%d...", i+1, numRestarts)
+
+		newCfg := &config.Config{
+			ServerMode:  config.ServerModeSocks5,
+			BindAddress: cfg.BindAddress,
+			Port:        cfg.Port,
+			LogLevel:    "error",
+			RewriteMode: config.RewriteModeGlobal,
+			UserAgent:   fmt.Sprintf("RaceTestUA/%d.0", i+2),
+		}
+
+		result, err := currentServer.Restart(newCfg)
+		if err != nil {
+			t.Fatalf("Restart %d failed: %v", i+1, err)
+		}
+
+		newSocks5Server, ok := result.(*Server)
+		if !ok {
+			t.Fatalf("Restart %d: unexpected server type", i+1)
+		}
+
+		if newSocks5Server.listener.Addr().String() != originalAddr {
+			t.Fatalf("Restart %d: address changed from %s to %s",
+				i+1, originalAddr, newSocks5Server.listener.Addr().String())
+		}
+
+		// Old server's done channel must be closed immediately
+		select {
+		case <-currentServer.done:
+			// Good
+		default:
+			t.Fatalf("Restart %d: old server done channel not closed", i+1)
+		}
+
+		currentServer = newSocks5Server
+	}
+
+	// Stop workers and wait for all to finish
+	close(stopWorkers)
+	wg.Wait()
+
+	// Clean up the final server
+	if currentServer != server {
+		_ = currentServer.Close()
+	}
+
+	// Assert zero failures - graceful restart must never drop connections
+	fails := atomic.LoadInt32(&failCount)
+	if fails > 0 {
+		t.Logf("=== Failure Details ===")
+		mu.Lock()
+		for _, msg := range failMsgs {
+			t.Log(msg)
+		}
+		mu.Unlock()
+		t.Fatalf("Graceful restart requires ZERO connection failures, but got %d failures during %d rapid restarts", fails, numRestarts)
+	}
+
+	t.Logf("Successfully completed %d rapid restarts with zero connection failures", numRestarts)
+}
+

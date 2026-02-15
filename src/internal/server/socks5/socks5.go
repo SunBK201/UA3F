@@ -26,6 +26,7 @@ type Server struct {
 	base.Server
 	listener net.Listener
 	so_mark  int
+	done     chan struct{}
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
@@ -43,13 +44,17 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 			MiddleMan: middleMan,
 		},
 		so_mark: base.SO_MARK,
+		done:    make(chan struct{}),
 	}
 }
 
 func (s *Server) Start() (err error) {
-	listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
-	if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
-		return fmt.Errorf("net.Listen: %w", err)
+	if s.listener == nil {
+		// first time start, create listener
+		listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
+		if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
+			return fmt.Errorf("net.Listen: %w", err)
+		}
 	}
 
 	s.Recorder.Start()
@@ -57,6 +62,12 @@ func (s *Server) Start() (err error) {
 	go func() {
 		var client net.Conn
 		for {
+			select {
+			case <-s.done:
+				return
+			default:
+			}
+
 			if client, err = s.listener.Accept(); err != nil {
 				if errors.Is(err, syscall.EMFILE) {
 					time.Sleep(time.Second)
@@ -73,6 +84,15 @@ func (s *Server) Start() (err error) {
 }
 
 func (s *Server) Close() (err error) {
+	if s.done != nil {
+		select {
+		case <-s.done:
+			// already closed
+		default:
+			close(s.done)
+		}
+	}
+
 	if s.listener != nil {
 		err = s.listener.Close()
 	}
@@ -80,10 +100,6 @@ func (s *Server) Close() (err error) {
 }
 
 func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
-	if err := s.Close(); err != nil {
-		return nil, err
-	}
-
 	newRewriter, err := rewrite.New(cfg, s.Recorder)
 	if err != nil {
 		slog.Error("rewrite.New", slog.Any("error", err))
@@ -97,8 +113,19 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 	}
 
 	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+
+	// Inherit the listener from old server for graceful restart
+	newServer.listener = s.listener
 	if err := newServer.Start(); err != nil {
 		return nil, err
+	}
+	if s.done != nil {
+		select {
+		case <-s.done:
+			// already closed
+		default:
+			close(s.done)
+		}
 	}
 	return newServer, nil
 }
