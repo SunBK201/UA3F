@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	DirectAction       = NewDirect(nil)
-	DropRequestAction  = NewDrop(nil, common.DirectionRequest)
-	DropResponseAction = NewDrop(nil, common.DirectionResponse)
+	DirectAction         = NewDirect(nil)
+	DropRequestAction    = NewDrop(nil, common.DirectionRequest)
+	DropResponseAction   = NewDrop(nil, common.DirectionResponse)
+	RejectRequestAction  = NewReject(nil, common.DirectionRequest)
+	RejectResponseAction = NewReject(nil, common.DirectionResponse)
 )
 
 func InitActions(recorder *statistics.Recorder) {
@@ -31,6 +33,15 @@ func NewHeaderAction(rule *config.Rule, recorder *statistics.Recorder) common.Ac
 	case common.ActionDirect:
 		DirectAction.SetRecorder(recorder)
 		return DirectAction
+	case common.ActionReject:
+		switch common.Direction(rule.RewriteDirection) {
+		case common.DirectionRequest:
+			return RejectRequestAction
+		case common.DirectionResponse:
+			return RejectResponseAction
+		default:
+			return nil
+		}
 	case common.ActionDrop:
 		switch common.Direction(rule.RewriteDirection) {
 		case common.DirectionRequest:
@@ -65,6 +76,15 @@ func NewBodyAction(rule *config.Rule, recorder *statistics.Recorder) common.Acti
 	case common.ActionDirect:
 		DirectAction.SetRecorder(recorder)
 		return DirectAction
+	case common.ActionReject:
+		switch common.Direction(rule.RewriteDirection) {
+		case common.DirectionRequest:
+			return RejectRequestAction
+		case common.DirectionResponse:
+			return RejectResponseAction
+		default:
+			return nil
+		}
 	case common.ActionDrop:
 		switch common.Direction(rule.RewriteDirection) {
 		case common.DirectionRequest:

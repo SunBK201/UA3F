@@ -90,7 +90,7 @@ type Rule struct {
 	MatchHeader string `json:"match_header,omitempty" yaml:"match-header,omitempty" validate:"required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX"`
 	MatchValue  string `json:"match_value,omitempty" yaml:"match-value,omitempty" validate:"required_if=Type DEST-PORT,required_if=Type HEADER-KEYWORD,required_if=Type HEADER-REGEX,required_if=Type IP-CIDR,required_if=Type SRC-IP,required_if=Type DOMAIN-SUFFIX,required_if=Type DOMAIN-KEYWORD,required_if=Type DOMAIN,required_if=Type URL-REGEX"`
 
-	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD REDIRECT-302 REDIRECT-307 REDIRECT-HEADER"`
+	Action string `json:"action" yaml:"action" validate:"required,oneof=DIRECT REPLACE REPLACE-REGEX DELETE DROP ADD REDIRECT-302 REDIRECT-307 REDIRECT-HEADER REJECT"`
 
 	RewriteHeader    string `json:"rewrite_header,omitempty" yaml:"rewrite-header,omitempty"` // validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action DELETE,required_if=Action ADD"
 	RewriteValue     string `json:"rewrite_value,omitempty" yaml:"rewrite-value,omitempty" validate:"required_if=Action REPLACE,required_if=Action REPLACE-REGEX,required_if=Action ADD"`

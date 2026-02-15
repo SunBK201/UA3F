@@ -44,6 +44,9 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *comm
 			break
 		}
 	}
+	if decision.Action == action.RejectRequestAction {
+		return
+	}
 
 	decision = &common.RewriteDecision{
 		Action: action.DirectAction,
@@ -66,6 +69,9 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *comm
 		if !contine {
 			break
 		}
+	}
+	if decision.Action == action.RejectRequestAction {
+		return
 	}
 
 	decision = &common.RewriteDecision{
@@ -116,6 +122,9 @@ func (r *RuleRewriter) RewriteResponse(metadata *common.Metadata) (decision *com
 		if !contine {
 			break
 		}
+	}
+	if decision.Action == action.RejectResponseAction {
+		return
 	}
 
 	decision = &common.RewriteDecision{

@@ -105,6 +105,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			c.LogDebugf("ProcessLR: %s", err.Error())
 		}
 		if c.Skipped {
+			// used by reject and firewall skip
 			_ = c.CloseLR()
 			return
 		}
@@ -221,9 +222,18 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		c.Metadata.UpdateRequest(req)
 
 		decision := s.Rewriter.RewriteRequest(c.Metadata)
-		if decision.Action == action.DropRequestAction || decision.Redirect {
+		if decision.Redirect {
 			continue
 		}
+
+		switch decision.Action {
+		case action.DropRequestAction:
+			continue
+		case action.RejectRequestAction:
+			c.Skipped = true
+			return
+		}
+
 		if decision.NeedCache {
 			s.Cache.Add(c.RAddr, struct{}{})
 		}
@@ -268,6 +278,11 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 	defer func() {
 		if err != nil {
 			c.LogDebugf("ProcessRL: %s", err.Error())
+		}
+		if c.Skipped {
+			// used by reject and firewall skip
+			_ = c.CloseRL()
+			return
 		}
 		if _, err = io.CopyBuffer(c.LConn, reader, one); err != nil {
 			if errors.Is(err, net.ErrClosed) {
@@ -315,8 +330,13 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 
 		c.Metadata.UpdateResponse(resp)
 
-		if decision := s.Rewriter.RewriteResponse(c.Metadata); decision.Action == action.DropResponseAction {
+		decision := s.Rewriter.RewriteResponse(c.Metadata)
+		switch decision.Action {
+		case action.DropResponseAction:
 			continue
+		case action.RejectResponseAction:
+			c.Skipped = true
+			return
 		}
 
 		if err := c.Metadata.Response.Write(c.LConn); err != nil {

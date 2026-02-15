@@ -8,6 +8,7 @@ const (
 	ActionDelete         ActionType = "DELETE"
 	ActionAdd            ActionType = "ADD"
 	ActionDirect         ActionType = "DIRECT"
+	ActionReject         ActionType = "REJECT"
 	ActionDrop           ActionType = "DROP"
 	ActionRedirect302    ActionType = "REDIRECT-302"
 	ActionRedirect307    ActionType = "REDIRECT-307"
