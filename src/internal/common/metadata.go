@@ -101,7 +101,7 @@ func (m *Metadata) URL() string {
 	}
 	req := m.Request
 	scheme := "http"
-	if req.TLS != nil || m.ConnLink.Protocol == sniff.HTTPS {
+	if req.TLS != nil || (m.ConnLink != nil && m.ConnLink.Protocol == sniff.HTTPS) {
 		scheme = "https"
 	}
 	url := scheme + "://" + req.Host + req.URL.RequestURI()
