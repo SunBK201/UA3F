@@ -128,6 +128,7 @@ Rule Types:
 | DOMAIN         | Match based on domain name                        |
 | DOMAIN-SUFFIX  | Match based on domain suffix                      |
 | DOMAIN-KEYWORD | Match based on domain keyword                     |
+| DOMAIN-SET     | Match based on a set of domain names              |
 | IP-CIDR        | Match based on IP address range                   |
 | SRC-IP         | Match based on source IP address                  |
 | DST-PORT       | Match based on destination port                   |
@@ -144,6 +145,7 @@ Rewrite Actions:
 | ADD           | Add the specified header with the given content               |
 | REPLACE       | Replace the specified header with the given content           |
 | REPLACE-REGEX | Replace the part of the specified header that matches a regex |
+| REJECT        | Reject the request                                            |
 | DROP          | Drop the request                                              |
 
 URL Redirection Actions:

@@ -138,6 +138,7 @@ UA3F 支持 3 种不同的重写策略：
 | DOMAIN         | 根据域名进行匹配               |
 | DOMAIN-SUFFIX  | 根据域名后缀进行匹配           |
 | DOMAIN-KEYWORD | 根据域名关键字进行匹配         |
+| DOMAIN-SET     | 根据域名集合进行匹配           |
 | IP-CIDR        | 根据 IP 地址段进行匹配         |
 | SRC-IP         | 根据源 IP 地址进行匹配         |
 | DST-PORT       | 根据目标端口进行匹配           |
@@ -154,6 +155,7 @@ UA3F 支持 3 种不同的重写策略：
 | ADD           | 添加指定 Header 为指定内容     |
 | REPLACE       | 替换指定 Header 为指定内容     |
 | REPLACE-REGEX | 将匹配正则的部分替换为指定内容 |
+| REJECT        | 拒绝该请求                     |
 | DROP          | 丢弃该请求                     |
 
 URL 重定向动作：
