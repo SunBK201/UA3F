@@ -24,6 +24,7 @@ UA3F 是一个 HTTP(S) 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDI
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
 - 支持 Desync 分片乱序发射与混淆，用于对抗深度包检测（DPI）
+- 支持 eBPF 流量卸载，加速转发性能
 
 ## 部署
 

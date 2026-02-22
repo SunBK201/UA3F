@@ -72,6 +72,9 @@ func init() {
 	rootCmd.Flags().String("mitm-ca-passphrase", "", "Passphrase for MitM CA PKCS#12 file")
 	rootCmd.Flags().Bool("mitm-insecure-skip-verify", false, "Skip server certificate verification in MitM")
 
+	// BPF
+	rootCmd.Flags().Bool("bpf-offload", false, "Enable BPF offloading (requires kernel support)")
+
 	// Bind all flags to viper using consistent key names
 	_ = viper.BindPFlag("config", rootCmd.Flags().Lookup("config"))
 	_ = viper.BindPFlag("server-mode", rootCmd.Flags().Lookup("mode"))
@@ -106,6 +109,8 @@ func init() {
 	_ = viper.BindPFlag("mitm.ca-passphrase", rootCmd.Flags().Lookup("mitm-ca-passphrase"))
 	_ = viper.BindPFlag("mitm.insecure-skip-verify", rootCmd.Flags().Lookup("mitm-insecure-skip-verify"))
 
+	_ = viper.BindPFlag("bpf-offload", rootCmd.Flags().Lookup("bpf-offload"))
+
 	// Bind environment variables
 	viper.SetEnvPrefix("UA3F")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
@@ -137,6 +142,8 @@ func init() {
 	_ = viper.BindEnv("mitm.ca-p12-base64", "UA3F_MITM_CA_P12_BASE64")
 	_ = viper.BindEnv("mitm.ca-passphrase", "UA3F_MITM_CA_PASSPHRASE")
 	_ = viper.BindEnv("mitm.insecure-skip-verify", "UA3F_MITM_INSECURE_SKIP_VERIFY")
+
+	_ = viper.BindEnv("bpf-offload", "UA3F_BPF_OFFLOAD")
 
 	_ = viper.BindEnv("api-server", "UA3F_API_SERVER")
 	_ = viper.BindEnv("api-server-secret", "UA3F_API_SERVER_SECRET")

@@ -53,6 +53,8 @@ type Config struct {
 
 	Desync DesyncConfig `yaml:"desync"`
 
+	BPFOffload bool `yaml:"bpf-offload"`
+
 	HeaderRules     []Rule `yaml:"header-rewrite" validate:"dive"`
 	HeaderRulesJson string `yaml:"header-rewrite-json,omitempty"`
 
@@ -155,6 +157,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Bool("Set IP ID", c.IPID),
 		slog.Bool("Delete TCP Timestamp", c.TCPTimeStamp),
 		slog.Bool("Set TCP Initial Window", c.TCPInitialWindow),
+		slog.Bool("BPF Offload", c.BPFOffload),
 		slog.Attr{
 			Key: "Desync", Value: slog.GroupValue(
 				slog.Bool("Reorder", c.Desync.Reorder),

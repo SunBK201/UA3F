@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/bpf"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
@@ -28,6 +29,7 @@ type Server struct {
 	SkipIpChan      chan *net.IP
 	BufioReaderPool sync.Pool
 	MiddleMan       *mitm.MiddleMan
+	BPF             *bpf.BPF
 }
 
 func (s *Server) GetRewriter() common.Rewriter {
@@ -38,6 +40,8 @@ var one = make([]byte, 1)
 
 func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
+	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
+
 	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
 		SrcAddr:   connLink.LAddr,
@@ -46,7 +50,12 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	}
 	s.Recorder.AddRecord(record)
 	defer s.Recorder.RemoveRecord(record)
-	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
+
+	defer func() {
+		if connLink.Offloaded {
+			s.BPF.DeleteOffload(connLink)
+		}
+	}()
 
 	connLink.Metadata = &common.Metadata{
 		ConnLink: connLink,
@@ -54,6 +63,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 
 	switch s.Cfg.RewriteMode {
 	case config.RewriteModeDirect:
+		s.BPF.TryOffload(connLink, nil)
 		go connLink.CopyRL()
 		connLink.CopyLR()
 	case config.RewriteModeGlobal:
@@ -174,6 +184,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	}
 	if !isHTTP {
 		s.Cache.Add(c.RAddr, struct{}{})
+		s.BPF.TryOffload(c, transferReader)
 		c.LogInfo("Sniff first request is not http, switch to direct forward")
 		return
 	}

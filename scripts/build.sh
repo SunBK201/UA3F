@@ -37,6 +37,7 @@ mkdir -p "$release_dir" "$dist/bin"
 cd "$project_root"
 gofmt -w ./
 cd "$project_root/src"
+go generate ./...
 
 for target_item in $TARGET_LIST; do
     goos=$(echo "$target_item" | cut -d'/' -f1)

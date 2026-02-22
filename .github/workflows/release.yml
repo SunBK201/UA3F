@@ -34,6 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y llvm clang linux-headers-$(uname -r) libbpf-dev gcc-multilib
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+          cache-dependency-path: src/go.sum
+
+      - name: Generate BPF code
+        run: cd src && go generate ./internal/bpf/...
+
       - name: Build
         uses: openwrt/gh-action-sdk@v9
         env:
@@ -83,7 +95,7 @@ jobs:
           cache-dependency-path: src/go.sum
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y zip
+        run: sudo apt-get update && sudo apt-get install -y zip llvm clang linux-headers-$(uname -r) libbpf-dev gcc-multilib
 
       - name: Get version
         id: get_version
@@ -102,6 +114,8 @@ jobs:
           GOARCH="${{ matrix.goarch }}"
 
           echo "Building for $GOOS/$GOARCH..."
+
+          go generate ./...
 
           CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
             go build -trimpath -ldflags="-s -w" -o ua3f main.go

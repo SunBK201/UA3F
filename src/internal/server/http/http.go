@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/bpf"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -29,7 +30,7 @@ type Server struct {
 	so_mark int
 }
 
-func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
@@ -42,14 +43,13 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 				},
 			},
 			MiddleMan: middleMan,
+			BPF:       bpf,
 		},
 		so_mark: base.SO_MARK,
 	}
 }
 
 func (s *Server) Start() (err error) {
-	s.Recorder.Start()
-
 	var listener net.Listener
 	listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
 	if listener, err = net.Listen("tcp", listenAddr); err != nil {
@@ -66,6 +66,8 @@ func (s *Server) Start() (err error) {
 		}),
 	}
 	s.server = server
+
+	s.Recorder.Start()
 	go func() {
 		if err := server.Serve(listener); err != nil {
 			if err == http.ErrServerClosed {
@@ -86,6 +88,8 @@ func (s *Server) Close() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	s.BPF.Close()
+
 	return s.server.Shutdown(ctx)
 }
 
@@ -102,7 +106,7 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 		return nil, err
 	}
 
-	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.BPF)
 
 	if err := s.Close(); err != nil {
 		slog.Error("old server shutdown error", slog.Any("error", err))

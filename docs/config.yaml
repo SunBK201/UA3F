@@ -5,6 +5,8 @@ server-mode: SOCKS5 # HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE
 bind-address: 127.0.0.1
 port: 1080
 
+bpf-offload: false # enable BPF offload on Linux (requires CAP_NET_ADMIN capability)
+
 log-level: info # debug, info, warn, error
 
 rewrite-mode: RULE # GLOBAL, DIRECT, RULE

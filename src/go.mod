@@ -3,6 +3,7 @@ module github.com/sunbk201/ua3f
 go 1.23.0
 
 require (
+	github.com/cilium/ebpf v0.19.0
 	github.com/coreos/go-iptables v0.8.0
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/florianl/go-nfqueue/v2 v2.0.2

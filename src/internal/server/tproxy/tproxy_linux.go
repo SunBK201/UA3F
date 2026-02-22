@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/knftables"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/sunbk201/ua3f/internal/bpf"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
@@ -37,7 +38,7 @@ type Server struct {
 	done             chan struct{}
 }
 
-func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
 	s := &Server{
 		Server: base.Server{
 			Cfg:        cfg,
@@ -51,6 +52,7 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 				},
 			},
 			MiddleMan: middleMan,
+			BPF:       bpf,
 		},
 		so_mark:          base.SO_MARK,
 		tproxyFwMark:     "0x1c9",
@@ -150,6 +152,7 @@ func (s *Server) Close() error {
 	if s.listener != nil {
 		return s.listener.Close()
 	}
+	s.BPF.Close()
 	return nil
 }
 
@@ -166,7 +169,7 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 		return nil, err
 	}
 
-	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan)
+	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.BPF)
 
 	newServer.listener = s.listener
 	if err := newServer.Start(); err != nil {

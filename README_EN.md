@@ -22,6 +22,7 @@ UA3F is an HTTP(S) rewriting tool that transparently rewrites HTTP(S) (e.g., Use
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
 - Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
 - Supports Desync fragment reordering and obfuscation to evade Deep Packet Inspection (DPI)
+- Supports eBPF offloading for accelerated forwarding performance
 
 ## Deployment
 
