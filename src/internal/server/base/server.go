@@ -42,6 +42,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
 
+	// Add connection record for statistics
 	record := &statistics.ConnectionRecord{
 		Protocol:  sniff.TCP,
 		SrcAddr:   connLink.LAddr,
@@ -51,6 +52,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	s.Recorder.AddRecord(record)
 	defer s.Recorder.RemoveRecord(record)
 
+	// Ensure BPF Sockmap is cleaned up when connection closes
 	defer func() {
 		if connLink.Offloaded {
 			s.BPF.DeleteOffload(connLink)
@@ -63,11 +65,13 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 
 	switch s.Cfg.RewriteMode {
 	case config.RewriteModeDirect:
+		// For direct mode, we can attempt BPF offload immediately without sniffing
 		s.BPF.TryOffload(connLink, nil)
 		go connLink.CopyRL()
 		connLink.CopyLR()
 	case config.RewriteModeGlobal:
 		go connLink.CopyRL()
+		// Skip sniffing and rewriting for known non-HTTP upstreams
 		if s.Cache.Contains(connLink.RAddr) {
 			connLink.CopyLR()
 		} else {

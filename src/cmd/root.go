@@ -31,6 +31,12 @@ var rootCmd = &cobra.Command{
 	RunE:         runRoot,
 }
 
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -193,11 +199,13 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Build config from flags/env/config file
 	cfg, err := config.BuildConfigFromViper()
 	if err != nil {
 		return fmt.Errorf("config error: %w", err)
 	}
 
+	// Set up logging and log the configuration
 	logBroadcaster, err := log.SetLogConf(cfg.LogLevel)
 	if err != nil {
 		return fmt.Errorf("log setup error: %w", err)
@@ -209,6 +217,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Start api server
 	apiSrv := api.New(AppVersion, cfg, logBroadcaster)
 	addShutdown("apiSrv.Close", apiSrv.Close)
 	if err := apiSrv.Start(); err != nil {
@@ -217,6 +226,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Start packet modification helper
 	helper := netlink.New(cfg)
 	addShutdown("helper.Close", helper.Close)
 	if err := helper.Start(); err != nil {
@@ -226,6 +236,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 	apiSrv.Helper = helper
 
+	// Start desync server if enabled
 	if cfg.Desync.Reorder || cfg.Desync.Inject {
 		d := desync.New(cfg)
 		addShutdown("desync.Close", d.Close)
@@ -237,6 +248,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		apiSrv.Desync = d
 	}
 
+	// Start main server
 	srv, err := server.NewServer(cfg)
 	if err != nil {
 		slog.Error("server.NewServer", slog.Any("error", err))
@@ -285,10 +297,4 @@ func shutdown() {
 		_ = shutdownChain[i]()
 	}
 	slog.Info("UA3F exit")
-}
-
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
 }
