@@ -102,7 +102,7 @@ func (s *Server) InjectPacket(p *common.Packet) {
 	}
 
 	if err := syscall.Sendto(fd, packet, 0, addr); err != nil {
-		slog.Error("syscall.Sendto", slog.Any("error", err))
+		slog.Error("InjectPacket syscall.Sendto", slog.Any("error", err))
 		return
 	}
 }
