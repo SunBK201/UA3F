@@ -69,19 +69,14 @@ func (s *APIServer) Start() error {
 	r.Get("/restart", s.handleRestart)
 
 	// pprof routes
-	r.Route("/debug/pprof", func(r chi.Router) {
-		r.HandleFunc("/", pprof.Index)
-		r.HandleFunc("/cmdline", pprof.Cmdline)
-		r.HandleFunc("/profile", pprof.Profile)
-		r.HandleFunc("/symbol", pprof.Symbol)
-		r.HandleFunc("/trace", pprof.Trace)
-		r.Handle("/goroutine", pprof.Handler("goroutine"))
-		r.Handle("/heap", pprof.Handler("heap"))
-		r.Handle("/allocs", pprof.Handler("allocs"))
-		r.Handle("/threadcreate", pprof.Handler("threadcreate"))
-		r.Handle("/block", pprof.Handler("block"))
-		r.Handle("/mutex", pprof.Handler("mutex"))
+	r.HandleFunc("/debug/pprof", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/debug/pprof/", http.StatusMovedPermanently)
 	})
+	r.HandleFunc("/debug/pprof/*", pprof.Index)
+	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	s.httpServer = &http.Server{
 		Addr:              s.addr,
