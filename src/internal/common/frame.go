@@ -22,11 +22,11 @@ type Frame struct {
 }
 
 type FragmentConfig struct {
-	Enable            bool
 	FragmentSize      int
-	OutOfOrder        bool
 	MinFragments      int // 0 auto calculate
 	FirstFragmentSize int // 0 means random 1-5 bytes
+	Enable            bool
+	OutOfOrder        bool
 }
 
 // NewFrame creates a Ethernet frame from the given nfqueue attribute.

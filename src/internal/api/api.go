@@ -20,15 +20,14 @@ import (
 )
 
 type APIServer struct {
-	version        string
+	Server         common.Server
 	cfg            *config.Config
-	addr           string
 	httpServer     *http.Server
 	logBroadcaster *applog.Broadcaster
-
-	Server common.Server
-	Helper *netlink.Server
-	Desync *desync.Server
+	Helper         *netlink.Server
+	Desync         *desync.Server
+	version        string
+	addr           string
 }
 
 func New(version string, cfg *config.Config, lb *applog.Broadcaster) *APIServer {

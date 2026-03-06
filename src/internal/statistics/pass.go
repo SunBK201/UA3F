@@ -12,24 +12,22 @@ import (
 )
 
 type PassThroughRecordList struct {
-	recordAddChan chan *PassThroughRecord
-	records       map[string]*PassThroughRecord
-	mu            sync.RWMutex
-
-	dumpRecords []*PassThroughRecord
-	dumpFile    string
-	dumpWriter  *bufio.Writer
-
+	recordAddChan   chan *PassThroughRecord
+	records         map[string]*PassThroughRecord
+	dumpWriter      *bufio.Writer
+	dumpFile        string
+	dumpRecords     []*PassThroughRecord
 	dumpInterval    time.Duration
 	cleanupInterval time.Duration
+	mu              sync.RWMutex
 }
 
 type PassThroughRecord struct {
+	LastSeen time.Time
 	SrcAddr  string
 	DestAddr string
 	UA       string
 	Count    int
-	LastSeen time.Time
 }
 
 func NewPassThroughRecordList(dumpFile string) *PassThroughRecordList {

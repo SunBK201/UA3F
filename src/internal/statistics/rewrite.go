@@ -11,24 +11,22 @@ import (
 )
 
 type RewriteRecordList struct {
-	recordAddChan chan *RewriteRecord
-	records       map[string]*RewriteRecord
-	mu            sync.RWMutex
-
-	dumpRecords []*RewriteRecord
-	dumpFile    string
-	dumpWriter  *bufio.Writer
-
+	recordAddChan   chan *RewriteRecord
+	records         map[string]*RewriteRecord
+	dumpWriter      *bufio.Writer
+	dumpFile        string
+	dumpRecords     []*RewriteRecord
 	dumpInterval    time.Duration
 	cleanupInterval time.Duration
+	mu              sync.RWMutex
 }
 
 type RewriteRecord struct {
+	LastSeen   time.Time
 	Host       string
-	Count      int
 	OriginalUA string
 	MockedUA   string
-	LastSeen   time.Time
+	Count      int
 }
 
 func NewRewriteRecordList(dumpFile string) *RewriteRecordList {

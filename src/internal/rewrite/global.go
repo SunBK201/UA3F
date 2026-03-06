@@ -13,14 +13,12 @@ import (
 )
 
 type GlobalRewriter struct {
-	UserAgent      string
-	uaRegex        *regexp2.Regexp
-	partialReplace bool
+	Recorder       *statistics.Recorder
 	rewriteAction  common.Action
-
-	whitelist []string
-
-	Recorder *statistics.Recorder
+	uaRegex        *regexp2.Regexp
+	UserAgent      string
+	whitelist      []string
+	partialReplace bool
 }
 
 func (r *GlobalRewriter) RewriteRequest(metadata *common.Metadata) (decision *common.RewriteDecision) {

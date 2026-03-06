@@ -14,11 +14,11 @@ import (
 )
 
 type PacketRewriter struct {
+	uaRegex        *regexp2.Regexp
+	Recorder       *statistics.Recorder
 	rewriteMode    config.RewriteMode
 	UserAgent      string
-	uaRegex        *regexp2.Regexp
 	partialReplace bool
-	Recorder       *statistics.Recorder
 }
 
 var (

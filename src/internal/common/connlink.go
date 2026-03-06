@@ -14,18 +14,20 @@ import (
 type ConnLink struct {
 	LConn    net.Conn
 	RConn    net.Conn
-	LAddr    string
-	RAddr    string
-	Skipped  bool
-	Protocol sniff.Protocol
 	Metadata *Metadata
 
 	SniffDone *sync.WaitGroup // For waiting ProcessLR First Sniff
 	SniffOnce sync.Once       // Ensures SniffDone.Done() is called only once
+	Protocol  sniff.Protocol
 
-	Offloaded bool   // whether this ConnLink is offloaded to BPF sockmap
-	lcookie   uint64 // BPF cookie for L side
-	rcookie   uint64 // BPF cookie for R side
+	LAddr string
+	RAddr string
+
+	lcookie uint64 // BPF cookie for L side
+	rcookie uint64 // BPF cookie for R side
+
+	Skipped   bool
+	Offloaded bool // whether this ConnLink is offloaded to BPF sockmap
 }
 
 var one = make([]byte, 1)

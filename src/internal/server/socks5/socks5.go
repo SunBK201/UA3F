@@ -26,8 +26,8 @@ import (
 type Server struct {
 	base.Server
 	listener net.Listener
-	so_mark  int
 	done     chan struct{}
+	so_mark  int
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {

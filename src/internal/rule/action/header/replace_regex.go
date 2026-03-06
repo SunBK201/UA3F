@@ -16,8 +16,8 @@ type ReplaceRegex struct {
 	replaceRegex  *regexp2.Regexp
 	replaceHeader string
 	replaceValue  string
-	contine       bool
 	direction     common.Direction
+	contine       bool
 }
 
 func (r *ReplaceRegex) Type() common.ActionType {

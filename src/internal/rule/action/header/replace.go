@@ -14,8 +14,8 @@ type Replace struct {
 	recorder  *statistics.Recorder
 	header    string
 	value     string
-	contine   bool
 	direction common.Direction
+	contine   bool
 }
 
 func (r *Replace) Type() common.ActionType {

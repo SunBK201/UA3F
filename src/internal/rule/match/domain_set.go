@@ -19,8 +19,8 @@ import (
 
 type DomainSet struct {
 	action    common.Action
-	domainSet []string
 	source    string // local file path or remote url
+	domainSet []string
 	mu        sync.RWMutex
 	loaded    bool
 }

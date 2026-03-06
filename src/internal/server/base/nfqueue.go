@@ -19,16 +19,16 @@ import (
 type NfqHandler func(a *common.Packet)
 
 type NfqueueServer struct {
-	QueueNum      uint16
-	MaxQueueLen   uint32
-	MaxPacketLen  uint32
 	HandlePacket  NfqHandler
-	NumWorkers    int
-	WorkerChanLen int
-	attrChans     []chan *nfq.Attribute
-	wg            sync.WaitGroup
 	Nf            *nfq.Nfqueue
 	cancel        context.CancelFunc
+	attrChans     []chan *nfq.Attribute
+	wg            sync.WaitGroup
+	NumWorkers    int
+	WorkerChanLen int
+	MaxQueueLen   uint32
+	MaxPacketLen  uint32
+	QueueNum      uint16
 }
 
 func (s *NfqueueServer) Start() error {

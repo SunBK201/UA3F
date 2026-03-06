@@ -13,8 +13,8 @@ import (
 
 type HeaderRegex struct {
 	action common.Action
-	header string
 	regex  *regexp2.Regexp
+	header string
 }
 
 func (h *HeaderRegex) Type() common.RuleType {

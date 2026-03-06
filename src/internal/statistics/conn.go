@@ -16,21 +16,19 @@ type ConnectionRecordList struct {
 	recordAddChan    chan *ConnectionRecord
 	recordRemoveChan chan *ConnectionRecord
 	records          map[string]*ConnectionRecord
+	dumpWriter       *bufio.Writer
+	dumpFile         string
+	dumpRecords      []*ConnectionRecord
+	dumpInterval     time.Duration
+	cleanupInterval  time.Duration
 	mu               sync.RWMutex
-
-	dumpRecords []*ConnectionRecord
-	dumpFile    string
-	dumpWriter  *bufio.Writer
-
-	dumpInterval    time.Duration
-	cleanupInterval time.Duration
 }
 
 type ConnectionRecord struct {
+	StartTime time.Time
 	Protocol  sniff.Protocol
 	SrcAddr   string
 	DestAddr  string
-	StartTime time.Time
 }
 
 func NewConnectionRecordList(dumpFile string) *ConnectionRecordList {

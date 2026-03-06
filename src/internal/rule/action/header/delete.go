@@ -13,8 +13,8 @@ import (
 type Delete struct {
 	recorder  *statistics.Recorder
 	header    string
-	contine   bool
 	direction common.Direction
+	contine   bool
 }
 
 func (d *Delete) Type() common.ActionType {

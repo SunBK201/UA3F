@@ -8,8 +8,8 @@ import (
 // Broadcaster is an io.Writer that fans out every Write to all registered
 // subscriber channels.  It is safe for concurrent use.
 type Broadcaster struct {
-	mu          sync.RWMutex
 	subscribers map[chan []byte]struct{}
+	mu          sync.RWMutex
 }
 
 // NewBroadcaster creates a ready-to-use Broadcaster.
