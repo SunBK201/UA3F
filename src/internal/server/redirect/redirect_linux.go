@@ -27,9 +27,10 @@ import (
 type Server struct {
 	base.Server
 	netfilter.Firewall
-	listener net.Listener
-	so_mark  int
-	done     chan struct{}
+	listener  net.Listener
+	so_mark   int
+	done      chan struct{}
+	loopAddrs map[string]bool
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
@@ -82,6 +83,23 @@ func (s *Server) Start() (err error) {
 
 	s.Recorder.Start()
 
+	// Build a set of all local addresses on the listening port.
+	// Connections to any of these would loop back to us.
+	s.loopAddrs = make(map[string]bool)
+	port := s.Cfg.Port
+	if addrs, err := net.InterfaceAddrs(); err == nil {
+		for _, a := range addrs {
+			if ipNet, ok := a.(*net.IPNet); ok {
+				ip := ipNet.IP
+				if ip.To4() != nil {
+					s.loopAddrs[fmt.Sprintf("%s:%d", ip.String(), port)] = true
+				} else {
+					s.loopAddrs[fmt.Sprintf("[%s]:%d", ip.String(), port)] = true
+				}
+			}
+		}
+	}
+
 	go func() {
 		var client net.Conn
 		for {
@@ -100,7 +118,7 @@ func (s *Server) Start() (err error) {
 				slog.Error("s.listener.Accept", slog.Any("error", err))
 				continue
 			}
-			slog.Debug("Accept connection", slog.String("addr", client.RemoteAddr().String()))
+			slog.Debug("Accepted connection", slog.String("remote", client.RemoteAddr().String()), slog.String("local", client.LocalAddr().String()))
 			go s.HandleClient(client)
 		}
 	}()
@@ -163,6 +181,12 @@ func (s *Server) HandleClient(client net.Conn) {
 	if err != nil {
 		_ = client.Close()
 		slog.Error("base.GetOriginalDstAddr", slog.Any("error", err), slog.String("client", client.RemoteAddr().String()))
+		return
+	}
+
+	if s.loopAddrs[addr] {
+		_ = client.Close()
+		slog.Warn("loop detected, dropping connection to self", slog.String("addr", addr))
 		return
 	}
 

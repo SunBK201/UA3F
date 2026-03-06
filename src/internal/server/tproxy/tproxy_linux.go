@@ -36,6 +36,7 @@ type Server struct {
 	tproxyRouteTable string
 	ignoreMark       []string
 	done             chan struct{}
+	loopAddrs        map[string]bool
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
@@ -113,6 +114,22 @@ func (s *Server) Start() error {
 
 	s.Recorder.Start()
 
+	// Build a set of all local addresses on the tproxy listening port.
+	// Connections to any of these would loop back to us.
+	s.loopAddrs = make(map[string]bool)
+	if addrs, err := net.InterfaceAddrs(); err == nil {
+		for _, a := range addrs {
+			if ipNet, ok := a.(*net.IPNet); ok {
+				ip := ipNet.IP
+				if ip.To4() != nil {
+					s.loopAddrs[fmt.Sprintf("%s:%d", ip.String(), s.Cfg.Port)] = true
+				} else {
+					s.loopAddrs[fmt.Sprintf("[%s]:%d", ip.String(), s.Cfg.Port)] = true
+				}
+			}
+		}
+	}
+
 	go func() {
 		var client net.Conn
 		for {
@@ -128,10 +145,10 @@ func (s *Server) Start() error {
 				} else if errors.Is(err, net.ErrClosed) {
 					return
 				}
-				slog.Error(fmt.Sprintf("s.listener.Accept: %v", err))
+				slog.Error("s.listener.Accept", slog.Any("error", err))
 				continue
 			}
-			slog.Debug(fmt.Sprintf("Accept connection from %s", client.RemoteAddr().String()))
+			slog.Debug("Accepted connection", slog.String("remote", client.RemoteAddr().String()), slog.String("local", client.LocalAddr().String()))
 			go s.HandleClient(client)
 		}
 	}()
@@ -187,6 +204,12 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 
 func (s *Server) HandleClient(client net.Conn) {
 	addr := client.LocalAddr().String()
+
+	if s.loopAddrs[addr] {
+		_ = client.Close()
+		slog.Warn("loop detected, dropping connection to self", slog.String("addr", addr))
+		return
+	}
 
 	target, err := base.Connect(addr, s.so_mark)
 	if err != nil {
