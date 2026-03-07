@@ -51,11 +51,11 @@ func (h *MiddleMan) HandleTLS(c *common.ConnLink, clientReader *bufio.Reader, se
 
 	// Check if this hostname:port should be MitM'd
 	if !h.HostnameFilter.Allow(serverName, destPort) {
-		c.LogInfof("MitM: skipping %s:%s (not in hostname list)", serverName, destPort)
+		slog.Debug("MitM: skipping connection", "serverName", serverName, "destPort", destPort, "ConnLink", c)
 		return false, nil
 	}
 
-	c.LogInfof("MitM: intercepting HTTPS to %s (SNI=%s, port=%s)", c.RAddr, serverName, destPort)
+	slog.Info("MitM: intercepting HTTPS connection", "serverName", serverName, "destPort", destPort, "ConnLink", c)
 
 	// Generate a certificate for this host
 	cert, err := h.CertManager.GetCertificateForHost(serverName)
@@ -72,7 +72,7 @@ func (h *MiddleMan) HandleTLS(c *common.ConnLink, clientReader *bufio.Reader, se
 		return false, fmt.Errorf("MitM: client TLS handshake failed: %w", err)
 	}
 
-	c.LogInfof("MitM: client TLS handshake completed for %s", serverName)
+	slog.Info("MitM: client TLS handshake completed", "serverName", serverName, "ConnLink", c)
 
 	// Connect to the real upstream server with TLS
 	serverTLS := tls.Client(c.RConn, &tls.Config{
@@ -84,7 +84,7 @@ func (h *MiddleMan) HandleTLS(c *common.ConnLink, clientReader *bufio.Reader, se
 		return false, fmt.Errorf("MitM: server TLS handshake failed for %s: %w", serverName, err)
 	}
 
-	c.LogInfof("MitM: server TLS handshake completed for %s", serverName)
+	slog.Info("MitM: server TLS handshake completed", "serverName", serverName, "ConnLink", c)
 
 	// Replace the ConnLink's connections in-place with the decrypted streams.
 	c.LConn = clientTLS

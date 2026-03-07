@@ -39,8 +39,8 @@ func (s *Server) GetRewriter() common.Rewriter {
 var one = make([]byte, 1)
 
 func (s *Server) ServeConnLink(connLink *common.ConnLink) {
-	slog.Info(fmt.Sprintf("New connection link: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
-	defer slog.Info(fmt.Sprintf("Connection link closed: %s <-> %s", connLink.LAddr, connLink.RAddr), "ConnLink", connLink)
+	slog.Info("New connection link", slog.Any("ConnLink", connLink))
+	defer slog.Info("Connection link closed", slog.Any("ConnLink", connLink))
 
 	// Add connection record for statistics
 	record := &statistics.ConnectionRecord{
@@ -116,7 +116,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		c.DoneSniff()
 
 		if err != nil {
-			c.LogDebugf("ProcessLR: %s", err.Error())
+			slog.Debug("ProcessLR error", "error", err, "ConnLink", c)
 		}
 		if c.Skipped {
 			// used by reject and firewall skip
@@ -128,9 +128,9 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		}
 		if _, err = io.CopyBuffer(c.RConn, transferReader, one); err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				c.LogDebugf("ProcessRL io.CopyBuffer: %v", err)
+				slog.Debug("ProcessRL io.CopyBuffer: net.ErrClosed", "error", err, "ConnLink", c)
 			} else {
-				c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+				slog.Warn("ProcessRL io.CopyBuffer: %v", "error", err, "ConnLink", c)
 			}
 		}
 		_ = c.CloseLR()
@@ -138,7 +138,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 	if isTLS, _ := sniff.SniffTLS(sniffReader); isTLS {
 		s.Cache.Add(c.RAddr, struct{}{})
-		c.LogInfo("TLS client hello detected")
+		slog.Info("TLS client hello detected", "ConnLink", c)
 		c.Protocol = sniff.TLS
 		s.Recorder.AddRecord(&statistics.ConnectionRecord{
 			Protocol: sniff.TLS,
@@ -162,7 +162,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			}
 			mitmDone, mitmErr := s.MiddleMan.HandleTLS(c, sniffReader, serverName)
 			if mitmErr != nil {
-				c.LogWarnf("MitM HandleTLS error: %v", mitmErr)
+				slog.Warn("MitM HandleTLS error", "error", mitmErr, "ConnLink", c)
 			}
 
 			if mitmDone {
@@ -189,7 +189,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	if !isHTTP {
 		s.Cache.Add(c.RAddr, struct{}{})
 		s.BPF.TryOffload(c, transferReader)
-		c.LogInfo("Sniff first request is not http, switch to direct forward")
+		slog.Info("Sniff first request is not http, switch to direct forward", "ConnLink", c)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 			return
 		}
 		if !isHTTP {
-			c.LogWarn("sniff subsequent request is not http, switch to direct forward")
+			slog.Warn("sniff subsequent request is not http, switch to direct forward", "ConnLink", c)
 			return
 		}
 
@@ -267,7 +267,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 		}
 
 		if req.Header.Get("Upgrade") == "websocket" && req.Header.Get("Connection") == "Upgrade" {
-			c.LogInfo("websocket upgrade detected, switch to direct forward")
+			slog.Info("WebSocket upgrade detected, switch to direct forward", "ConnLink", c)
 			c.Protocol = sniff.WebSocket
 			s.Recorder.AddRecord(&statistics.ConnectionRecord{
 				Protocol: sniff.WebSocket,
@@ -292,7 +292,7 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 
 	defer func() {
 		if err != nil {
-			c.LogDebugf("ProcessRL: %s", err.Error())
+			slog.Debug("ProcessRL error", "error", err, "ConnLink", c)
 		}
 		if c.Skipped {
 			// used by reject and firewall skip
@@ -301,9 +301,9 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 		}
 		if _, err = io.CopyBuffer(c.LConn, reader, one); err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				c.LogDebugf("ProcessRL io.CopyBuffer: %v", err)
+				slog.Debug("ProcessRL io.CopyBuffer: net.ErrClosed", "error", err, "ConnLink", c)
 			} else {
-				c.LogWarnf("ProcessRL io.CopyBuffer: %v", err)
+				slog.Warn("ProcessRL io.CopyBuffer: %v", "error", err, "ConnLink", c)
 			}
 		}
 		_ = c.CloseRL()
@@ -330,7 +330,7 @@ func (s *Server) ProcessRL(c *common.ConnLink) (err error) {
 			return
 		}
 		if !isHTTP {
-			c.LogWarn("sniff subsequent response is not http, switch to direct forward")
+			slog.Warn("sniff subsequent response is not http, switch to direct forward", "ConnLink", c)
 			return
 		}
 

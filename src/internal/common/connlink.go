@@ -98,7 +98,7 @@ func (c *ConnLink) CopyLR() {
 		}
 	}()
 	n, _ := io.CopyBuffer(c.RConn, c.LConn, one)
-	c.LogDebugf("CopyLR done, bytes copied: %d", n)
+	slog.Debug("CopyLR done", slog.Int64("bytes", n), slog.Any("ConnLink", c))
 }
 
 func (c *ConnLink) CopyRL() {
@@ -115,7 +115,7 @@ func (c *ConnLink) CopyRL() {
 		}
 	}()
 	n, _ := io.CopyBuffer(c.LConn, c.RConn, one)
-	c.LogDebugf("CopyRL done, bytes copied: %d", n)
+	slog.Debug("CopyRL done", slog.Int64("bytes", n), slog.Any("ConnLink", c))
 }
 
 func (c *ConnLink) CloseLR() error {
@@ -169,38 +169,6 @@ func (c *ConnLink) LogValue() slog.Value {
 		slog.String("LAddr", c.LAddr),
 		slog.String("RAddr", c.RAddr),
 	)
-}
-
-func (c *ConnLink) LogDebug(msg string) {
-	slog.Debug(msg, "ConnLink", c)
-}
-
-func (c *ConnLink) LogInfo(msg string) {
-	slog.Info(msg, "ConnLink", c)
-}
-
-func (c *ConnLink) LogWarn(msg string) {
-	slog.Warn(msg, "ConnLink", c)
-}
-
-func (c *ConnLink) LogError(msg string) {
-	slog.Error(msg, "ConnLink", c)
-}
-
-func (c *ConnLink) LogDebugf(format string, args ...interface{}) {
-	c.LogDebug(fmt.Sprintf(format, args...))
-}
-
-func (c *ConnLink) LogInfof(format string, args ...interface{}) {
-	c.LogInfo(fmt.Sprintf(format, args...))
-}
-
-func (c *ConnLink) LogWarnf(format string, args ...interface{}) {
-	c.LogWarn(fmt.Sprintf(format, args...))
-}
-
-func (c *ConnLink) LogErrorf(format string, args ...interface{}) {
-	c.LogError(fmt.Sprintf(format, args...))
 }
 
 // sockFd returns the underlying OS descriptor for conn.
