@@ -195,7 +195,7 @@ func isValidHostname(host string) bool {
 		return false
 	}
 	for _, c := range host {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == '-' || c == '_') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '.' && c != '-' && c != '_' {
 			return false
 		}
 	}
