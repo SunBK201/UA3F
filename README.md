@@ -10,7 +10,7 @@
 
 [English](README_EN.md) | 简体中文
 
-UA3F 是一个 HTTP(S) 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP(S) 流量 (例如 User-Agent) 进行高效透明重写。
+UA3F 是一个 HTTP(S) 重写代理，作为一个 HTTP、SOCKS5、TPROXY、REDIRECT、NFQUEUE 服务对 HTTP(S) 流量 (例如 User-Agent) 进行高效透明重写。
 
 - 支持 HTTP(S) 请求与响应的 Header、Body 双向重写
 - 支持 HTTP(S) URL 重定向：302、307、Header
@@ -23,18 +23,35 @@ UA3F 是一个 HTTP(S) 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDI
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
-- 支持 Desync 分片乱序发射与混淆，用于对抗深度包检测（DPI）
+- 支持 [Desync](docs/desync.md) 分片乱序发射与混淆，用于对抗深度包检测（DPI）
 - 支持 eBPF 流量卸载，加速转发性能
 
-## 部署
+## 安装
 
-提供 4 种部署方式：
+UA3F 支持多种安装方式：
 
-- 使用 OpenWrt 安装包进行部署：
+- 二进制文件与安装包
 
-  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的打包版本，可以根据自己设备的架构下载到 OpenWrt 上进行安装。
+  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的二进制文件与 opkg/apk 安装包，直接下载对应平台的安装包手动安装即可。
 
-- OpenWrt 编译安装：
+- Docker 部署：
+
+  作为 SOCKS5 代理运行：
+
+  ```sh
+  docker run -p 1080:1080 sunbk201/ua3f -f FFF
+  ```
+
+- 源码编译：
+
+  编译构建 UA3F 二进制文件：
+
+  ```sh
+  git clone https://github.com/SunBK201/UA3F.git && cd UA3F/src
+  go build -o ua3f main.go
+  ```
+
+  OpenWrt 编译安装：
 
   ```sh
   git clone https://github.com/openwrt/openwrt.git && cd openwrt
@@ -43,28 +60,39 @@ UA3F 是一个 HTTP(S) 重写工具，作为一个 HTTP、SOCKS5、TPROXY、REDI
   git clone https://github.com/SunBK201/UA3F.git package/UA3F
   make menuconfig # 勾选 Network->Web Servers/Proxies->ua3f
   make download -j$(nproc) V=s
-  make -j$(nproc) || make -j1 || make -j1 V=sc # make package/UA3F/openwrt/compile -j1 V=sc # 单独编译 UA3F
+  make -j$(nproc) || make -j1 || make -j1 V=sc
+  # make package/UA3F/openwrt/compile -j1 V=sc # 单独编译 UA3F 安装包
   ```
-
-- Docker 部署：
-
-  ```sh
-  docker run -p 1080:1080 sunbk201/ua3f -f FFF
-  ```
-
-- 二进制文件下载
-
-  [Release](https://github.com/SunBK201/UA3F/releases) 页面已经提供常见架构的编译版本，可以根据自己设备的架构下载对应的二进制文件使用。
 
 ## 使用
+
+### 命令行使用
+
+使用默认配置启动 UA3F：
+
+```sh
+ua3f
+```
+
+指定配置文件启动：
+
+```sh
+ua3f -c /path/to/config.yaml
+```
+
+生成模板配置文件：
+
+```sh
+ua3f -g
+```
+
+详细命令行参数配置说明见 [CLI.md](docs/cli.md)，配置文件示例见 [config.yaml](docs/config.yaml)
+
+### OpenWrt LuCI Web 页面
 
 UA3F 支持 OpenWrt LuCI Web 页面，可以打开 Services -> UA3F 进行相关配置。
 
 快速使用教程详见：[猴子也能看懂的 UA3F 使用教程](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
-
-UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径， 通过 `-g` 参数生成模板配置文件，配置文件示例见 [config.yaml](docs/config.yaml)
-
-详细命令行配置说明见 [CLI.md](docs/cli.md)
 
 设备与系统信息正则表达式参考：
 
@@ -73,7 +101,7 @@ UA3F 支持 yaml 文件进行配置，通过 `-c` 参数指定配置文件路径
 ```
 
 <details>
-<summary>手动命令行启动</summary>
+<summary>OpenWrt 手动命令行启动</summary>
 
 ```sh
 opkg install sudo
