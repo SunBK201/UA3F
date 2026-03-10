@@ -132,7 +132,11 @@ Command line parameters:
 
 ### API Server
 
-UA3F includes a built-in API Server controller that provides query and control interfaces for UA3F runtime status, configuration rules, and more. Enable it with the `--api-server <addr:port>` parameter.
+UA3F includes a built-in API Server controller that provides query and control interfaces for UA3F runtime status, configuration rules, and more. Enable it with the `--api-server` parameter:
+
+```sh
+ua3f --api-server <addr:port>
+```
 
 API documentation: [API.md](docs/api.md)
 

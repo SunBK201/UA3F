@@ -134,7 +134,11 @@ sudo -u shellcrash /usr/bin/ua3f
 
 ### API Server
 
-UA3F 内置 API Server 控制器，提供 UA3F 运行状态、配置规则等信息查询与控制接口，可以通过 `--api-server <addr:port>` 参数启用。
+UA3F 内置 API Server 控制器，提供 UA3F 运行状态、配置规则等信息查询与控制接口，可以通过 `--api-server` 参数启用：
+
+```sh
+ua3f --api-server <addr:port>
+```
 
 API 文档见 [API.md](docs/api.md)
 
