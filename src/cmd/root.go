@@ -223,9 +223,8 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// Start packet modification helper
-	helper := netlink.New(cfg)
-	apiSrv.Helper = helper
-	if err := helper.Start(); err != nil {
+	apiSrv.Helper = netlink.New(cfg)
+	if err := apiSrv.Helper.Start(); err != nil {
 		slog.Error("helper.Start", slog.Any("error", err))
 		apiSrv.CloseSystem()
 		return err
@@ -233,9 +232,8 @@ func runRoot(cmd *cobra.Command, args []string) error {
 
 	// Start desync server if enabled
 	if cfg.Desync.Reorder || cfg.Desync.Inject {
-		d := desync.New(cfg)
-		apiSrv.Desync = d
-		if err := d.Start(); err != nil {
+		apiSrv.Desync = desync.New(cfg)
+		if err := apiSrv.Desync.Start(); err != nil {
 			slog.Error("desync.Start", slog.Any("error", err))
 			apiSrv.CloseSystem()
 			return err
