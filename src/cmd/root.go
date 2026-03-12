@@ -19,10 +19,7 @@ import (
 	"github.com/sunbk201/ua3f/internal/server/netlink"
 )
 
-var (
-	AppVersion    = "Development"
-	shutdownChain []func() error
-)
+var AppVersion = "Development"
 
 var rootCmd = &cobra.Command{
 	Use:          "ua3f",
@@ -219,49 +216,45 @@ func runRoot(cmd *cobra.Command, args []string) error {
 
 	// Start api server
 	apiSrv := api.New(AppVersion, cfg, logBroadcaster)
-	addShutdown("apiSrv.Close", apiSrv.Close)
 	if err := apiSrv.Start(); err != nil {
 		slog.Error("apiSrv.Start", slog.Any("error", err))
-		shutdown()
+		apiSrv.CloseSystem()
 		return err
 	}
 
 	// Start packet modification helper
 	helper := netlink.New(cfg)
-	addShutdown("helper.Close", helper.Close)
+	apiSrv.Helper = helper
 	if err := helper.Start(); err != nil {
 		slog.Error("helper.Start", slog.Any("error", err))
-		shutdown()
+		apiSrv.CloseSystem()
 		return err
 	}
-	apiSrv.Helper = helper
 
 	// Start desync server if enabled
 	if cfg.Desync.Reorder || cfg.Desync.Inject {
 		d := desync.New(cfg)
-		addShutdown("desync.Close", d.Close)
+		apiSrv.Desync = d
 		if err := d.Start(); err != nil {
 			slog.Error("desync.Start", slog.Any("error", err))
-			shutdown()
+			apiSrv.CloseSystem()
 			return err
 		}
-		apiSrv.Desync = d
 	}
 
 	// Start main server
 	srv, err := server.NewServer(cfg)
 	if err != nil {
 		slog.Error("server.NewServer", slog.Any("error", err))
-		shutdown()
-		return err
-	}
-	addShutdown("srv.Close", srv.Close)
-	if err := srv.Start(); err != nil {
-		slog.Error("srv.Start", slog.Any("error", err))
-		shutdown()
+		apiSrv.CloseSystem()
 		return err
 	}
 	apiSrv.Server = srv
+	if err := srv.Start(); err != nil {
+		slog.Error("srv.Start", slog.Any("error", err))
+		apiSrv.CloseSystem()
+		return err
+	}
 
 	cleanup := make(chan os.Signal, 1)
 	signal.Notify(cleanup, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
@@ -270,7 +263,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		slog.Info("Received signal", slog.String("signal", s.String()))
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM:
-			shutdown()
+			apiSrv.CloseSystem()
 			return nil
 		case syscall.SIGHUP:
 			if err := apiSrv.RestartSystem(); err != nil {
@@ -280,21 +273,4 @@ func runRoot(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 	}
-}
-
-func addShutdown(name string, fn func() error) {
-	shutdownChain = append(shutdownChain, func() error {
-		if err := fn(); err != nil {
-			slog.Error(name, slog.Any("error", err))
-			return err
-		}
-		return nil
-	})
-}
-
-func shutdown() {
-	for i := len(shutdownChain) - 1; i >= 0; i-- {
-		_ = shutdownChain[i]()
-	}
-	slog.Info("UA3F exit")
 }

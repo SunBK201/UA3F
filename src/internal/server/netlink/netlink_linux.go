@@ -43,7 +43,6 @@ func New(cfg *config.Config) *Server {
 
 func (s *Server) Start() (err error) {
 	if !(s.cfg.TTL || s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow || s.cfg.IPID) {
-		slog.Info("No packet modification options enabled, skipping netlink helper setup")
 		return nil
 	}
 	err = s.Firewall.Setup(s.cfg)
