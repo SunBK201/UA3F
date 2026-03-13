@@ -2,7 +2,7 @@
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux sockmap sockmap.c
 
-package bpf
+package sockmap
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/sunbk201/ua3f/internal/config"
 )
 
 type Sockmap struct {
@@ -20,7 +21,11 @@ type Sockmap struct {
 	rawAttach   bool // true when using BPF_PROG_ATTACH fallback
 }
 
-func NewSockmap() (*Sockmap, error) {
+func NewSockmap(cfg *config.Config) (*Sockmap, error) {
+	if cfg.BPFOffload == false {
+		return nil, nil
+	}
+
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return nil, fmt.Errorf("remove memlock: %w", err)
 	}
@@ -44,6 +49,10 @@ func NewSockmap() (*Sockmap, error) {
 }
 
 func (s *Sockmap) Close() error {
+	if s == nil {
+		return nil
+	}
+
 	var errs []error
 
 	if s.rawAttach {

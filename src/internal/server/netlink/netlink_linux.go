@@ -7,6 +7,7 @@ import (
 
 	nfq "github.com/florianl/go-nfqueue/v2"
 	"github.com/google/gopacket/layers"
+	"github.com/sunbk201/ua3f/internal/bpf/tc"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/netfilter"
@@ -16,13 +17,16 @@ import (
 
 type Server struct {
 	netfilter.Firewall
-	cfg       *config.Config
+	cfg       *config.L3RewriteConfig
+	mainCfg   *config.Config
 	nfqServer *base.NfqueueServer
+	tc        *tc.TC
 }
 
 func New(cfg *config.Config) *Server {
 	s := &Server{
-		cfg: cfg,
+		cfg:     &cfg.L3Rewrite,
+		mainCfg: cfg,
 		nfqServer: &base.NfqueueServer{
 			QueueNum: netfilter.HELPER_QUEUE,
 		},
@@ -42,22 +46,35 @@ func New(cfg *config.Config) *Server {
 }
 
 func (s *Server) Start() (err error) {
-	if !(s.cfg.TTL || s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow || s.cfg.IPID) {
+	enableL3Rewrite := s.cfg.TTL || s.cfg.TCPTS || s.cfg.TCPWIN || s.cfg.IPID
+	if !enableL3Rewrite {
 		return nil
 	}
-	err = s.Firewall.Setup(s.cfg)
+
+	if s.cfg.BPFOffload {
+		if s.tc, err = tc.NewTC(s.cfg); err != nil {
+			slog.Error("initialize BPF TC failed, please try disable BPF offload", slog.Any("error", err))
+			return err
+		} else {
+			slog.Info("BPF TC initialized successfully")
+			return nil
+		}
+	}
+
+	err = s.Firewall.Setup(s.mainCfg)
 	if err != nil {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.TTL), slog.Bool("tcpts", s.cfg.TCPTimeStamp), slog.Bool("ipid", s.cfg.IPID), slog.Bool("tcp_init_window", s.cfg.TCPInitialWindow))
-	if s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow || s.cfg.IPID {
+	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.TTL), slog.Bool("tcpts", s.cfg.TCPTS), slog.Bool("ipid", s.cfg.IPID), slog.Bool("tcp_init_window", s.cfg.TCPWIN))
+	if s.cfg.TCPTS || s.cfg.TCPWIN || s.cfg.IPID {
 		return s.nfqServer.Start()
 	}
 	return nil
 }
 
 func (s *Server) Close() error {
+	s.tc.Close()
 	err := s.Firewall.Cleanup()
 	s.nfqServer.Close()
 	return err
@@ -81,10 +98,10 @@ func (s *Server) handlePacket(packet *common.Packet) {
 
 	modified := false
 	if packet.TCP != nil {
-		if s.cfg.TCPTimeStamp {
+		if s.cfg.TCPTS {
 			modified = s.clearTCPTimestamp(packet.TCP) || modified
 		}
-		if s.cfg.TCPInitialWindow {
+		if s.cfg.TCPWIN {
 			modified = s.setInitialTCPWindow(packet.TCP) || modified
 		}
 	}

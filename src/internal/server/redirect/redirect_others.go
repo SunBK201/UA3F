@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/sunbk201/ua3f/internal/bpf"
+	"github.com/sunbk201/ua3f/internal/bpf/sockmap"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
@@ -18,9 +18,9 @@ type Server struct {
 	base.Server
 }
 
-func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, sm *sockmap.Sockmap) *Server {
 	return &Server{
-		Server: base.Server{Cfg: cfg, Rewriter: rw, Recorder: rc, MiddleMan: middleMan, BPF: bpf},
+		Server: base.Server{Cfg: cfg, Rewriter: rw, Recorder: rc, MiddleMan: middleMan, Sockmap: sm},
 	}
 }
 

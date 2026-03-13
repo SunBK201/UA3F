@@ -28,10 +28,13 @@ start_service() {
     config_get header_rewrite "main" "header_rewrite" ""
     config_get body_rewrite "main" "body_rewrite" ""
     config_get url_redirect "main" "url_redirect" ""
-    config_get_bool set_ttl "main" "set_ttl" 0
-    config_get_bool set_ipid "main" "set_ipid" 0
-    config_get_bool del_tcpts "main" "del_tcpts" 0
-    config_get_bool set_tcp_init_window "main" "set_tcp_init_window" 0
+
+    local l3_rewrite_ttl l3_rewrite_ipid l3_rewrite_tcpts l3_rewrite_tcpwin l3_rewrite_bpf_offload
+    config_get_bool l3_rewrite_ttl "main" "l3_rewrite_ttl" 0
+    config_get_bool l3_rewrite_ipid "main" "l3_rewrite_ipid" 0
+    config_get_bool l3_rewrite_tcpts "main" "l3_rewrite_tcpts" 0
+    config_get_bool l3_rewrite_tcpwin "main" "l3_rewrite_tcpwin" 0
+    config_get_bool l3_rewrite_bpf_offload "main" "l3_rewrite_bpf_offload" 0
 
     local desync_reorder desync_reorder_bytes desync_reorder_packets desync_ports
     config_get_bool desync_reorder "main" "desync_reorder" 0
@@ -59,10 +62,13 @@ start_service() {
     procd_append_param command --body-rewrite "$body_rewrite"
     procd_append_param command --url-redirect "$url_redirect"
     [ "$partial_replace" = "1" ] && procd_append_param command -s
-    procd_append_param env UA3F_TTL="$set_ttl"
-    procd_append_param env UA3F_IPID="$set_ipid"
-    procd_append_param env UA3F_TCPTS="$del_tcpts"
-    procd_append_param env UA3F_TCP_INIT_WINDOW="$set_tcp_init_window"
+
+    procd_append_param env UA3F_L3_REWRITE_TTL="$l3_rewrite_ttl"
+    procd_append_param env UA3F_L3_REWRITE_IPID="$l3_rewrite_ipid"
+    procd_append_param env UA3F_L3_REWRITE_TCPTS="$l3_rewrite_tcpts"
+    procd_append_param env UA3F_L3_REWRITE_TCPWIN="$l3_rewrite_tcpwin"
+    procd_append_param env UA3F_L3_REWRITE_BPF_OFFLOAD="$l3_rewrite_bpf_offload"
+
     procd_append_param env UA3F_DESYNC_REORDER="$desync_reorder"
     procd_append_param env UA3F_DESYNC_REORDER_BYTES="$desync_reorder_bytes"
     procd_append_param env UA3F_DESYNC_REORDER_PACKETS="$desync_reorder_packets"

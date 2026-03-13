@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) nftSetup() error {
-	if !s.cfg.TTL && !s.cfg.TCPTimeStamp && !s.cfg.IPID {
+	if !s.cfg.TTL && !s.cfg.TCPTS && !s.cfg.IPID {
 		slog.Info("No packet modification features enabled, skipping nftables setup")
 		return nil
 	}
@@ -29,7 +29,7 @@ func (s *Server) nftSetup() error {
 	if s.cfg.TTL {
 		s.NftSetTTL(tx, s.Nftable)
 	}
-	if (s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow) && !s.cfg.IPID {
+	if (s.cfg.TCPTS || s.cfg.TCPWIN) && !s.cfg.IPID {
 		s.NftHookTCPSyn(tx, s.Nftable)
 	}
 	if s.cfg.IPID {
@@ -154,7 +154,7 @@ func (s *Server) NftHookIP(tx *knftables.Transaction, table *knftables.Table) {
 	}
 	tx.Add(chain)
 
-	if s.cfg.TCPInitialWindow || s.cfg.TCPTimeStamp {
+	if s.cfg.TCPWIN || s.cfg.TCPTS {
 		tx.Add(&knftables.Rule{
 			Chain: chain.Name,
 			Rule: knftables.Concat(

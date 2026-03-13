@@ -64,7 +64,7 @@ func (s *Server) iptSetup() error {
 			}
 		}
 	}
-	if (s.cfg.TCPTimeStamp || s.cfg.TCPInitialWindow) && !s.cfg.IPID {
+	if (s.cfg.TCPTS || s.cfg.TCPWIN) && !s.cfg.IPID {
 		err = s.IptHookTCPSyn(ipt)
 		if err != nil {
 			return err

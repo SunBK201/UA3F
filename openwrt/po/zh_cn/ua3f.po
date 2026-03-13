@@ -128,11 +128,23 @@ msgstr "清除日志"
 msgid "Others Settings"
 msgstr "其他设置"
 
+msgid "L3 Rewriting"
+msgstr "L3 重写"
+
 msgid "Set TTL"
 msgstr "固定 TTL"
 
 msgid "Set the TTL 64 for packets"
 msgstr "固定数据包的 TTL 为 64"
+
+msgid "L3 Rewriting eBPF Offloading"
+msgstr "L3 重写 eBPF 卸载"
+
+msgid "Speed up L3 rewriting by enabling tc egress offloading (requires kernel support)"
+msgstr "启用 eBFP tc egress 来加速 L3 重写（需要内核支持）"
+
+msgid "eBFP offloading requires kmod-sched-bpf package"
+msgstr "eBFP 卸载需要 kmod-sched-bpf 软件包"
 
 msgid "Connection Statistics"
 msgstr "连接实时统计"

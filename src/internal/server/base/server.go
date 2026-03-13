@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sunbk201/ua3f/internal/bpf"
+	"github.com/sunbk201/ua3f/internal/bpf/sockmap"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
@@ -29,7 +29,7 @@ type Server struct {
 	SkipIpChan      chan *net.IP
 	BufioReaderPool sync.Pool
 	MiddleMan       *mitm.MiddleMan
-	BPF             *bpf.BPF
+	Sockmap         *sockmap.Sockmap
 }
 
 func (s *Server) GetRewriter() common.Rewriter {
@@ -55,7 +55,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	// Ensure BPF Sockmap is cleaned up when connection closes
 	defer func() {
 		if connLink.Offloaded {
-			s.BPF.DeleteOffload(connLink)
+			s.DeleteOffload(connLink)
 		}
 	}()
 
@@ -66,7 +66,7 @@ func (s *Server) ServeConnLink(connLink *common.ConnLink) {
 	switch s.Cfg.RewriteMode {
 	case config.RewriteModeDirect:
 		// For direct mode, we can attempt BPF offload immediately without sniffing
-		s.BPF.TryOffload(connLink, nil)
+		s.TryOffload(connLink, nil)
 		go connLink.CopyRL()
 		connLink.CopyLR()
 	case config.RewriteModeGlobal:
@@ -188,7 +188,7 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 	}
 	if !isHTTP {
 		s.Cache.Add(c.RAddr, struct{}{})
-		s.BPF.TryOffload(c, transferReader)
+		s.TryOffload(c, transferReader)
 		slog.Info("Sniff first request is not http, switch to direct forward", "ConnLink", c)
 		return
 	}

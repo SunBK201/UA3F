@@ -20,6 +20,13 @@ ipid: false
 tcp_timestamp: false
 tcp_initial_window: false
 
+l3-rewrite:
+  ttl: false
+  ipid: false
+  tcpts: false
+  tcpwin: false
+  bpf-offload: false
+
 desync:
   reorder: false
   reorder-bytes: 8

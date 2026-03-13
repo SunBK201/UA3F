@@ -49,6 +49,8 @@ type Config struct {
 	TCPTimeStamp     bool `yaml:"tcp_timestamp"`
 	TCPInitialWindow bool `yaml:"tcp_initial_window"`
 
+	L3Rewrite L3RewriteConfig `yaml:"l3-rewrite"`
+
 	MitM MitMConfig `yaml:"mitm"`
 
 	Desync DesyncConfig `yaml:"desync"`
@@ -81,6 +83,14 @@ type DesyncConfig struct {
 	Reorder        bool   `yaml:"reorder"`
 	Inject         bool   `yaml:"inject"`
 	InjectTTL      uint8  `yaml:"inject-ttl" default:"3" validate:"min=0"`
+}
+
+type L3RewriteConfig struct {
+	BPFOffload bool `yaml:"bpf-offload"`
+	TTL        bool `yaml:"ttl"`
+	IPID       bool `yaml:"ipid"`
+	TCPWIN     bool `yaml:"tcpwin"`
+	TCPTS      bool `yaml:"tcpts"`
 }
 
 type Rule struct {
@@ -130,6 +140,15 @@ func BuildConfigFromViper() (*Config, error) {
 	cfg.LogLevel = strings.ToLower(cfg.LogLevel)
 	cfg.RewriteMode = RewriteMode(strings.ToUpper(string(cfg.RewriteMode)))
 
+	ipid := cfg.IPID || cfg.L3Rewrite.IPID
+	ttl := cfg.TTL || cfg.L3Rewrite.TTL
+	tcpts := cfg.TCPTimeStamp || cfg.L3Rewrite.TCPTS
+	tcpInitWindow := cfg.TCPInitialWindow || cfg.L3Rewrite.TCPWIN
+	cfg.IPID, cfg.L3Rewrite.IPID = ipid, ipid
+	cfg.TTL, cfg.L3Rewrite.TTL = ttl, ttl
+	cfg.TCPTimeStamp, cfg.L3Rewrite.TCPTS = tcpts, tcpts
+	cfg.TCPInitialWindow, cfg.L3Rewrite.TCPWIN = tcpInitWindow, tcpInitWindow
+
 	// Backwards compatibility: convert deprecated "RULES" value to "RULE".
 	if cfg.RewriteMode == "RULES" {
 		cfg.RewriteMode = RewriteModeRule
@@ -157,6 +176,14 @@ func (c *Config) LogValue() slog.Value {
 		slog.Bool("Delete TCP Timestamp", c.TCPTimeStamp),
 		slog.Bool("Set TCP Initial Window", c.TCPInitialWindow),
 		slog.Bool("BPF Offload", c.BPFOffload),
+		slog.Attr{
+			Key: "L3 Rewrite", Value: slog.GroupValue(
+				slog.Bool("Set TTL", c.L3Rewrite.TTL),
+				slog.Bool("Set IP ID", c.L3Rewrite.IPID),
+				slog.Bool("Delete TCP Timestamp", c.L3Rewrite.TCPTS),
+				slog.Bool("Set TCP Initial Window", c.L3Rewrite.TCPWIN),
+			),
+		},
 		slog.Attr{
 			Key: "Desync", Value: slog.GroupValue(
 				slog.Bool("Reorder", c.Desync.Reorder),

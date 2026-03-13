@@ -56,10 +56,18 @@ func init() {
 	rootCmd.Flags().String("header-rewrite", "", "Header rewrite json rules")
 	rootCmd.Flags().String("body-rewrite", "", "Body rewrite json rules")
 	rootCmd.Flags().String("url-redirect", "", "URL redirect json rules")
+
 	rootCmd.Flags().Bool("ttl", false, "Set TTL")
 	rootCmd.Flags().Bool("ipid", false, "Set IP ID")
 	rootCmd.Flags().Bool("tcpts", false, "Delete TCP Timestamp")
 	rootCmd.Flags().Bool("tcpwin", false, "Set TCP Initial Window")
+
+	rootCmd.Flags().Bool("l3-rewrite-ttl", false, "Set TTL (legacy flag, same as --ttl)")
+	rootCmd.Flags().Bool("l3-rewrite-ipid", false, "Set IP ID (legacy flag, same as --ipid)")
+	rootCmd.Flags().Bool("l3-rewrite-tcpts", false, "Delete TCP Timestamp (legacy flag, same as --tcpts)")
+	rootCmd.Flags().Bool("l3-rewrite-tcpwin", false, "Set TCP Initial Window (legacy flag, same as --tcpwin)")
+	rootCmd.Flags().Bool("l3-rewrite-bpf-offload", false, "Enable BPF offloading for L3 rewrite (requires kernel support)")
+
 	rootCmd.Flags().Bool("desync-reorder", false, "Enable desync reorder")
 	rootCmd.Flags().Uint("desync-reorder-bytes", 0, "Desync reorder bytes")
 	rootCmd.Flags().Uint("desync-reorder-packets", 0, "Desync reorder packets")
@@ -91,10 +99,18 @@ func init() {
 	_ = viper.BindPFlag("header-rewrite-json", rootCmd.Flags().Lookup("header-rewrite"))
 	_ = viper.BindPFlag("body-rewrite-json", rootCmd.Flags().Lookup("body-rewrite"))
 	_ = viper.BindPFlag("url-redirect-json", rootCmd.Flags().Lookup("url-redirect"))
+
 	_ = viper.BindPFlag("ttl", rootCmd.Flags().Lookup("ttl"))
 	_ = viper.BindPFlag("ipid", rootCmd.Flags().Lookup("ipid"))
 	_ = viper.BindPFlag("tcp_timestamp", rootCmd.Flags().Lookup("tcpts"))
 	_ = viper.BindPFlag("tcp_initial_window", rootCmd.Flags().Lookup("tcpwin"))
+
+	_ = viper.BindPFlag("l3-rewrite.bpf-offload", rootCmd.Flags().Lookup("l3-rewrite-bpf-offload"))
+	_ = viper.BindPFlag("l3-rewrite.ttl", rootCmd.Flags().Lookup("l3-rewrite-ttl"))
+	_ = viper.BindPFlag("l3-rewrite.ipid", rootCmd.Flags().Lookup("l3-rewrite-ipid"))
+	_ = viper.BindPFlag("l3-rewrite.tcpts", rootCmd.Flags().Lookup("l3-rewrite-tcpts"))
+	_ = viper.BindPFlag("l3-rewrite.tcpwin", rootCmd.Flags().Lookup("l3-rewrite-tcpwin"))
+
 	_ = viper.BindPFlag("desync.reorder", rootCmd.Flags().Lookup("desync-reorder"))
 	_ = viper.BindPFlag("desync.reorder-bytes", rootCmd.Flags().Lookup("desync-reorder-bytes"))
 	_ = viper.BindPFlag("desync.reorder-packets", rootCmd.Flags().Lookup("desync-reorder-packets"))
@@ -128,10 +144,18 @@ func init() {
 	_ = viper.BindEnv("user-agent", "UA3F_PAYLOAD_UA")
 	_ = viper.BindEnv("user-agent-regex", "UA3F_UA_REGEX")
 	_ = viper.BindEnv("user-agent-partial-replace", "UA3F_PARTIAL_REPLACE")
+
 	_ = viper.BindEnv("ttl", "UA3F_TTL")
 	_ = viper.BindEnv("ipid", "UA3F_IPID")
 	_ = viper.BindEnv("tcp_timestamp", "UA3F_TCPTS")
 	_ = viper.BindEnv("tcp_initial_window", "UA3F_TCP_INIT_WINDOW")
+
+	_ = viper.BindEnv("l3-rewrite.bpf-offload", "UA3F_L3_REWRITE_BPF_OFFLOAD")
+	_ = viper.BindEnv("l3-rewrite.ttl", "UA3F_L3_REWRITE_TTL")
+	_ = viper.BindEnv("l3-rewrite.ipid", "UA3F_L3_REWRITE_IPID")
+	_ = viper.BindEnv("l3-rewrite.tcpts", "UA3F_L3_REWRITE_TCPTS")
+	_ = viper.BindEnv("l3-rewrite.tcpwin", "UA3F_L3_REWRITE_TCPWIN")
+
 	_ = viper.BindEnv("desync.reorder", "UA3F_DESYNC_REORDER")
 	_ = viper.BindEnv("desync.reorder-bytes", "UA3F_DESYNC_REORDER_BYTES")
 	_ = viper.BindEnv("desync.reorder-packets", "UA3F_DESYNC_REORDER_PACKETS")
@@ -172,9 +196,16 @@ func initConfig() {
 	viper.SetDefault("log-level", "info")
 	viper.SetDefault("user-agent", "FFF")
 	viper.SetDefault("rewrite-mode", "GLOBAL")
+
 	viper.SetDefault("desync.reorder-bytes", 8)
 	viper.SetDefault("desync.reorder-packets", 1500)
 	viper.SetDefault("desync.inject-ttl", 3)
+
+	viper.SetDefault("l3-rewrite.ttl", false)
+	viper.SetDefault("l3-rewrite.ipid", false)
+	viper.SetDefault("l3-rewrite.tcpts", false)
+	viper.SetDefault("l3-rewrite.tcpwin", false)
+	viper.SetDefault("l3-rewrite.bpf-offload", false)
 }
 
 func runRoot(cmd *cobra.Command, args []string) error {

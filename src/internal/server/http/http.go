@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/sunbk201/ua3f/internal/bpf"
+	"github.com/sunbk201/ua3f/internal/bpf/sockmap"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/log"
@@ -30,7 +30,7 @@ type Server struct {
 	so_mark int
 }
 
-func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, sm *sockmap.Sockmap) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
@@ -43,7 +43,7 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 				},
 			},
 			MiddleMan: middleMan,
-			BPF:       bpf,
+			Sockmap:   sm,
 		},
 		so_mark: base.SO_MARK,
 	}
@@ -88,7 +88,7 @@ func (s *Server) Close() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	s.BPF.Close()
+	s.Sockmap.Close()
 
 	return s.server.Shutdown(ctx)
 }
@@ -106,7 +106,7 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 		return nil, err
 	}
 
-	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.BPF)
+	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.Sockmap)
 
 	if err := s.Close(); err != nil {
 		slog.Error("old server shutdown error", slog.Any("error", err))

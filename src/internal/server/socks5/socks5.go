@@ -13,7 +13,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/luyuhuang/subsocks/socks"
-	"github.com/sunbk201/ua3f/internal/bpf"
+	"github.com/sunbk201/ua3f/internal/bpf/sockmap"
 	"github.com/sunbk201/ua3f/internal/common"
 	"github.com/sunbk201/ua3f/internal/config"
 	"github.com/sunbk201/ua3f/internal/mitm"
@@ -30,7 +30,7 @@ type Server struct {
 	so_mark  int
 }
 
-func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, bpf *bpf.BPF) *Server {
+func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, sm *sockmap.Sockmap) *Server {
 	return &Server{
 		Server: base.Server{
 			Cfg:      cfg,
@@ -43,7 +43,7 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 				},
 			},
 			MiddleMan: middleMan,
-			BPF:       bpf,
+			Sockmap:   sm,
 		},
 		so_mark: base.SO_MARK,
 		done:    make(chan struct{}),
@@ -99,7 +99,7 @@ func (s *Server) Close() (err error) {
 		err = s.listener.Close()
 	}
 
-	s.BPF.Close()
+	s.Sockmap.Close()
 
 	return
 }
@@ -117,7 +117,7 @@ func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
 		return nil, err
 	}
 
-	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.BPF)
+	newServer := New(cfg, newRewriter, s.Recorder, newMiddleMan, s.Sockmap)
 
 	// Inherit the listener from old server for graceful restart
 	newServer.listener = s.listener

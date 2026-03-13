@@ -32,6 +32,10 @@ function M.tproxy_exists()
     return opkg_installed("kmod-nft-tproxy") or apk_installed("kmod-nft-tproxy")
 end
 
+function M.sched_bpf_exists()
+    return opkg_installed("kmod-sched-bpf") or apk_installed("kmod-sched-bpf")
+end
+
 function M.offloading_enabled()
     -- uci get firewall.@defaults[0].flow_offloading
     local uci = require("luci.model.uci").cursor()
