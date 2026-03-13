@@ -158,16 +158,29 @@ func getIPv4DefaultRouteInterfaces() (map[int]bool, error) {
 
 	defaultIfaces := make(map[int]bool)
 	for _, route := range routes {
-		if route.Dst != nil {
-			continue
-		}
-		if route.LinkIndex <= 0 {
+		if !isIPv4DefaultRoute(route.Dst) {
 			continue
 		}
 		defaultIfaces[route.LinkIndex] = true
 	}
 
 	return defaultIfaces, nil
+}
+
+func isIPv4DefaultRoute(dst *net.IPNet) bool {
+	// Linux may represent default IPv4 route as nil or as 0.0.0.0/0.
+	if dst == nil {
+		return true
+	}
+	ones, bits := dst.Mask.Size()
+	if bits != 32 || ones != 0 {
+		return false
+	}
+	ip4 := dst.IP.To4()
+	if ip4 == nil {
+		return false
+	}
+	return ip4.Equal(net.IPv4zero)
 }
 
 func (t *TC) Close() error {
