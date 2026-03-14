@@ -82,8 +82,8 @@ func NewTC(cfg *config.L3RewriteConfig) (*TC, error) {
 		if skipInterfaces[iface.Name] {
 			continue
 		}
-		if !isEthernetInterface(iface) {
-			slog.Info("Skip interface for TC", "name", iface.Name, "index", iface.Index, "reason", "non-ethernet")
+		if !isEthernetOrPPPInterface(iface) {
+			slog.Info("Skip interface for TC", "name", iface.Name, "index", iface.Index, "reason", "not ethernet or pppoe")
 			continue
 		}
 		if !hasIPv4Address(iface) {
@@ -118,7 +118,7 @@ func NewTC(cfg *config.L3RewriteConfig) (*TC, error) {
 	return &TC{objs: &objs, links: links, classicLinks: classicLinks}, nil
 }
 
-func isEthernetInterface(iface net.Interface) bool {
+func isEthernetOrPPPInterface(iface net.Interface) bool {
 	lnk, err := netlink.LinkByIndex(iface.Index)
 	if err != nil {
 		return false
@@ -127,7 +127,7 @@ func isEthernetInterface(iface net.Interface) bool {
 	if attrs == nil {
 		return false
 	}
-	return attrs.EncapType == "ether"
+	return attrs.EncapType == "ether" || attrs.EncapType == "ppp"
 }
 
 func hasIPv4Address(iface net.Interface) bool {

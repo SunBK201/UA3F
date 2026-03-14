@@ -5,6 +5,7 @@
 
 #include <linux/if_ether.h>
 #include <linux/in.h>
+#include <linux/ppp_defs.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
 
@@ -14,9 +15,25 @@
 #define MAX_TCP_OPT_LEN 40
 #define IP_TTL_DEFAULT 64
 
+struct pppoe_hdr {
+    __u8 ver_type;
+    __u8 code;
+    __be16 sid;
+    __be16 length;
+} __attribute__((packed));
+
 static __always_inline int parse_l2(void* data, void* data_end, __u32* off, __u16* proto)
 {
     __u8* cursor = data;
+
+    // Some tc paths (for example PPP/PPPoX style devices) provide L3 packets
+    // directly without an Ethernet header.
+    struct iphdr* l3_ip = (struct iphdr*)cursor;
+    if ((void*)(l3_ip + 1) <= data_end && l3_ip->version == 4 && l3_ip->ihl >= 5) {
+        *proto = ETH_P_IP;
+        *off = 0;
+        return 0;
+    }
 
     struct ethhdr* eth = (struct ethhdr*)cursor;
     if ((void*)(eth + 1) > data_end)
@@ -24,6 +41,41 @@ static __always_inline int parse_l2(void* data, void* data_end, __u32* off, __u1
 
     *proto = bpf_ntohs(eth->h_proto);
     *off = sizeof(*eth);
+
+    if (*proto != ETH_P_PPP_SES)
+        return 0;
+
+    // For PPPoE session packets
+    struct pppoe_hdr* pppoe = (struct pppoe_hdr*)(cursor + *off);
+    if ((void*)(pppoe + 1) > data_end)
+        return -1;
+
+    // PPPoE session traffic uses code=0x00.
+    if (pppoe->code != 0)
+        return -1;
+
+    *off += sizeof(*pppoe);
+
+    if ((void*)(cursor + *off + 1) > data_end)
+        return -1;
+
+    // PPP protocol field can be 1 byte (PFC) or 2 bytes.
+    __u8 ppp0 = *(__u8*)(cursor + *off);
+    __u16 ppp_proto = 0;
+
+    if (ppp0 & 0x01) {
+        ppp_proto = ppp0;
+        *off += 1;
+    } else {
+        if ((void*)(cursor + *off + 2) > data_end)
+            return -1;
+        __u8 ppp1 = *(__u8*)(cursor + *off + 1);
+        ppp_proto = ((__u16)ppp0 << 8) | ppp1;
+        *off += 2;
+    }
+
+    if (ppp_proto == PPP_IP)
+        *proto = ETH_P_IP;
 
     return 0;
 }
