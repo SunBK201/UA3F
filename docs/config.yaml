@@ -15,11 +15,6 @@ user-agent: "FFF"
 user-agent-regex: ""
 user-agent-partial-replace: false
 
-ttl: false
-ipid: false
-tcp_timestamp: false
-tcp_initial_window: false
-
 l3-rewrite:
   ttl: false
   ipid: false
