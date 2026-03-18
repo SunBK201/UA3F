@@ -22,8 +22,8 @@ UA3F 是一个 HTTP(S) 重写代理，作为一个 HTTP、SOCKS5、TPROXY、REDI
 - 实时统计面板，支持流量修改监控与分析
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
-- 支持 TTL，TCP Timestamp，TCP Window，IPID 伪装
-- 支持 [Desync](docs/desync.md) 分片乱序发射与混淆，用于对抗深度包检测（DPI）
+- 支持 L3 重写：TTL、IPID、TCP 时间戳、TCP 初始窗口
+- 支持 [Desync](docs/desync.md) 分片乱序发射与混淆，用于深度包检测（DPI）
 - 支持 eBPF 流量卸载，加速转发性能
 
 ## 安装

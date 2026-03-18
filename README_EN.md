@@ -20,7 +20,7 @@ UA3F is an HTTP(S) rewriting proxy that transparently rewrites HTTP(S) (e.g., Us
 - Real-time statistics dashboard with traffic modification monitoring and analysis
 - Multiple deployment options: opkg installation, compilation, and Docker deployment
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
-- Supports TTL, TCP Timestamp, TCP Window and IP ID obfuscation
+- Supports L3 rewriting: TTL, IPID, TCP Timestamp, TCP Window
 - Supports Desync fragment reordering and obfuscation to evade Deep Packet Inspection (DPI)
 - Supports eBPF offloading for accelerated forwarding performance
 
