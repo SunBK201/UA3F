@@ -144,13 +144,13 @@ API documentation: [API.md](docs/api.md)
 
 UA3F supports 5 different server modes, each with unique characteristics:
 
-| Server Mode  | Working Principle  | Clash Dependency | Compatibility | Performance | Coexist with Clash |
-| ------------ | ------------------ | ---------------- | ------------- | ----------- | ------------------ |
-| **HTTP**     | HTTP Proxy         | Yes              | High          | Low         | Yes                |
-| **SOCKS5**   | SOCKS5 Proxy       | Yes              | High          | Low         | Yes                |
-| **TPROXY**   | netfilter TPROXY   | No               | Medium        | Medium      | Yes                |
-| **REDIRECT** | netfilter REDIRECT | No               | Medium        | Medium      | Yes                |
-| **NFQUEUE**  | netfilter NFQUEUE  | No               | Low           | High        | Yes                |
+| Server Mode  | Working Principle  | Clash Dependency | Compatibility | Coexist with Clash |
+| ------------ | ------------------ | ---------------- | ------------- | ------------------ |
+| **HTTP**     | HTTP Proxy         | Yes              | High          | Yes                |
+| **SOCKS5**   | SOCKS5 Proxy       | Yes              | High          | Yes                |
+| **TPROXY**   | netfilter TPROXY   | No               | Medium        | Yes                |
+| **REDIRECT** | netfilter REDIRECT | No               | Medium        | Yes                |
+| **NFQUEUE**  | netfilter NFQUEUE  | No               | Low           | Yes                |
 
 ### Rewrite Strategy Description
 
@@ -190,10 +190,10 @@ Rewrite Actions:
 | DROP          | Drop the request                                              |
 
 URL Redirection Actions:
-| Action Type | Description |
-| ----------------- | ------------------------------- |
-| REDIRECT-302 | Return a 302 redirect response |
-| REDIRECT-307 | Return a 307 redirect response |
+| Action Type     | Description                                                  |
+| --------------- | ------------------------------------------------------------ |
+| REDIRECT-302    | Return a 302 redirect response                               |
+| REDIRECT-307    | Return a 307 redirect response                               |
 | REDIRECT-HEADER | Modify request Header for redirection, transparent to client |
 
 ## Desync
