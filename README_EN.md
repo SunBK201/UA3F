@@ -92,12 +92,6 @@ UA3F supports OpenWrt LuCI Web interface. Navigate to Services -> UA3F for confi
 
 For detailed tutorial, please visit: [UA3F User Guide](https://sunbk201public.notion.site/UA3F-2a21f32cbb4b80669e04ec1f053d0333)
 
-Device and system information regex reference:
-
-```regex
-(Apple|iPhone|iPad|Macintosh|Mac OS X|Mac|Darwin|Microsoft|Windows|Linux|Android|OpenHarmony|HUAWEI|OPPO|Vivo|XiaoMi|Mobile|Dalvik)
-```
-
 <details>
 <summary>Manual Command Line Launch</summary>
 
