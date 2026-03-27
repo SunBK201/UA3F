@@ -14,6 +14,7 @@
 
 #define MAX_TCP_OPT_LEN 40
 #define IP_TTL_DEFAULT 64
+#define IP_TTL_MIN 10
 
 struct pppoe_hdr {
     __u8 ver_type;
@@ -351,6 +352,10 @@ int set_ip_ttl(struct __sk_buff* skb)
         return TC_ACT_OK;
 
     if (ip->ttl == IP_TTL_DEFAULT)
+        return TCX_NEXT;
+
+    // prevent modify desync inject packet
+    if (ip->ttl < IP_TTL_MIN)
         return TCX_NEXT;
 
     __u8 new_ttl = IP_TTL_DEFAULT;
