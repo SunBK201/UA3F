@@ -906,19 +906,45 @@ header-rewrite:
 	}
 }
 
-func TestDocsConfigFile(t *testing.T) {
+func TestConfigFile(t *testing.T) {
 	resetViper(t)
 
-	// Test that the example docs/config.yaml parses without error
-	docsConfig := filepath.Join("..", "..", "..", "docs", "config.yaml")
-	if _, err := os.Stat(docsConfig); os.IsNotExist(err) {
-		t.Skip("docs/config.yaml not found, skipping")
-	}
-	loadConfigFile(t, docsConfig)
+	// Keep this test self-contained: do not depend on docs/config.yaml.
+	yaml := `
+server-mode: SOCKS5
+bind-address: 127.0.0.1
+port: 1080
+log-level: info
+rewrite-mode: RULE
+user-agent: FFF
+
+header-rewrite:
+  - type: FINAL
+    action: REPLACE
+    rewrite-header: "User-Agent"
+    rewrite-value: "FFF"
+
+body-rewrite:
+  - type: URL-REGEX
+    match-value: "^http://example.com"
+    action: REPLACE-REGEX
+    rewrite-direction: RESPONSE
+    rewrite-regex: "OldValue"
+    rewrite-value: "NewValue"
+
+url-redirect:
+  - type: URL-REGEX
+    match-value: "^http://example.com/old"
+    action: REDIRECT-302
+    rewrite-regex: "^http://example.com/old(.*)"
+    rewrite-value: "http://example.com/new$1"
+`
+	path := writeConfigFile(t, yaml)
+	loadConfigFile(t, path)
 
 	cfg, err := BuildConfigFromViper()
 	if err != nil {
-		t.Fatalf("docs/config.yaml failed to parse: %v", err)
+		t.Fatalf("self-contained config.yaml failed to parse: %v", err)
 	}
 
 	if cfg.ServerMode != ServerModeSocks5 {
