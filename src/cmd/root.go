@@ -52,6 +52,8 @@ func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "Show version")
 	rootCmd.Flags().BoolP("generate-config", "g", false, "Generate template config file")
 
+	rootCmd.Flags().Bool("include-lan-routes", false, "Include LAN routes from proxying")
+
 	// Long flags
 	rootCmd.Flags().String("header-rewrite", "", "Header rewrite json rules")
 	rootCmd.Flags().String("body-rewrite", "", "Body rewrite json rules")
@@ -100,6 +102,8 @@ func init() {
 	_ = viper.BindPFlag("body-rewrite-json", rootCmd.Flags().Lookup("body-rewrite"))
 	_ = viper.BindPFlag("url-redirect-json", rootCmd.Flags().Lookup("url-redirect"))
 
+	_ = viper.BindPFlag("include-lan-routes", rootCmd.Flags().Lookup("include-lan-routes"))
+
 	_ = viper.BindPFlag("ttl", rootCmd.Flags().Lookup("ttl"))
 	_ = viper.BindPFlag("ipid", rootCmd.Flags().Lookup("ipid"))
 	_ = viper.BindPFlag("tcp_timestamp", rootCmd.Flags().Lookup("tcpts"))
@@ -144,6 +148,8 @@ func init() {
 	_ = viper.BindEnv("user-agent", "UA3F_PAYLOAD_UA")
 	_ = viper.BindEnv("user-agent-regex", "UA3F_UA_REGEX")
 	_ = viper.BindEnv("user-agent-partial-replace", "UA3F_PARTIAL_REPLACE")
+
+	_ = viper.BindEnv("include-lan-routes", "UA3F_INCLUDE_LAN_ROUTES")
 
 	_ = viper.BindEnv("ttl", "UA3F_TTL")
 	_ = viper.BindEnv("ipid", "UA3F_IPID")

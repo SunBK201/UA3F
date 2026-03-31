@@ -156,9 +156,11 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 	if err != nil {
 		return err
 	}
-	err = ipt.Append(table, chainPre, netfilter.IptRuleIgnoreLAN...)
-	if err != nil {
-		return err
+	if !s.includeLanRoutes {
+		err = ipt.Append(table, chainPre, netfilter.IptRuleIgnoreLAN...)
+		if err != nil {
+			return err
+		}
 	}
 	err = ipt.Append(table, chainPre, netfilter.IptRuleIgnoreIP...)
 	if err != nil {
@@ -232,9 +234,11 @@ func (s *Server) IptSetTproxy(ipt *iptables.IPTables) error {
 	if err != nil {
 		return err
 	}
-	err = ipt.Append(table, chainOut, netfilter.IptRuleIgnoreLAN...)
-	if err != nil {
-		return err
+	if !s.includeLanRoutes {
+		err = ipt.Append(table, chainOut, netfilter.IptRuleIgnoreLAN...)
+		if err != nil {
+			return err
+		}
 	}
 	err = ipt.Append(table, chainOut, netfilter.IptRuleIgnoreIP...)
 	if err != nil {

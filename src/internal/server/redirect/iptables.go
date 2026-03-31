@@ -90,9 +90,11 @@ func (s *Server) IptSetRedirect(ipt *iptables.IPTables) error {
 	if err != nil {
 		return err
 	}
-	err = ipt.Append(table, chain, netfilter.IptRuleIgnoreLAN...)
-	if err != nil {
-		return err
+	if !s.includeLanRoutes {
+		err = ipt.Append(table, chain, netfilter.IptRuleIgnoreLAN...)
+		if err != nil {
+			return err
+		}
 	}
 	err = ipt.Append(table, chain, netfilter.IptRuleIgnoreIP...)
 	if err != nil {

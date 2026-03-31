@@ -21,6 +21,8 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 		UserAgentRegex:          "",
 		UserAgentPartialReplace: false,
 
+		IncludeLanRoutes: false,
+
 		TTL:              false,
 		IPID:             false,
 		TCPTimeStamp:     false,

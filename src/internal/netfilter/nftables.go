@@ -55,7 +55,7 @@ func (f *Firewall) DumpNFTables() {
 	if err != nil {
 		return
 	}
-	slog.Info("nftables ruleset:\n" + string(output))
+	slog.Debug("nftables ruleset:\n" + string(output))
 }
 
 func (f *Firewall) NftSetLanIP(tx *knftables.Transaction, table *knftables.Table) {

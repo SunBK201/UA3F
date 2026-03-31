@@ -27,10 +27,11 @@ import (
 type Server struct {
 	base.Server
 	netfilter.Firewall
-	listener  net.Listener
-	so_mark   int
-	done      chan struct{}
-	loopAddrs map[string]bool
+	listener         net.Listener
+	includeLanRoutes bool
+	so_mark          int
+	done             chan struct{}
+	loopAddrs        map[string]bool
 }
 
 func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middleMan *mitm.MiddleMan, sm *sockmap.Sockmap) *Server {
@@ -49,8 +50,9 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 			MiddleMan: middleMan,
 			Sockmap:   sm,
 		},
-		so_mark: base.SO_MARK,
-		done:    make(chan struct{}),
+		includeLanRoutes: cfg.IncludeLanRoutes,
+		so_mark:          base.SO_MARK,
+		done:             make(chan struct{}),
 	}
 	s.Firewall = netfilter.Firewall{
 		Nftable: &knftables.Table{

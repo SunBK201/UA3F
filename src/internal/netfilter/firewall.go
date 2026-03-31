@@ -95,7 +95,7 @@ func (f *Firewall) Setup(cfg *config.Config) (err error) {
 	_ = f.Cleanup()
 	backend := detectFirewallBackend(cfg)
 	slog.Info("Setup firewall", slog.String("backend", backend))
-	slog.Info("Exempt LAN CIDRs", slog.String("cidrs", fmt.Sprintf("%v", LAN_CIDRS)))
+	slog.Debug("Exempt LAN CIDRs", slog.String("cidrs", fmt.Sprintf("%v", LAN_CIDRS)))
 	switch backend {
 	case NFT:
 		if f.NftSetup == nil {

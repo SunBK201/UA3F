@@ -31,6 +31,7 @@ type Server struct {
 	netfilter.Firewall
 	base.Server
 	listener         net.Listener
+	includeLanRoutes bool
 	so_mark          int
 	tproxyFwMark     string
 	tproxyRouteTable string
@@ -55,6 +56,7 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 			MiddleMan: middleMan,
 			Sockmap:   sm,
 		},
+		includeLanRoutes: cfg.IncludeLanRoutes,
 		so_mark:          base.SO_MARK,
 		tproxyFwMark:     "0x1c9",
 		tproxyRouteTable: "0x1c9",

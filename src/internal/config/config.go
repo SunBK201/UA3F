@@ -44,6 +44,8 @@ type Config struct {
 	UserAgentRegex          string `yaml:"user-agent-regex"`
 	UserAgentPartialReplace bool   `yaml:"user-agent-partial-replace"`
 
+	IncludeLanRoutes bool `yaml:"include-lan-routes"`
+
 	TTL              bool `yaml:"ttl"`
 	IPID             bool `yaml:"ipid"`
 	TCPTimeStamp     bool `yaml:"tcp_timestamp"`
@@ -171,6 +173,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("User-Agent", c.UserAgent),
 		slog.String("User-Agent Regex", c.UserAgentRegex),
 		slog.Bool("User-Agent Partial Replace", c.UserAgentPartialReplace),
+		slog.Bool("Include LAN Routes", c.IncludeLanRoutes),
 		slog.Bool("Set TTL", c.TTL),
 		slog.Bool("Set IP ID", c.IPID),
 		slog.Bool("Delete TCP Timestamp", c.TCPTimeStamp),

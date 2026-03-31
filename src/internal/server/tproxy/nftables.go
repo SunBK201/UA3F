@@ -133,15 +133,17 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule:  netfilter.NftRuleIgnoreFakeIP,
 	})
 
-	tx.Add(&knftables.Rule{
-		Chain: prerouting.Name,
-		Rule:  netfilter.NftRuleIgnoreLAN,
-	})
+	if !s.includeLanRoutes {
+		tx.Add(&knftables.Rule{
+			Chain: prerouting.Name,
+			Rule:  netfilter.NftRuleIgnoreLAN,
+		})
 
-	tx.Add(&knftables.Rule{
-		Chain: prerouting.Name,
-		Rule:  netfilter.NftRuleIgnoreLAN6,
-	})
+		tx.Add(&knftables.Rule{
+			Chain: prerouting.Name,
+			Rule:  netfilter.NftRuleIgnoreLAN6,
+		})
+	}
 
 	tx.Add(&knftables.Rule{
 		Chain: prerouting.Name,
@@ -240,15 +242,17 @@ func (s *Server) NftSetTproxy(tx *knftables.Transaction, table *knftables.Table)
 		Rule:  netfilter.NftRuleIgnoreFakeIP,
 	})
 
-	tx.Add(&knftables.Rule{
-		Chain: output.Name,
-		Rule:  netfilter.NftRuleIgnoreLAN,
-	})
+	if !s.includeLanRoutes {
+		tx.Add(&knftables.Rule{
+			Chain: output.Name,
+			Rule:  netfilter.NftRuleIgnoreLAN,
+		})
 
-	tx.Add(&knftables.Rule{
-		Chain: output.Name,
-		Rule:  netfilter.NftRuleIgnoreLAN6,
-	})
+		tx.Add(&knftables.Rule{
+			Chain: output.Name,
+			Rule:  netfilter.NftRuleIgnoreLAN6,
+		})
+	}
 
 	tx.Add(&knftables.Rule{
 		Chain: output.Name,

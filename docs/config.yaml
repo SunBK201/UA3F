@@ -4,8 +4,9 @@ api-server-secret: "" # api-server secret for authentication
 server-mode: SOCKS5 # HTTP, SOCKS5, TPROXY, REDIRECT, NFQUEUE
 bind-address: 127.0.0.1
 port: 1080
+include-lan-routes: false # include LAN routes from proxying
 
-bpf-offload: false # enable BPF offload on Linux (requires CAP_NET_ADMIN capability)
+bpf-offload: false # enable BPF offload on Linux
 
 log-level: info # debug, info, warn, error
 
