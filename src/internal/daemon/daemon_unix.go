@@ -59,11 +59,11 @@ func determineGroup(serverMode config.ServerMode) string {
 		return "root"
 	}
 
-	if processRunning("openclash") {
+	if IsCommandRunning("openclash") {
 		return "nogroup"
 	}
 
-	if processRunning("ShellCrash") {
+	if IsCommandRunning("ShellCrash") {
 		return "shellcrash"
 	}
 
@@ -86,12 +86,6 @@ func shellClashExists() bool {
 		return true
 	}
 	return false
-}
-
-func processRunning(name string) bool {
-	cmd := exec.Command("pgrep", "-f", name)
-	err := cmd.Run()
-	return err == nil
 }
 
 func userExists(username string) bool {
