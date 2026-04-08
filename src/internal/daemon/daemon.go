@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"os/user"
 	"strings"
 
 	"github.com/sunbk201/ua3f/internal/config"
@@ -38,7 +37,7 @@ func IsOpenWrt() bool {
 		return true
 	}
 
-	if _, err := user.Lookup("uci"); err == nil {
+	if _, err := exec.LookPath("uci"); err == nil {
 		return true
 	}
 
