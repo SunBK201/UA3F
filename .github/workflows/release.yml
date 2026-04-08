@@ -29,7 +29,7 @@ jobs:
           - mipsel_24kc
         version:
           - 24.10.6
-          - 25.12.1
+          - 25.12.2
 
     steps:
       - uses: actions/checkout@v5
