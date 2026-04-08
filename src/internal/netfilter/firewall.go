@@ -190,10 +190,10 @@ func detectFirewallBackend(cfg *config.Config) string {
 	if isOpenwrt {
 		slog.Info("Detected OpenWrt environment")
 	}
-	nftAvailable := IsCommandAvailable("nft")
-	iptAvailable := IsCommandAvailable("iptables")
-	nftTproxyAvailable := isOpkgPackageInstalled("kmod-nft-tproxy") && nftAvailable
-	nftNfqueueAvailable := isOpkgPackageInstalled("kmod-nft-queue") && nftAvailable
+	nftAvailable := daemon.IsCommandAvailable("nft")
+	iptAvailable := daemon.IsCommandAvailable("iptables")
+	nftTproxyAvailable := daemon.IsPackageInstalled("kmod-nft-tproxy") && nftAvailable
+	nftNfqueueAvailable := daemon.IsPackageInstalled("kmod-nft-queue") && nftAvailable
 	tproxyNeeded := cfg.ServerMode == config.ServerModeTProxy
 	nfqueueNeeded := cfg.TCPInitialWindow || cfg.TCPTimeStamp || cfg.IPID || cfg.ServerMode == config.ServerModeNFQueue || cfg.Desync.Reorder || cfg.Desync.Inject
 
@@ -293,26 +293,6 @@ func getLocalIPv4CIDRs() ([]string, error) {
 	return cidrs, nil
 }
 
-func IsCommandAvailable(cmd string) bool {
-	_, err := exec.LookPath(cmd)
-	return err == nil
-}
-
-func isOpkgPackageInstalled(pkg string) bool {
-	cmd := exec.Command("opkg", "list-installed", pkg)
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return len(output) > 0
-}
-
-func commandRunning(c string) bool {
-	cmd := exec.Command("pgrep", "-f", c)
-	err := cmd.Run()
-	return err == nil
-}
-
 func shellclashExists() bool {
 	if _, err := user.Lookup("shellclash"); err == nil {
 		return true
@@ -324,13 +304,13 @@ func shellclashExists() bool {
 }
 
 func initSkipGids() {
-	if commandRunning("openclash") {
+	if daemon.IsCommandRunning("openclash") {
 		SKIP_GIDS += ",7890"
 		SIDECAR = OC
-	} else if commandRunning("ShellCrash") {
+	} else if daemon.IsCommandRunning("ShellCrash") {
 		SKIP_GIDS += ",65534"
 		SIDECAR = SC
-	} else if isOpkgPackageInstalled("luci-app-openclash") {
+	} else if daemon.IsPackageInstalled("luci-app-openclash") {
 		SKIP_GIDS += ",7890"
 		SIDECAR = OC
 	} else if shellclashExists() {

@@ -46,8 +46,41 @@ func IsOpenWrt() bool {
 		return true
 	}
 
-	if _, err := user.Lookup("apk"); err == nil {
+	if _, err := exec.LookPath("apk"); err == nil {
 		return true
+	}
+
+	return false
+}
+
+func IsCommandAvailable(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
+
+func IsCommandRunning(c string) bool {
+	cmd := exec.Command("pgrep", "-f", c)
+	err := cmd.Run()
+	return err == nil
+}
+
+func IsPackageInstalled(pkg string) bool {
+	if _, err := exec.LookPath("opkg"); err == nil {
+		cmd := exec.Command("opkg", "list-installed", pkg)
+		output, err := cmd.Output()
+		if err != nil {
+			return false
+		}
+		return strings.Contains(string(output), pkg)
+	}
+
+	if _, err := exec.LookPath("apk"); err == nil {
+		cmd := exec.Command("apk", "info", "-e", pkg)
+		output, err := cmd.Output()
+		if err != nil {
+			return false
+		}
+		return strings.Contains(string(output), pkg)
 	}
 
 	return false
