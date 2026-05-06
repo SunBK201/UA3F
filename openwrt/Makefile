@@ -74,11 +74,6 @@ uci -q commit ua3f
 	uci -q delete ucitrack.ua3f
 	uci -q commit ucitrack
 }
-rm -rf /var/log/ua3f >/dev/null 2>&1
-rm -rf /usr/lib/lua/luci/model/cbi/ua3f >/dev/null 2>&1
-rm -rf /usr/lib/lua/luci/model/cbi/ua3f.lua >/dev/null 2>&1
-rm -rf /usr/lib/lua/luci/controller/ua3f.lua >/dev/null 2>&1
-rm -rf /usr/lib/lua/luci/view/ua3f >/dev/null 2>&1
 endef
 
 $(eval $(call GoBinPackage,ua3f))
