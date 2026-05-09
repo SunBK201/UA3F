@@ -16,6 +16,8 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+node_modules/
+docs/.vitepress/cache/
 
 # Go workspace file
 go.work
@@ -23,6 +25,7 @@ go.work
 .vscode
 bin/
 dist/
+docs/.vitepress/dist/
 scripts/ipkg/etc/
 scripts/ipkg/usr/
 scripts/ipkg/www/
