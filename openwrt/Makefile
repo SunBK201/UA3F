@@ -36,7 +36,6 @@ define Package/ua3f/description
 endef
 
 define Build/Prepare
-	$(CP) ../src/* $(PKG_BUILD_DIR)
 	po2lmo ./po/zh_cn/ua3f.po $(PKG_BUILD_DIR)/ua3f.zh-cn.lmo
 endef
 

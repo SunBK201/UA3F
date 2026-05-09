@@ -41,10 +41,10 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: "1.23"
-          cache-dependency-path: src/go.sum
+          cache-dependency-path: go.sum
 
       - name: Generate BPF code
-        run: cd src && go generate ./internal/bpf/...
+        run: go generate ./internal/bpf/...
 
       - name: Build
         uses: openwrt/gh-action-sdk@v9
@@ -92,7 +92,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: "1.23"
-          cache-dependency-path: src/go.sum
+          cache-dependency-path: go.sum
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y zip llvm clang linux-headers-$(uname -r) libbpf-dev gcc-multilib
@@ -108,7 +108,6 @@ jobs:
 
       - name: Build binary
         run: |
-          cd src
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           GOOS="${{ matrix.goos }}"
           GOARCH="${{ matrix.goarch }}"
@@ -120,19 +119,18 @@ jobs:
           CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
             go build -trimpath -ldflags="-s -w" -o ua3f main.go
 
-          mkdir -p ../dist
-          cd ..
+          mkdir -p dist
 
           case "$GOOS" in
             windows)
-              mv src/ua3f src/ua3f.exe
-              zip "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j src/ua3f.exe
+              mv ua3f ua3f.exe
+              zip "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j ua3f.exe
               ;;
             darwin)
-              zip -q "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j src/ua3f
+              zip -q "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.zip" -j ua3f
               ;;
             *)
-              tar -czf "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.tar.gz" -C src ua3f
+              tar -czf "dist/ua3f-${VERSION}-${GOOS}-${GOARCH}.tar.gz" ua3f
               ;;
           esac
 

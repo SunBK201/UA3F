@@ -35,8 +35,7 @@ rm -rf "$release_dir"/* "$dist"/*
 mkdir -p "$release_dir" "$dist/bin"
 
 cd "$project_root"
-gofmt -w ./
-cd "$project_root/src"
+gofmt -w ./cmd ./internal ./main.go
 go generate ./...
 
 for target_item in $TARGET_LIST; do
@@ -94,7 +93,6 @@ for target_item in $TARGET_LIST; do
     fi
 done
 
-cd ..
 opkg_template=./scripts/ipkg
 ipkg_build=./scripts/ipkg-build.sh
 

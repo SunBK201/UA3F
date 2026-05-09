@@ -45,7 +45,7 @@ Multiple installation methods are available:
   Build UA3F binary:
 
   ```sh
-  git clone https://github.com/SunBK201/UA3F.git && cd UA3F/src
+  git clone https://github.com/SunBK201/UA3F.git && cd UA3F
   go build -o ua3f main.go
   ```
 

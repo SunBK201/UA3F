@@ -20,7 +20,7 @@ docker run -p 1080:1080 sunbk201/ua3f -f FFF
 
 ```sh
 git clone https://github.com/SunBK201/UA3F.git
-cd UA3F/src
+cd UA3F
 go build -o ua3f main.go
 ```
 

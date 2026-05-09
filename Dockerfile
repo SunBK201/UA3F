@@ -2,9 +2,11 @@ FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
-COPY src/go.mod src/go.sum ./
+COPY go.mod go.sum ./
 
-COPY src/ ./
+COPY main.go ./
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
 ARG TARGETOS
 ARG TARGETARCH

@@ -47,7 +47,7 @@ UA3F 支持多种安装方式：
   编译构建 UA3F 二进制文件：
 
   ```sh
-  git clone https://github.com/SunBK201/UA3F.git && cd UA3F/src
+  git clone https://github.com/SunBK201/UA3F.git && cd UA3F
   go build -o ua3f main.go
   ```
 
