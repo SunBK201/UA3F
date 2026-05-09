@@ -64,6 +64,8 @@ Multiple installation methods are available:
 
 ## Usage
 
+Detailed documentation is available at [UA3F](https://ua3f.sunbk201.site)
+
 ### Command Line Usage
 
 Start UA3F with default configuration:
