@@ -23,7 +23,7 @@ UA3F 是一个 HTTP(S) 重写代理，作为一个 HTTP、SOCKS5、TPROXY、REDI
 - 支持 opkg 安装、编译安装、Docker 部署多种方式
 - 兼容 Clash Fake-IP & Redir-Host 多种模式伴生运行
 - 支持 L3 重写：TTL、IPID、TCP 时间戳、TCP 初始窗口
-- 支持 [Desync](docs/desync.md) 分片乱序发射与混淆，用于深度包检测（DPI）
+- 支持 [Desync](https://ua3f.sunbk201.site/zh/desync/overview) 分片乱序发射与混淆，用于深度包检测（DPI）
 - 支持 eBPF 流量卸载，加速转发性能
 
 ## 安装
@@ -88,7 +88,7 @@ ua3f -c /path/to/config.yaml
 ua3f -g
 ```
 
-详细命令行参数配置说明见 [CLI.md](docs/cli.md)，配置文件示例见 [config.yaml](docs/config.yaml)
+详细命令行参数配置说明见 [配置说明](https://ua3f.sunbk201.site/zh/guide/configuration)，配置文件示例见 [配置示例](https://ua3f.sunbk201.site/zh/guide/config-examples)
 
 ### OpenWrt LuCI Web 页面
 
@@ -136,7 +136,7 @@ UA3F 内置 API Server 控制器，提供 UA3F 运行状态、配置规则等信
 ua3f --api-server <addr:port>
 ```
 
-API 文档见 [API.md](docs/api.md)
+API 文档见 [UA3F API 文档](https://ua3f.sunbk201.site/zh/api/)
 
 ### 服务模式说明
 
@@ -196,11 +196,11 @@ URL 重定向动作：
 
 ## Desync 说明
 
-详见 [UA3F Desync](docs/desync.md)
+详见 [Desync 介绍](https://ua3f.sunbk201.site/zh/desync/overview)
 
 ## Clash 配置建议
 
-见 [Clash 配置](docs/clash/Clash.md)
+见 [与其他代理配合](https://ua3f.sunbk201.site/zh/guide/proxy-integration)
 
 ## Credits
 

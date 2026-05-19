@@ -21,7 +21,7 @@ UA3F is an HTTP(S) rewriting proxy that transparently rewrites HTTP(S) (e.g., Us
 - Multiple deployment options: opkg installation, compilation, and Docker deployment
 - Compatible with Clash Fake-IP & Redir-Host modes for coexistence
 - Supports L3 rewriting: TTL, IPID, TCP Timestamp, TCP Window
-- Supports Desync fragment reordering and obfuscation to evade Deep Packet Inspection (DPI)
+- Supports [Desync](https://ua3f.sunbk201.site/desync/overview) fragment reordering and obfuscation to evade Deep Packet Inspection (DPI)
 - Supports eBPF offloading for accelerated forwarding performance
 
 ## Installation
@@ -86,7 +86,7 @@ Generate a template configuration file:
 ua3f -g
 ```
 
-For detailed CLI parameters, see [CLI.md](docs/cli.md). For a configuration file example, see [config.yaml](docs/config.yaml).
+For detailed CLI parameters, see [Configuration](https://ua3f.sunbk201.site/en/guide/configuration). For configuration examples, see [Configuration Examples](https://ua3f.sunbk201.site/en/guide/config-examples).
 
 ### OpenWrt LuCI Web Interface
 
@@ -134,7 +134,7 @@ UA3F includes a built-in API Server controller that provides query and control i
 ua3f --api-server <addr:port>
 ```
 
-API documentation: [API.md](docs/api.md)
+API documentation: [UA3F API Documentation](https://ua3f.sunbk201.site/en/api/)
 
 ### Server Mode Description
 
@@ -194,11 +194,11 @@ URL Redirection Actions:
 
 ## Desync
 
-See [UA3F Desync](docs/desync.md)
+See [Desync Overview](https://ua3f.sunbk201.site/en/desync/overview)
 
 ## Clash Configuration
 
-See [Clash Configuration](docs/clash/Clash.md)
+See [Proxy Integration](https://ua3f.sunbk201.site/en/guide/proxy-integration)
 
 ## Credits
 
