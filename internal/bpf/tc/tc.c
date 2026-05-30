@@ -8,6 +8,7 @@
 #include <linux/ppp_defs.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
+#include <linux/udp.h>
 
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
@@ -219,7 +220,7 @@ int clear_tcp_syn_ts(struct __sk_buff* skb)
 
     struct iphdr* ip = NULL;
     if (parse_ipv4_tcp(data, data_end, &off, &ip) < 0)
-        return TC_ACT_OK;
+        return TCX_NEXT;
 
     struct tcphdr* tcp = NULL;
     int opt_off = 0, opt_len = 0;
@@ -252,7 +253,7 @@ int set_tcp_syn_window(struct __sk_buff* skb)
 
     struct iphdr* ip = NULL;
     if (parse_ipv4_tcp(data, data_end, &off, &ip) < 0)
-        return TC_ACT_OK;
+        return TCX_NEXT;
 
     struct tcphdr* tcp = NULL;
     int opt_off = 0, opt_len = 0;
@@ -366,6 +367,58 @@ int set_ip_ttl(struct __sk_buff* skb)
         old_ttl, new_ttl_word, sizeof(new_ttl_word));
     (void)bpf_skb_store_bytes(skb, off + offsetof(struct iphdr, ttl),
         &new_ttl, sizeof(new_ttl), BPF_F_RECOMPUTE_CSUM);
+
+    return TCX_NEXT;
+}
+
+SEC("tc/egress")
+int block_quic(struct __sk_buff* skb)
+{
+    void* data = (void*)(long)skb->data;
+    void* data_end = (void*)(long)skb->data_end;
+
+    __u32 off = 0;
+    __u16 proto = 0;
+
+    if (parse_l2(data, data_end, &off, &proto) < 0)
+        return TC_ACT_OK;
+
+    if (proto != ETH_P_IP)
+        return TC_ACT_OK;
+
+    __u8* cursor = data;
+    struct iphdr* ip = (struct iphdr*)(cursor + off);
+    if ((void*)(ip + 1) > data_end)
+        return TC_ACT_OK;
+
+    if (ip->version != 4)
+        return TC_ACT_OK;
+
+    int ip_hlen = ip->ihl * 4;
+    if (ip_hlen < (int)sizeof(*ip))
+        return TC_ACT_OK;
+
+    if ((void*)(cursor + off + ip_hlen) > data_end)
+        return TC_ACT_OK;
+
+    if (ip->protocol != IPPROTO_UDP)
+        return TCX_NEXT;
+
+    // ignore fragmented packets
+    __u16 frag = bpf_ntohs(ip->frag_off);
+    if (frag & 0x3FFF)
+        return TCX_NEXT;
+
+    off += ip_hlen;
+
+    struct udphdr* udp = (struct udphdr*)(cursor + off);
+    if ((void*)(udp + 1) > data_end)
+        return TCX_NEXT;
+
+    __u16 dport = bpf_ntohs(udp->dest);
+    if (dport == 443) {
+        return TCX_DROP;
+    }
 
     return TCX_NEXT;
 }

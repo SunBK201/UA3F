@@ -236,6 +236,10 @@ func selectedPrograms(objs *tcObjects, cfg *config.L3RewriteConfig) []tcProgramA
 		programs = append(programs, tcProgramAttachment{name: "clear_tcp_syn_ts", program: objs.ClearTcpSynTs})
 		slog.Info("Selected TC program", "Clear TCP Timestamp", true)
 	}
+	if cfg.BLOCKQUIC {
+		programs = append(programs, tcProgramAttachment{name: "block_quic", program: objs.BlockQuic})
+		slog.Info("Selected TC program", "Block QUIC", true)
+	}
 
 	return programs
 }

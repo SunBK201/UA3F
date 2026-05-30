@@ -54,6 +54,7 @@ type tcSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type tcProgramSpecs struct {
+	BlockQuic       *ebpf.ProgramSpec `ebpf:"block_quic"`
 	ClearTcpSynTs   *ebpf.ProgramSpec `ebpf:"clear_tcp_syn_ts"`
 	SetIpIdZero     *ebpf.ProgramSpec `ebpf:"set_ip_id_zero"`
 	SetIpTtl        *ebpf.ProgramSpec `ebpf:"set_ip_ttl"`
@@ -108,6 +109,7 @@ type tcVariables struct {
 //
 // It can be passed to loadTcObjects or ebpf.CollectionSpec.LoadAndAssign.
 type tcPrograms struct {
+	BlockQuic       *ebpf.Program `ebpf:"block_quic"`
 	ClearTcpSynTs   *ebpf.Program `ebpf:"clear_tcp_syn_ts"`
 	SetIpIdZero     *ebpf.Program `ebpf:"set_ip_id_zero"`
 	SetIpTtl        *ebpf.Program `ebpf:"set_ip_ttl"`
@@ -116,6 +118,7 @@ type tcPrograms struct {
 
 func (p *tcPrograms) Close() error {
 	return _TcClose(
+		p.BlockQuic,
 		p.ClearTcpSynTs,
 		p.SetIpIdZero,
 		p.SetIpTtl,
