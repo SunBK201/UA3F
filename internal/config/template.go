@@ -23,10 +23,14 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 
 		IncludeLanRoutes: false,
 
-		TTL:              false,
-		IPID:             false,
-		TCPTimeStamp:     false,
-		TCPInitialWindow: false,
+		L3Rewrite: L3RewriteConfig{
+			TTL:        false,
+			IPID:       false,
+			TCPTS:      false,
+			TCPWIN:     false,
+			BLOCKQUIC:  false,
+			BPFOffload: false,
+		},
 
 		Desync: DesyncConfig{
 			Reorder:        false,

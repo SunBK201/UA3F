@@ -93,6 +93,7 @@ type L3RewriteConfig struct {
 	IPID       bool `yaml:"ipid"`
 	TCPWIN     bool `yaml:"tcpwin"`
 	TCPTS      bool `yaml:"tcpts"`
+	BLOCKQUIC  bool `yaml:"block-quic"`
 }
 
 type Rule struct {

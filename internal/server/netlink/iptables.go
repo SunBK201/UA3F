@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	table = "mangle"
-	chain = "POSTROUTING"
+	table       = "mangle"
+	POSTROUTING = "POSTROUTING"
 )
 
 var RuleTTL = []string{
@@ -48,6 +48,12 @@ var RuleRstTimestamp = []string{
 	"--strip-options", "timestamp",
 }
 
+var RuleBlockQuic = []string{
+	"-p", "udp",
+	"--dport", "443",
+	"-j", "DROP",
+}
+
 func (s *Server) iptSetup() error {
 	ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
@@ -77,6 +83,12 @@ func (s *Server) iptSetup() error {
 			return err
 		}
 	}
+	if s.cfg.BLOCKQUIC {
+		err = s.IptBlockQUIC(ipt)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -85,9 +97,10 @@ func (s *Server) iptCleanup() error {
 	if err != nil {
 		return err
 	}
-	_ = ipt.DeleteIfExists(table, chain, RuleTTL...)
-	_ = ipt.DeleteIfExists(table, chain, RuleIP...)
-	_ = ipt.DeleteIfExists(table, chain, RuleHookTCPSyn...)
+	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleTTL...)
+	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleIP...)
+	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleHookTCPSyn...)
+	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleBlockQuic...)
 	if s.cfg.TTL {
 		_ = s.NftCleanup()
 	}
@@ -95,7 +108,7 @@ func (s *Server) iptCleanup() error {
 }
 
 func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleTTL...)
+	err := ipt.Append(table, POSTROUTING, RuleTTL...)
 	if err != nil {
 		return err
 	}
@@ -103,7 +116,7 @@ func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
 }
 
 func (s *Server) IptHookTCPSyn(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleHookTCPSyn...)
+	err := ipt.Append(table, POSTROUTING, RuleHookTCPSyn...)
 	if err != nil {
 		return err
 	}
@@ -111,7 +124,7 @@ func (s *Server) IptHookTCPSyn(ipt *iptables.IPTables) error {
 }
 
 func (s *Server) IptSetIP(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, chain, RuleIP...)
+	err := ipt.Append(table, POSTROUTING, RuleIP...)
 	if err != nil {
 		return err
 	}
@@ -139,4 +152,12 @@ func (s *Server) IptSetTTLIngress(ipt *iptables.IPTables) error {
 		return err
 	}
 	return s.NftSetTTLIngress(nft, s.Nftable, lanDev)
+}
+
+func (s *Server) IptBlockQUIC(ipt *iptables.IPTables) error {
+	err := ipt.Append(table, POSTROUTING, RuleBlockQuic...)
+	if err != nil {
+		return err
+	}
+	return nil
 }

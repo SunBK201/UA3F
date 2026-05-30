@@ -13,11 +13,6 @@ import (
 )
 
 func (s *Server) nftSetup() error {
-	if !s.cfg.TTL && !s.cfg.TCPTS && !s.cfg.IPID {
-		slog.Info("No packet modification features enabled, skipping nftables setup")
-		return nil
-	}
-
 	nft, err := knftables.New(s.Nftable.Family, s.Nftable.Name)
 	if err != nil {
 		return err
@@ -34,6 +29,9 @@ func (s *Server) nftSetup() error {
 	}
 	if s.cfg.IPID {
 		s.NftHookIP(tx, s.Nftable)
+	}
+	if s.cfg.BLOCKQUIC {
+		s.NftBlockQUIC(tx, s.Nftable)
 	}
 
 	if err := nft.Run(context.TODO(), tx); err != nil {
@@ -169,6 +167,26 @@ func (s *Server) NftHookIP(tx *knftables.Transaction, table *knftables.Table) {
 			"ip id != 0",
 			"meta l4proto tcp",
 			fmt.Sprintf("counter queue num %d bypass", s.nfqServer.QueueNum),
+		),
+	})
+}
+
+func (s *Server) NftBlockQUIC(tx *knftables.Transaction, table *knftables.Table) {
+	chain := &knftables.Chain{
+		Name:     "BLOCK_QUIC",
+		Table:    table.Name,
+		Type:     knftables.PtrTo(knftables.FilterType),
+		Hook:     knftables.PtrTo(knftables.PostroutingHook),
+		Priority: knftables.PtrTo(knftables.ManglePriority),
+	}
+	tx.Add(chain)
+
+	tx.Add(&knftables.Rule{
+		Chain: chain.Name,
+		Rule: knftables.Concat(
+			"meta l4proto udp",
+			"udp dport 443",
+			"counter drop",
 		),
 	})
 }

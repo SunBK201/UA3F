@@ -114,6 +114,7 @@ func init() {
 	_ = viper.BindPFlag("l3-rewrite.ipid", rootCmd.Flags().Lookup("l3-rewrite-ipid"))
 	_ = viper.BindPFlag("l3-rewrite.tcpts", rootCmd.Flags().Lookup("l3-rewrite-tcpts"))
 	_ = viper.BindPFlag("l3-rewrite.tcpwin", rootCmd.Flags().Lookup("l3-rewrite-tcpwin"))
+	_ = viper.BindPFlag("l3-rewrite.block-quic", rootCmd.Flags().Lookup("block-quic"))
 
 	_ = viper.BindPFlag("desync.reorder", rootCmd.Flags().Lookup("desync-reorder"))
 	_ = viper.BindPFlag("desync.reorder-bytes", rootCmd.Flags().Lookup("desync-reorder-bytes"))
@@ -161,6 +162,7 @@ func init() {
 	_ = viper.BindEnv("l3-rewrite.ipid", "UA3F_L3_REWRITE_IPID")
 	_ = viper.BindEnv("l3-rewrite.tcpts", "UA3F_L3_REWRITE_TCPTS")
 	_ = viper.BindEnv("l3-rewrite.tcpwin", "UA3F_L3_REWRITE_TCPWIN")
+	_ = viper.BindEnv("l3-rewrite.block-quic", "UA3F_L3_REWRITE_BLOCK_QUIC")
 
 	_ = viper.BindEnv("desync.reorder", "UA3F_DESYNC_REORDER")
 	_ = viper.BindEnv("desync.reorder-bytes", "UA3F_DESYNC_REORDER_BYTES")
@@ -206,12 +208,6 @@ func initConfig() {
 	viper.SetDefault("desync.reorder-bytes", 8)
 	viper.SetDefault("desync.reorder-packets", 1500)
 	viper.SetDefault("desync.inject-ttl", 3)
-
-	viper.SetDefault("l3-rewrite.ttl", false)
-	viper.SetDefault("l3-rewrite.ipid", false)
-	viper.SetDefault("l3-rewrite.tcpts", false)
-	viper.SetDefault("l3-rewrite.tcpwin", false)
-	viper.SetDefault("l3-rewrite.bpf-offload", false)
 }
 
 func runRoot(cmd *cobra.Command, args []string) error {

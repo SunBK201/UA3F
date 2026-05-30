@@ -21,6 +21,7 @@ l3-rewrite:
   ipid: false
   tcpts: false
   tcpwin: false
+  block-quic: false
   bpf-offload: false
 
 desync:
