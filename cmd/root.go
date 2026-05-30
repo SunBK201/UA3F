@@ -63,6 +63,7 @@ func init() {
 	rootCmd.Flags().Bool("ipid", false, "Set IP ID")
 	rootCmd.Flags().Bool("tcpts", false, "Delete TCP Timestamp")
 	rootCmd.Flags().Bool("tcpwin", false, "Set TCP Initial Window")
+	rootCmd.Flags().Bool("block-quic", false, "Block QUIC by dropping outbound UDP/443 traffic")
 
 	rootCmd.Flags().Bool("l3-rewrite-ttl", false, "Set TTL (legacy flag, same as --ttl)")
 	rootCmd.Flags().Bool("l3-rewrite-ipid", false, "Set IP ID (legacy flag, same as --ipid)")
