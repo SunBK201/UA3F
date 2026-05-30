@@ -137,6 +137,12 @@ msgstr "固定 TTL"
 msgid "Set the TTL 64 for packets"
 msgstr "固定数据包的 TTL 为 64"
 
+msgid "Block QUIC Protocol"
+msgstr "阻断 QUIC 协议流量"
+
+msgid "Drop UDP packets with destination port 443 to block QUIC traffic"
+msgstr "丢弃目标端口为 443 的 UDP 数据包以阻止 QUIC 流量"
+
 msgid "L3 Rewriting eBPF Offloading"
 msgstr "L3 重写 eBPF 卸载"
 

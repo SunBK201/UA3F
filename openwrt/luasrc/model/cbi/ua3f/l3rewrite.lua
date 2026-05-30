@@ -21,6 +21,10 @@ function M.add_l3rewrite_fields(section)
     local tcp_init_window = section:taboption("l3rewrite", Flag, "l3_rewrite_tcpwin", translate("Set TCP Initial Window"))
     tcp_init_window.description = translate("Set the TCP Initial Window to 65535 for SYN packets")
 
+    -- Block QUIC
+    local block_quic = section:taboption("l3rewrite", Flag, "l3_rewrite_block_quic", translate("Block QUIC Protocol"))
+    block_quic.description = translate("Drop UDP packets with destination port 443 to block QUIC traffic")
+
     -- IP ID Setting
     local ipid = section:taboption("l3rewrite", Flag, "l3_rewrite_ipid", translate("Set IP ID"))
     ipid.description = translate("Set the IP ID to 0 for packets")

@@ -16,7 +16,6 @@ start_service() {
 
     local server_mode port bind ua log_level ua_regex partial_replace
     local rewrite_mode header_rewrite body_rewrite url_redirect
-    local set_ttl set_ipid del_tcpts set_tcp_init_window
     config_get server_mode "main" "server_mode" "TPROXY"
     config_get port "main" "port" "1080"
     config_get bind "main" "bind" "127.0.0.1"
@@ -29,11 +28,12 @@ start_service() {
     config_get body_rewrite "main" "body_rewrite" ""
     config_get url_redirect "main" "url_redirect" ""
 
-    local l3_rewrite_ttl l3_rewrite_ipid l3_rewrite_tcpts l3_rewrite_tcpwin l3_rewrite_bpf_offload
+    local l3_rewrite_ttl l3_rewrite_ipid l3_rewrite_tcpts l3_rewrite_tcpwin l3_rewrite_block_quic l3_rewrite_bpf_offload
     config_get_bool l3_rewrite_ttl "main" "l3_rewrite_ttl" 0
     config_get_bool l3_rewrite_ipid "main" "l3_rewrite_ipid" 0
     config_get_bool l3_rewrite_tcpts "main" "l3_rewrite_tcpts" 0
     config_get_bool l3_rewrite_tcpwin "main" "l3_rewrite_tcpwin" 0
+    config_get_bool l3_rewrite_block_quic "main" "l3_rewrite_block_quic" 0
     config_get_bool l3_rewrite_bpf_offload "main" "l3_rewrite_bpf_offload" 0
 
     local desync_reorder desync_reorder_bytes desync_reorder_packets desync_ports
@@ -67,6 +67,7 @@ start_service() {
     procd_append_param env UA3F_L3_REWRITE_IPID="$l3_rewrite_ipid"
     procd_append_param env UA3F_L3_REWRITE_TCPTS="$l3_rewrite_tcpts"
     procd_append_param env UA3F_L3_REWRITE_TCPWIN="$l3_rewrite_tcpwin"
+    procd_append_param env UA3F_L3_REWRITE_BLOCK_QUIC="$l3_rewrite_block_quic"
     procd_append_param env UA3F_L3_REWRITE_BPF_OFFLOAD="$l3_rewrite_bpf_offload"
 
     procd_append_param env UA3F_DESYNC_REORDER="$desync_reorder"
