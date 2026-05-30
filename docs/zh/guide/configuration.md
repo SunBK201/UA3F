@@ -147,7 +147,7 @@ curl -H "Authorization: Bearer change-me" http://127.0.0.1:9000/version
 
 ## L3 重写
 
-L3 重写用于调整 TTL、IPID、TCP Timestamp、TCP 初始窗口等网络层特征。推荐使用 `l3-rewrite` 配置块；顶层 `ttl`、`ipid`、`tcp_timestamp`、`tcp_initial_window` 仍可用，并会与 `l3-rewrite` 合并。
+L3 重写用于调整 TTL、IPID、TCP Timestamp、TCP 初始窗口，并可阻断 QUIC 等网络层特征。推荐使用 `l3-rewrite` 配置块；顶层 `ttl`、`ipid`、`tcp_timestamp`、`tcp_initial_window` 仍可用，并会与 `l3-rewrite` 合并。
 
 ```yaml
 l3-rewrite:
@@ -155,6 +155,7 @@ l3-rewrite:
   ipid: true
   tcpts: true
   tcpwin: true
+  block-quic: true
   bpf-offload: true
 ```
 
@@ -164,6 +165,7 @@ l3-rewrite:
 | IPID 重写 | `l3-rewrite.ipid` | `ipid` | `--ipid`, `--l3-rewrite-ipid` | `UA3F_L3_REWRITE_IPID`, `UA3F_IPID` | `false` |
 | 删除 TCP Timestamp | `l3-rewrite.tcpts` | `tcp_timestamp` | `--tcpts`, `--l3-rewrite-tcpts` | `UA3F_L3_REWRITE_TCPTS`, `UA3F_TCPTS` | `false` |
 | 修改 TCP 初始窗口 | `l3-rewrite.tcpwin` | `tcp_initial_window` | `--tcpwin`, `--l3-rewrite-tcpwin` | `UA3F_L3_REWRITE_TCPWIN`, `UA3F_TCP_INIT_WINDOW` | `false` |
+| QUIC 阻断 | `l3-rewrite.block-quic` | - | `--block-quic` | `UA3F_L3_REWRITE_BLOCK_QUIC` | `false` |
 | L3 eBPF 加速 | `l3-rewrite.bpf-offload` | - | `--l3-rewrite-bpf-offload` | `UA3F_L3_REWRITE_BPF_OFFLOAD` | `false` |
 
 L3 eBPF 加速要求 Linux 内核 `>= 5.15`。详见 [L3 重写](/zh/l3/overview.md) 与 [eBPF 加速](/zh/ebpf/l3-rewrite.md)。

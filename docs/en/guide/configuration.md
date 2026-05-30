@@ -147,7 +147,7 @@ curl -H "Authorization: Bearer change-me" http://127.0.0.1:9000/version
 
 ## L3 rewrite
 
-L3 rewrite adjusts network-layer characteristics such as TTL, IPID, TCP Timestamp, and TCP Initial Window. Prefer the `l3-rewrite` block. Top-level `ttl`, `ipid`, `tcp_timestamp`, and `tcp_initial_window` remain supported and are merged with `l3-rewrite`.
+L3 rewrite adjusts network-layer characteristics such as TTL, IPID, TCP Timestamp, TCP Initial Window, and QUIC blocking. Prefer the `l3-rewrite` block. Top-level `ttl`, `ipid`, `tcp_timestamp`, and `tcp_initial_window` remain supported and are merged with `l3-rewrite`.
 
 ```yaml
 l3-rewrite:
@@ -155,6 +155,7 @@ l3-rewrite:
   ipid: true
   tcpts: true
   tcpwin: true
+  block-quic: true
   bpf-offload: true
 ```
 
@@ -164,6 +165,7 @@ l3-rewrite:
 | IPID rewrite | `l3-rewrite.ipid` | `ipid` | `--ipid`, `--l3-rewrite-ipid` | `UA3F_L3_REWRITE_IPID`, `UA3F_IPID` | `false` |
 | Delete TCP Timestamp | `l3-rewrite.tcpts` | `tcp_timestamp` | `--tcpts`, `--l3-rewrite-tcpts` | `UA3F_L3_REWRITE_TCPTS`, `UA3F_TCPTS` | `false` |
 | TCP Initial Window rewrite | `l3-rewrite.tcpwin` | `tcp_initial_window` | `--tcpwin`, `--l3-rewrite-tcpwin` | `UA3F_L3_REWRITE_TCPWIN`, `UA3F_TCP_INIT_WINDOW` | `false` |
+| QUIC blocking | `l3-rewrite.block-quic` | - | `--block-quic` | `UA3F_L3_REWRITE_BLOCK_QUIC` | `false` |
 | L3 eBPF acceleration | `l3-rewrite.bpf-offload` | - | `--l3-rewrite-bpf-offload` | `UA3F_L3_REWRITE_BPF_OFFLOAD` | `false` |
 
 L3 eBPF acceleration requires Linux kernel `>= 5.15`. See [L3 Rewrite](/l3/overview.md) and [eBPF Acceleration](/ebpf/l3-rewrite.md).

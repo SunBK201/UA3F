@@ -1,6 +1,6 @@
 # Getting Started
 
-UA3F is an HTTP(S) rewriting proxy for modifying request and response headers, body content, and URL routing behavior. In addition to HTTP rewrite, UA3F supports L3 rewrite and Desync: L3 rewrite can adjust network-layer characteristics such as TTL, IPID, TCP Timestamp, and TCP Initial Window, with optional TC eBPF acceleration; Desync can interfere with stream reassembly on some DPI devices through TCP segment reordering and low-TTL obfuscation injection.
+UA3F is an HTTP(S) rewriting proxy for modifying request and response headers, body content, and URL routing behavior. In addition to HTTP rewrite, UA3F supports L3 rewrite and Desync: L3 rewrite can adjust network-layer characteristics such as TTL, IPID, TCP Timestamp, TCP Initial Window, and QUIC blocking, with optional TC eBPF acceleration; Desync can interfere with stream reassembly on some DPI devices through TCP segment reordering and low-TTL obfuscation injection.
 
 ## Installation
 
@@ -55,7 +55,7 @@ ua3f -g
 | Network-layer queue processing | `NFQUEUE` |
 | Coexisting with Clash | Run UA3F as `SOCKS5`, then route HTTP/TCP traffic from Clash to UA3F |
 | Rewriting HTTPS headers or bodies | Enable `mitm` for selected hostnames |
-| Network-layer characteristic rewriting | Enable L3 rewrite and configure TTL, IPID, TCP Timestamp, or TCP Initial Window as needed |
+| Network-layer characteristic rewriting | Enable L3 rewrite and configure TTL, IPID, TCP Timestamp, TCP Initial Window, or QUIC blocking as needed |
 | DPI stream reassembly interference | Enable Desync and configure TCP segment reordering or TCP obfuscation injection as needed |
 
 ## Next steps

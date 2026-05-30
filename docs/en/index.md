@@ -27,7 +27,7 @@ features:
   - title: OpenWrt ready
     details: Ships opkg/apk packages, LuCI integration, Clash coexistence examples, and transparent proxy modes.
   - title: L3 Rewriting and Desync
-    details: Rewrite TTL, IPID, TCP Timestamp, and TCP Initial Window, with TCP reordering and injection based Desync support.
+    details: Rewrite TTL, IPID, TCP Timestamp, and TCP Initial Window, add QUIC blocking, and use Desync for TCP reordering and injection support.
   - title: API and observability
     details: Query version, configuration, rules, and logs through the built-in RESTful API.
 ---

@@ -27,7 +27,7 @@ features:
   - title: OpenWrt 原生支持
     details: 提供 opkg/apk 包、LuCI 页面、Clash 伴生配置与多种透明代理部署方式。
   - title: L3 重写 与 Desync
-    details: 支持 TTL、IPID、TCP Timestamp、TCP 初始窗口重写，以及分片乱序与混淆注入。
+    details: 支持 TTL、IPID、TCP Timestamp、TCP 初始窗口重写，以及 QUIC 阻断、分片乱序与混淆注入。
   - title: API 与可观测
     details: 内置 RESTful API，可查询版本、配置、规则与实时日志，并支持运行时重启。
 ---

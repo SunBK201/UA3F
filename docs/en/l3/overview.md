@@ -10,6 +10,7 @@ L3 rewrite modifies selected IP/TCP fields at the network layer. It is separate 
 | IPID | Sets IPv4 Identification to `0` |
 | TCP Timestamp | Removes TCP Timestamp options |
 | TCP Initial Window | Sets TCP SYN window to `65535` |
+| QUIC Block | Drops outbound UDP/443 packets |
 
 ## Configuration
 
@@ -19,6 +20,7 @@ l3-rewrite:
   ipid: false
   tcpts: false
   tcpwin: false
+  block-quic: false
   bpf-offload: false
 ```
 

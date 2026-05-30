@@ -100,6 +100,7 @@ l3-rewrite:
   ipid: true
   tcpts: true
   tcpwin: true
+  block-quic: true
   bpf-offload: true
 ```
 

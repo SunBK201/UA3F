@@ -43,7 +43,8 @@ const enSidebar = [
       { text: 'TTL', link: '/l3/ttl' },
       { text: 'IPID', link: '/l3/ipid' },
       { text: 'TCP Timestamp', link: '/l3/tcp-timestamp' },
-      { text: 'TCP Initial Window', link: '/l3/tcp-initial-window' }
+      { text: 'TCP Initial Window', link: '/l3/tcp-initial-window' },
+      { text: 'QUIC Block', link: '/l3/block-quic' }
     ]
   },
   {
@@ -112,7 +113,8 @@ const zhSidebar = [
       { text: 'TTL', link: '/zh/l3/ttl' },
       { text: 'IPID', link: '/zh/l3/ipid' },
       { text: 'TCP 时间戳', link: '/zh/l3/tcp-timestamp' },
-      { text: 'TCP 初始窗口', link: '/zh/l3/tcp-initial-window' }
+      { text: 'TCP 初始窗口', link: '/zh/l3/tcp-initial-window' },
+      { text: 'QUIC 阻断', link: '/zh/l3/block-quic' }
     ]
   },
   {

@@ -1,6 +1,6 @@
 # 快速开始
 
-UA3F 是一个 HTTP(S) 重写代理，可用于透明改写请求/响应 Header、Body，也可按规则执行 URL 重定向、拒绝或丢弃请求。除 HTTP 重写外，UA3F 还支持 L3 重写与 Desync：L3 重写可调整 TTL、IPID、TCP Timestamp、TCP 初始窗口等网络层特征，并可通过 TC eBPF 加速；Desync 可通过 TCP 分片乱序发射和低 TTL 混淆注入干扰部分 DPI 设备的流重组行为。
+UA3F 是一个 HTTP(S) 重写代理，可用于透明改写请求/响应 Header、Body，也可按规则执行 URL 重定向、拒绝或丢弃请求。除 HTTP 重写外，UA3F 还支持 L3 重写与 Desync：L3 重写可调整 TTL、IPID、TCP Timestamp、TCP 初始窗口，并可阻断 QUIC 等网络层特征，还可通过 TC eBPF 加速；Desync 可通过 TCP 分片乱序发射和低 TTL 混淆注入干扰部分 DPI 设备的流重组行为。
 
 ## 安装
 
@@ -55,7 +55,7 @@ ua3f -g
 | 需要网络层队列处理 | `NFQUEUE` |
 | 与 Clash 共存 | UA3F 使用 `SOCKS5`，Clash 将 HTTP/TCP 流量转发到 UA3F |
 | 需要 HTTPS Header/Body 重写 | 启用 `mitm` 并配置目标主机名 |
-| 需要网络层特征重写 | 启用 L3 重写，按需配置 TTL、IPID、TCP Timestamp 或 TCP 初始窗口 |
+| 需要网络层特征重写 | 启用 L3 重写，按需配置 TTL、IPID、TCP Timestamp、TCP 初始窗口或 QUIC 阻断 |
 | 需要 DPI 流重组干扰 | 启用 Desync，按需配置 TCP 分片乱序发射或 TCP 混淆注入 |
 
 ## 下一步
