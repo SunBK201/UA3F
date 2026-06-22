@@ -34,8 +34,8 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 
 		Desync: DesyncConfig{
 			Reorder:        false,
-			ReorderBytes:   8,
-			ReorderPackets: 1500,
+			ReorderBytes:   1500,
+			ReorderPackets: 8,
 			Inject:         false,
 			InjectTTL:      3,
 		},
