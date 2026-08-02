@@ -66,7 +66,7 @@ func (s *Server) Start() (err error) {
 		slog.Error("s.Firewall.Setup", slog.Any("error", err))
 		return err
 	}
-	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.TTL), slog.Bool("tcpts", s.cfg.TCPTS), slog.Bool("ipid", s.cfg.IPID), slog.Bool("tcp_init_window", s.cfg.TCPWIN), slog.Bool("block_quic", s.cfg.BLOCKQUIC))
+	slog.Info("Packet modification configuration", slog.Bool("ttl", s.cfg.TTL), slog.Uint64("ttl_value", uint64(s.cfg.TTLValue)), slog.Bool("tcpts", s.cfg.TCPTS), slog.Bool("ipid", s.cfg.IPID), slog.Bool("tcp_init_window", s.cfg.TCPWIN), slog.Bool("block_quic", s.cfg.BLOCKQUIC))
 	if s.cfg.TCPTS || s.cfg.TCPWIN || s.cfg.IPID {
 		return s.nfqServer.Start()
 	}

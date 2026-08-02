@@ -25,6 +25,7 @@ func GenerateTemplateConfig(writeToFile bool) (Config, error) {
 
 		L3Rewrite: L3RewriteConfig{
 			TTL:        false,
+			TTLValue:   DefaultTTL,
 			IPID:       false,
 			TCPTS:      false,
 			TCPWIN:     false,

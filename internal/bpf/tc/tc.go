@@ -52,7 +52,21 @@ func NewTC(cfg *config.L3RewriteConfig) (*TC, error) {
 	}
 
 	var objs tcObjects
-	if err := loadTcObjects(&objs, nil); err != nil {
+	spec, err := loadTc()
+	if err != nil {
+		return nil, fmt.Errorf("load tc spec: %w", err)
+	}
+	targetTTL, ok := spec.Variables["target_ttl"]
+	if !ok {
+		return nil, fmt.Errorf("configure target TTL: variable target_ttl not found")
+	}
+	if !targetTTL.Constant() {
+		return nil, fmt.Errorf("configure target TTL: variable target_ttl is not constant")
+	}
+	if err := targetTTL.Set(cfg.TTLValue); err != nil {
+		return nil, fmt.Errorf("configure target TTL: %w", err)
+	}
+	if err := spec.LoadAndAssign(&objs, nil); err != nil {
 		return nil, fmt.Errorf("load tc objs: %w", err)
 	}
 
@@ -226,7 +240,7 @@ func selectedPrograms(objs *tcObjects, cfg *config.L3RewriteConfig) []tcProgramA
 	}
 	if cfg.TTL {
 		programs = append(programs, tcProgramAttachment{name: "set_ip_ttl", program: objs.SetIpTtl})
-		slog.Info("Selected TC program", "Set TTL", true)
+		slog.Info("Selected TC program", "Set TTL", true, "TTL Value", cfg.TTLValue)
 	}
 	if cfg.TCPWIN {
 		programs = append(programs, tcProgramAttachment{name: "set_tcp_syn_window", program: objs.SetTcpSynWindow})

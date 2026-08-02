@@ -69,7 +69,7 @@ func (s *Server) nftCleanup() error {
 
 func (s *Server) NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 	chain := &knftables.Chain{
-		Name:     "TTL64",
+		Name:     "TTL",
 		Table:    table.Name,
 		Type:     knftables.PtrTo(knftables.FilterType),
 		Hook:     knftables.PtrTo(knftables.PostroutingHook),
@@ -88,7 +88,7 @@ func (s *Server) NftSetTTL(tx *knftables.Transaction, table *knftables.Table) {
 	tx.Add(&knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			"ip ttl set 64",
+			fmt.Sprintf("ip ttl set %d", s.cfg.TTLValue),
 		),
 	})
 }
@@ -97,7 +97,7 @@ func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Tabl
 	tx := nft.NewTransaction()
 
 	chain := &knftables.Chain{
-		Name:     "TTL64_INGRESS",
+		Name:     "TTL_INGRESS",
 		Table:    table.Name,
 		Type:     knftables.PtrTo(knftables.FilterType),
 		Hook:     knftables.PtrTo(knftables.IngressHook),
@@ -107,7 +107,7 @@ func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Tabl
 	rule := &knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			"ip ttl set 65",
+			fmt.Sprintf("ip ttl set %d", ingressTTL(s.cfg.TTLValue)),
 		),
 	}
 	tx.Add(chain)
@@ -117,6 +117,15 @@ func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Tabl
 		return err
 	}
 	return nil
+}
+
+// Forwarding decrements TTL after the ingress hook, so compensate by one.
+// TTL 255 is saturated because it is the largest value representable on IPv4.
+func ingressTTL(ttl uint8) uint8 {
+	if ttl == 255 {
+		return ttl
+	}
+	return ttl + 1
 }
 
 func (s *Server) NftHookTCPSyn(tx *knftables.Transaction, table *knftables.Table) {

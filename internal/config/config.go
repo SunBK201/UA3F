@@ -26,6 +26,8 @@ const (
 	RewriteModeGlobal RewriteMode = "GLOBAL"
 	RewriteModeDirect RewriteMode = "DIRECT"
 	RewriteModeRule   RewriteMode = "RULE"
+
+	DefaultTTL uint8 = 64
 )
 
 type Config struct {
@@ -88,12 +90,13 @@ type DesyncConfig struct {
 }
 
 type L3RewriteConfig struct {
-	BPFOffload bool `yaml:"bpf-offload"`
-	TTL        bool `yaml:"ttl"`
-	IPID       bool `yaml:"ipid"`
-	TCPWIN     bool `yaml:"tcpwin"`
-	TCPTS      bool `yaml:"tcpts"`
-	BLOCKQUIC  bool `yaml:"block-quic"`
+	BPFOffload bool  `yaml:"bpf-offload"`
+	TTL        bool  `yaml:"ttl"`
+	TTLValue   uint8 `yaml:"ttl-value" validate:"min=1,max=255"`
+	IPID       bool  `yaml:"ipid"`
+	TCPWIN     bool  `yaml:"tcpwin"`
+	TCPTS      bool  `yaml:"tcpts"`
+	BLOCKQUIC  bool  `yaml:"block-quic"`
 }
 
 type Rule struct {
@@ -183,6 +186,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Attr{
 			Key: "L3 Rewrite", Value: slog.GroupValue(
 				slog.Bool("Set TTL", c.L3Rewrite.TTL),
+				slog.Uint64("TTL Value", uint64(c.L3Rewrite.TTLValue)),
 				slog.Bool("Set IP ID", c.L3Rewrite.IPID),
 				slog.Bool("Delete TCP Timestamp", c.L3Rewrite.TCPTS),
 				slog.Bool("Set TCP Initial Window", c.L3Rewrite.TCPWIN),

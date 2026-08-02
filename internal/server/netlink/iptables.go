@@ -19,11 +19,13 @@ const (
 	POSTROUTING = "POSTROUTING"
 )
 
-var RuleTTL = []string{
-	"-m", "mark",
-	"!", "--mark", strconv.Itoa(base.SO_INJECT_MARK),
-	"-j", "TTL",
-	"--ttl-set", "64",
+func ruleTTL(ttl uint8) []string {
+	return []string{
+		"-m", "mark",
+		"!", "--mark", strconv.Itoa(base.SO_INJECT_MARK),
+		"-j", "TTL",
+		"--ttl-set", strconv.FormatUint(uint64(ttl), 10),
+	}
 }
 
 var RuleHookTCPSyn = []string{
@@ -97,7 +99,7 @@ func (s *Server) iptCleanup() error {
 	if err != nil {
 		return err
 	}
-	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleTTL...)
+	_ = ipt.DeleteIfExists(table, POSTROUTING, ruleTTL(s.cfg.TTLValue)...)
 	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleIP...)
 	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleHookTCPSyn...)
 	_ = ipt.DeleteIfExists(table, POSTROUTING, RuleBlockQuic...)
@@ -108,7 +110,7 @@ func (s *Server) iptCleanup() error {
 }
 
 func (s *Server) IptSetTTL(ipt *iptables.IPTables) error {
-	err := ipt.Append(table, POSTROUTING, RuleTTL...)
+	err := ipt.Append(table, POSTROUTING, ruleTTL(s.cfg.TTLValue)...)
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,8 @@
 #define IP_TTL_DEFAULT 64
 #define IP_TTL_MIN 10
 
+volatile const __u8 target_ttl = IP_TTL_DEFAULT;
+
 struct pppoe_hdr {
     __u8 ver_type;
     __u8 code;
@@ -352,14 +354,14 @@ int set_ip_ttl(struct __sk_buff* skb)
     if ((void*)(cursor + off + ip_hlen) > data_end)
         return TC_ACT_OK;
 
-    if (ip->ttl == IP_TTL_DEFAULT)
+    if (ip->ttl == target_ttl)
         return TCX_NEXT;
 
     // prevent modify desync inject packet
     if (ip->ttl < IP_TTL_MIN)
         return TCX_NEXT;
 
-    __u8 new_ttl = IP_TTL_DEFAULT;
+    __u8 new_ttl = target_ttl;
     __u16 old_ttl = bpf_htons((__u16)ip->ttl << 8);
     __u16 new_ttl_word = bpf_htons((__u16)new_ttl << 8);
 

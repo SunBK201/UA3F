@@ -134,8 +134,14 @@ msgstr "L3 重写"
 msgid "Set TTL"
 msgstr "固定 TTL"
 
-msgid "Set the TTL 64 for packets"
-msgstr "固定数据包的 TTL 为 64"
+msgid "Enable TTL rewriting for packets"
+msgstr "启用数据包 TTL 重写"
+
+msgid "TTL Value"
+msgstr "TTL 值"
+
+msgid "Target TTL value for packets (1-255)"
+msgstr "数据包的目标 TTL 值（1-255）"
 
 msgid "Block QUIC Protocol"
 msgstr "阻断 QUIC 协议流量"

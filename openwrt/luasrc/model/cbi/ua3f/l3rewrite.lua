@@ -6,12 +6,20 @@ local utils = require("luci.model.cbi.ua3f.utils")
 local translate = i18n.translate
 
 local Flag = cbi.Flag
+local Value = cbi.Value
 local DummyValue = cbi.DummyValue
 
 function M.add_l3rewrite_fields(section)
     -- TTL Setting
     local ttl = section:taboption("l3rewrite", Flag, "l3_rewrite_ttl", translate("Set TTL"))
-    ttl.description = translate("Set the TTL 64 for packets")
+    ttl.description = translate("Enable TTL rewriting for packets")
+
+    local ttl_value = section:taboption("l3rewrite", Value, "l3_rewrite_ttl_value", translate("TTL Value"))
+    ttl_value.default = "64"
+    ttl_value.placeholder = "64"
+    ttl_value.datatype = "range(1,255)"
+    ttl_value.description = translate("Target TTL value for packets (1-255)")
+    ttl_value:depends("l3_rewrite_ttl", "1")
 
     -- TCP Timestamp Deletion
     local tcpts = section:taboption("l3rewrite", Flag, "l3_rewrite_tcpts", translate("Delete TCP Timestamps"))

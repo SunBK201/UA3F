@@ -21,6 +21,7 @@ func resetViper(t *testing.T) {
 	viper.SetDefault("log-level", "info")
 	viper.SetDefault("user-agent", "FFF")
 	viper.SetDefault("rewrite-mode", "GLOBAL")
+	viper.SetDefault("l3-rewrite.ttl-value", DefaultTTL)
 	viper.SetDefault("desync.reorder-bytes", 8)
 	viper.SetDefault("desync.reorder-packets", 1500)
 	viper.SetDefault("desync.inject-ttl", 3)
@@ -68,6 +69,7 @@ func TestDefaultConfig(t *testing.T) {
 		{"UserAgentRegex", cfg.UserAgentRegex, ""},
 		{"UserAgentPartialReplace", cfg.UserAgentPartialReplace, false},
 		{"TTL", cfg.TTL, false},
+		{"L3Rewrite.TTLValue", cfg.L3Rewrite.TTLValue, DefaultTTL},
 		{"IPID", cfg.IPID, false},
 		{"TCPTimeStamp", cfg.TCPTimeStamp, false},
 		{"TCPInitialWindow", cfg.TCPInitialWindow, false},
@@ -99,7 +101,9 @@ rewrite-mode: RULE
 user-agent: "TestAgent"
 user-agent-regex: "(Android|iOS)"
 user-agent-partial-replace: true
-ttl: true
+l3-rewrite:
+  ttl: true
+  ttl-value: 128
 ipid: true
 tcp_timestamp: true
 tcp_initial_window: true
@@ -145,6 +149,9 @@ desync:
 	}
 	if !cfg.TTL {
 		t.Error("TTL should be true")
+	}
+	if cfg.L3Rewrite.TTLValue != 128 {
+		t.Errorf("L3Rewrite.TTLValue = %v, want 128", cfg.L3Rewrite.TTLValue)
 	}
 	if !cfg.IPID {
 		t.Error("IPID should be true")
@@ -456,6 +463,42 @@ func TestValidation_InvalidPort(t *testing.T) {
 			_, err := BuildConfigFromViper()
 			if err == nil {
 				t.Fatalf("expected validation error for port %d, got nil", tt.port)
+			}
+		})
+	}
+}
+
+func TestValidation_TTLValue(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		want    uint8
+		wantErr bool
+	}{
+		{name: "minimum", value: "1", want: 1},
+		{name: "maximum", value: "255", want: 255},
+		{name: "zero", value: "0", wantErr: true},
+		{name: "too_large", value: "256", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetViper(t)
+			path := writeConfigFile(t, "l3-rewrite:\n  ttl: true\n  ttl-value: "+tt.value+"\n")
+			loadConfigFile(t, path)
+
+			cfg, err := BuildConfigFromViper()
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error for ttl-value %s, got nil", tt.value)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for ttl-value %s: %v", tt.value, err)
+			}
+			if got := cfg.L3Rewrite.TTLValue; got != tt.want {
+				t.Fatalf("TTLValue = %d, want %s", got, tt.value)
 			}
 		})
 	}

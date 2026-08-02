@@ -152,6 +152,7 @@ L3 rewrite adjusts network-layer characteristics such as TTL, IPID, TCP Timestam
 ```yaml
 l3-rewrite:
   ttl: true
+  ttl-value: 64
   ipid: true
   tcpts: true
   tcpwin: true
@@ -162,6 +163,7 @@ l3-rewrite:
 | Feature | Preferred YAML | Compatible YAML | CLI flag | Environment variable | Default |
 | --- | --- | --- | --- | --- | --- |
 | TTL rewrite | `l3-rewrite.ttl` | `ttl` | `--ttl`, `--l3-rewrite-ttl` | `UA3F_L3_REWRITE_TTL`, `UA3F_TTL` | `false` |
+| TTL target value | `l3-rewrite.ttl-value` | - | `--ttl-value` | `UA3F_L3_REWRITE_TTL_VALUE` | `64` |
 | IPID rewrite | `l3-rewrite.ipid` | `ipid` | `--ipid`, `--l3-rewrite-ipid` | `UA3F_L3_REWRITE_IPID`, `UA3F_IPID` | `false` |
 | Delete TCP Timestamp | `l3-rewrite.tcpts` | `tcp_timestamp` | `--tcpts`, `--l3-rewrite-tcpts` | `UA3F_L3_REWRITE_TCPTS`, `UA3F_TCPTS` | `false` |
 | TCP Initial Window rewrite | `l3-rewrite.tcpwin` | `tcp_initial_window` | `--tcpwin`, `--l3-rewrite-tcpwin` | `UA3F_L3_REWRITE_TCPWIN`, `UA3F_TCP_INIT_WINDOW` | `false` |

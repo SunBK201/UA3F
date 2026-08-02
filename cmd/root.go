@@ -66,6 +66,7 @@ func init() {
 	rootCmd.Flags().Bool("block-quic", false, "Block QUIC by dropping outbound UDP/443 traffic")
 
 	rootCmd.Flags().Bool("l3-rewrite-ttl", false, "Set TTL (legacy flag, same as --ttl)")
+	rootCmd.Flags().Uint("l3-rewrite-ttl-value", 0, "Set the target TTL value (1-255)")
 	rootCmd.Flags().Bool("l3-rewrite-ipid", false, "Set IP ID (legacy flag, same as --ipid)")
 	rootCmd.Flags().Bool("l3-rewrite-tcpts", false, "Delete TCP Timestamp (legacy flag, same as --tcpts)")
 	rootCmd.Flags().Bool("l3-rewrite-tcpwin", false, "Set TCP Initial Window (legacy flag, same as --tcpwin)")
@@ -112,6 +113,7 @@ func init() {
 
 	_ = viper.BindPFlag("l3-rewrite.bpf-offload", rootCmd.Flags().Lookup("l3-rewrite-bpf-offload"))
 	_ = viper.BindPFlag("l3-rewrite.ttl", rootCmd.Flags().Lookup("l3-rewrite-ttl"))
+	_ = viper.BindPFlag("l3-rewrite.ttl-value", rootCmd.Flags().Lookup("l3-rewrite-ttl-value"))
 	_ = viper.BindPFlag("l3-rewrite.ipid", rootCmd.Flags().Lookup("l3-rewrite-ipid"))
 	_ = viper.BindPFlag("l3-rewrite.tcpts", rootCmd.Flags().Lookup("l3-rewrite-tcpts"))
 	_ = viper.BindPFlag("l3-rewrite.tcpwin", rootCmd.Flags().Lookup("l3-rewrite-tcpwin"))
@@ -160,6 +162,7 @@ func init() {
 
 	_ = viper.BindEnv("l3-rewrite.bpf-offload", "UA3F_L3_REWRITE_BPF_OFFLOAD")
 	_ = viper.BindEnv("l3-rewrite.ttl", "UA3F_L3_REWRITE_TTL")
+	_ = viper.BindEnv("l3-rewrite.ttl-value", "UA3F_L3_REWRITE_TTL_VALUE")
 	_ = viper.BindEnv("l3-rewrite.ipid", "UA3F_L3_REWRITE_IPID")
 	_ = viper.BindEnv("l3-rewrite.tcpts", "UA3F_L3_REWRITE_TCPTS")
 	_ = viper.BindEnv("l3-rewrite.tcpwin", "UA3F_L3_REWRITE_TCPWIN")
@@ -205,6 +208,7 @@ func initConfig() {
 	viper.SetDefault("log-level", "info")
 	viper.SetDefault("user-agent", "FFF")
 	viper.SetDefault("rewrite-mode", "GLOBAL")
+	viper.SetDefault("l3-rewrite.ttl-value", config.DefaultTTL)
 
 	viper.SetDefault("desync.reorder-bytes", 8)
 	viper.SetDefault("desync.reorder-packets", 1500)

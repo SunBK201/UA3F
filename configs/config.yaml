@@ -18,6 +18,7 @@ user-agent-partial-replace: false
 
 l3-rewrite:
   ttl: false
+  ttl-value: 64
   ipid: false
   tcpts: false
   tcpwin: false

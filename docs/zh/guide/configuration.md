@@ -152,6 +152,7 @@ L3 重写用于调整 TTL、IPID、TCP Timestamp、TCP 初始窗口，并可阻�
 ```yaml
 l3-rewrite:
   ttl: true
+  ttl-value: 64
   ipid: true
   tcpts: true
   tcpwin: true
@@ -162,6 +163,7 @@ l3-rewrite:
 | 功能 | 推荐 YAML | 兼容 YAML | 命令行参数 | 环境变量 | 默认值 |
 | --- | --- | --- | --- | --- | --- |
 | TTL 重写 | `l3-rewrite.ttl` | `ttl` | `--ttl`, `--l3-rewrite-ttl` | `UA3F_L3_REWRITE_TTL`, `UA3F_TTL` | `false` |
+| TTL 目标值 | `l3-rewrite.ttl-value` | - | `--ttl-value` | `UA3F_L3_REWRITE_TTL_VALUE` | `64` |
 | IPID 重写 | `l3-rewrite.ipid` | `ipid` | `--ipid`, `--l3-rewrite-ipid` | `UA3F_L3_REWRITE_IPID`, `UA3F_IPID` | `false` |
 | 删除 TCP Timestamp | `l3-rewrite.tcpts` | `tcp_timestamp` | `--tcpts`, `--l3-rewrite-tcpts` | `UA3F_L3_REWRITE_TCPTS`, `UA3F_TCPTS` | `false` |
 | 修改 TCP 初始窗口 | `l3-rewrite.tcpwin` | `tcp_initial_window` | `--tcpwin`, `--l3-rewrite-tcpwin` | `UA3F_L3_REWRITE_TCPWIN`, `UA3F_TCP_INIT_WINDOW` | `false` |

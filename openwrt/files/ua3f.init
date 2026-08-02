@@ -28,8 +28,9 @@ start_service() {
     config_get body_rewrite "main" "body_rewrite" ""
     config_get url_redirect "main" "url_redirect" ""
 
-    local l3_rewrite_ttl l3_rewrite_ipid l3_rewrite_tcpts l3_rewrite_tcpwin l3_rewrite_block_quic l3_rewrite_bpf_offload
+    local l3_rewrite_ttl l3_rewrite_ttl_value l3_rewrite_ipid l3_rewrite_tcpts l3_rewrite_tcpwin l3_rewrite_block_quic l3_rewrite_bpf_offload
     config_get_bool l3_rewrite_ttl "main" "l3_rewrite_ttl" 0
+    config_get l3_rewrite_ttl_value "main" "l3_rewrite_ttl_value" "64"
     config_get_bool l3_rewrite_ipid "main" "l3_rewrite_ipid" 0
     config_get_bool l3_rewrite_tcpts "main" "l3_rewrite_tcpts" 0
     config_get_bool l3_rewrite_tcpwin "main" "l3_rewrite_tcpwin" 0
@@ -64,6 +65,7 @@ start_service() {
     [ "$partial_replace" = "1" ] && procd_append_param command -s
 
     procd_append_param env UA3F_L3_REWRITE_TTL="$l3_rewrite_ttl"
+    procd_append_param env UA3F_L3_REWRITE_TTL_VALUE="$l3_rewrite_ttl_value"
     procd_append_param env UA3F_L3_REWRITE_IPID="$l3_rewrite_ipid"
     procd_append_param env UA3F_L3_REWRITE_TCPTS="$l3_rewrite_tcpts"
     procd_append_param env UA3F_L3_REWRITE_TCPWIN="$l3_rewrite_tcpwin"

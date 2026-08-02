@@ -71,6 +71,7 @@ type tcMapSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type tcVariableSpecs struct {
+	TargetTtl *ebpf.VariableSpec `ebpf:"target_ttl"`
 }
 
 // tcObjects contains all objects after they have been loaded into the kernel.
@@ -103,6 +104,7 @@ func (m *tcMaps) Close() error {
 //
 // It can be passed to loadTcObjects or ebpf.CollectionSpec.LoadAndAssign.
 type tcVariables struct {
+	TargetTtl *ebpf.Variable `ebpf:"target_ttl"`
 }
 
 // tcPrograms contains all programs after they have been loaded into the kernel.
