@@ -118,8 +118,8 @@ user-agent: "FFF"
 
 desync:
   reorder: true
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
   inject: true
   inject-ttl: 3
   desync-ports: "80,443"

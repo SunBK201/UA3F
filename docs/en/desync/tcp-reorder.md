@@ -9,8 +9,8 @@ UA3F splits early TCP payloads into two parts, forwards the tail first, and drop
 ```yaml
 desync:
   reorder: true
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
 ```
 
 UA3F skips packets without TCP payload, packets with payload length less than or equal to one byte, and packets with `FIN`.

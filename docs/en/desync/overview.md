@@ -7,8 +7,8 @@ UA3F Desync is a serverless DPI evasion mechanism. It mainly uses TCP segment re
 ```yaml
 desync:
   reorder: false
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
   inject: false
   inject-ttl: 3
   desync-ports: ""

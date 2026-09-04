@@ -210,8 +210,8 @@ func initConfig() {
 	viper.SetDefault("rewrite-mode", "GLOBAL")
 	viper.SetDefault("l3-rewrite.ttl-value", config.DefaultTTL)
 
-	viper.SetDefault("desync.reorder-bytes", 8)
-	viper.SetDefault("desync.reorder-packets", 1500)
+	viper.SetDefault("desync.reorder-bytes", 1500)
+	viper.SetDefault("desync.reorder-packets", 8)
 	viper.SetDefault("desync.inject-ttl", 3)
 }
 

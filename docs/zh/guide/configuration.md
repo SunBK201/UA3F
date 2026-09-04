@@ -179,8 +179,8 @@ Desync 用于 TCP 分片乱序发射和 TCP 混淆注入。
 ```yaml
 desync:
   reorder: false
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
   inject: false
   inject-ttl: 3
   desync-ports: ""
@@ -189,8 +189,8 @@ desync:
 | 功能 | YAML | 命令行参数 | 环境变量 | 默认值 |
 | --- | --- | --- | --- | --- |
 | TCP 分片乱序发射 | `desync.reorder` | `--desync-reorder` | `UA3F_DESYNC_REORDER` | `false` |
-| 乱序分片字节数 | `desync.reorder-bytes` | `--desync-reorder-bytes` | `UA3F_DESYNC_REORDER_BYTES` | `8` |
-| 乱序包大小 | `desync.reorder-packets` | `--desync-reorder-packets` | `UA3F_DESYNC_REORDER_PACKETS` | `1500` |
+| 乱序分片字节数 | `desync.reorder-bytes` | `--desync-reorder-bytes` | `UA3F_DESYNC_REORDER_BYTES` | `1500` |
+| 乱序包大小 | `desync.reorder-packets` | `--desync-reorder-packets` | `UA3F_DESYNC_REORDER_PACKETS` | `8` |
 | TCP 混淆注入 | `desync.inject` | `--desync-inject` | `UA3F_DESYNC_INJECT` | `false` |
 | 注入包 TTL | `desync.inject-ttl` | `--desync-inject-ttl` | `UA3F_DESYNC_INJECT_TTL` | `3` |
 | 生效端口 | `desync.desync-ports` | `--desync-ports` | `UA3F_DESYNC_PORTS` | 空 |

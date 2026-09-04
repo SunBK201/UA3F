@@ -82,8 +82,8 @@ type MitMConfig struct {
 
 type DesyncConfig struct {
 	DesyncPorts    string `yaml:"desync-ports,omitempty"`
-	ReorderBytes   uint32 `yaml:"reorder-bytes" default:"8" validate:"min=0"`
-	ReorderPackets uint32 `yaml:"reorder-packets" default:"1500" validate:"min=0"`
+	ReorderBytes   uint32 `yaml:"reorder-bytes" default:"1500" validate:"min=0"`
+	ReorderPackets uint32 `yaml:"reorder-packets" default:"8" validate:"min=0"`
 	Reorder        bool   `yaml:"reorder"`
 	Inject         bool   `yaml:"inject"`
 	InjectTTL      uint8  `yaml:"inject-ttl" default:"3" validate:"min=0"`

@@ -118,8 +118,8 @@ curl http://127.0.0.1:9000/config
   },
   "Desync": {
     "Reorder": false,
-    "ReorderBytes": 8,
-    "ReorderPackets": 1500,
+    "ReorderBytes": 1500,
+    "ReorderPackets": 8,
     "Inject": false,
     "InjectTTL": 3,
     "DesyncPorts": ""

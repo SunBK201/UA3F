@@ -7,8 +7,8 @@ UA3F Desync 是一种无服务器侧配合的 DPI 对抗方式，主要通过 TC
 ```yaml
 desync:
   reorder: false
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
   inject: false
   inject-ttl: 3
   desync-ports: ""

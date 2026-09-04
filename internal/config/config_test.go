@@ -22,8 +22,8 @@ func resetViper(t *testing.T) {
 	viper.SetDefault("user-agent", "FFF")
 	viper.SetDefault("rewrite-mode", "GLOBAL")
 	viper.SetDefault("l3-rewrite.ttl-value", DefaultTTL)
-	viper.SetDefault("desync.reorder-bytes", 8)
-	viper.SetDefault("desync.reorder-packets", 1500)
+	viper.SetDefault("desync.reorder-bytes", 1500)
+	viper.SetDefault("desync.reorder-packets", 8)
 	viper.SetDefault("desync.inject-ttl", 3)
 }
 
@@ -74,8 +74,8 @@ func TestDefaultConfig(t *testing.T) {
 		{"TCPTimeStamp", cfg.TCPTimeStamp, false},
 		{"TCPInitialWindow", cfg.TCPInitialWindow, false},
 		{"Desync.Reorder", cfg.Desync.Reorder, false},
-		{"Desync.ReorderBytes", cfg.Desync.ReorderBytes, uint32(8)},
-		{"Desync.ReorderPackets", cfg.Desync.ReorderPackets, uint32(1500)},
+		{"Desync.ReorderBytes", cfg.Desync.ReorderBytes, uint32(1500)},
+		{"Desync.ReorderPackets", cfg.Desync.ReorderPackets, uint32(8)},
 		{"Desync.Inject", cfg.Desync.Inject, false},
 		{"Desync.InjectTTL", cfg.Desync.InjectTTL, uint8(3)},
 	}

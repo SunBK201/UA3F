@@ -179,8 +179,8 @@ Desync enables TCP segment reordering and TCP obfuscation injection.
 ```yaml
 desync:
   reorder: false
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
   inject: false
   inject-ttl: 3
   desync-ports: ""
@@ -189,8 +189,8 @@ desync:
 | Feature | YAML | CLI flag | Environment variable | Default |
 | --- | --- | --- | --- | --- |
 | TCP segment reordering | `desync.reorder` | `--desync-reorder` | `UA3F_DESYNC_REORDER` | `false` |
-| Reordered segment bytes | `desync.reorder-bytes` | `--desync-reorder-bytes` | `UA3F_DESYNC_REORDER_BYTES` | `8` |
-| Reordered packet size | `desync.reorder-packets` | `--desync-reorder-packets` | `UA3F_DESYNC_REORDER_PACKETS` | `1500` |
+| Reordered segment bytes | `desync.reorder-bytes` | `--desync-reorder-bytes` | `UA3F_DESYNC_REORDER_BYTES` | `1500` |
+| Reordered packet size | `desync.reorder-packets` | `--desync-reorder-packets` | `UA3F_DESYNC_REORDER_PACKETS` | `8` |
 | TCP obfuscation injection | `desync.inject` | `--desync-inject` | `UA3F_DESYNC_INJECT` | `false` |
 | Injected packet TTL | `desync.inject-ttl` | `--desync-inject-ttl` | `UA3F_DESYNC_INJECT_TTL` | `3` |
 | Effective ports | `desync.desync-ports` | `--desync-ports` | `UA3F_DESYNC_PORTS` | empty |

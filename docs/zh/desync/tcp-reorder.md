@@ -9,8 +9,8 @@ UA3F 会针对早期 TCP payload 进行二分分片，并优先转发尾片、�
 ```yaml
 desync:
   reorder: true
-  reorder-bytes: 8
-  reorder-packets: 1500
+  reorder-bytes: 1500
+  reorder-packets: 8
 ```
 
 UA3F 会跳过没有 TCP payload、payload 长度小于等于 1 字节、以及带 `FIN` 标志的包。
