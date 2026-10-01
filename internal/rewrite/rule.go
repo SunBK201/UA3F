@@ -44,7 +44,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *comm
 			break
 		}
 	}
-	if decision.Action == action.RejectRequestAction {
+	if decision.Action == action.RejectRequestAction || decision.Action == action.DropRequestAction {
 		return
 	}
 
@@ -70,7 +70,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *comm
 			break
 		}
 	}
-	if decision.Action == action.RejectRequestAction {
+	if decision.Action == action.RejectRequestAction || decision.Action == action.DropRequestAction {
 		return
 	}
 
