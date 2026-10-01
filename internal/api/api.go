@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,6 +23,8 @@ import (
 type APIServer struct {
 	Server         common.Server
 	cfg            *config.Config
+	cfgMu          sync.RWMutex
+	restartMu      sync.Mutex
 	httpServer     *http.Server
 	logBroadcaster *applog.Broadcaster
 	Helper         *netlink.Server
@@ -40,7 +43,8 @@ func New(version string, cfg *config.Config, lb *applog.Broadcaster) *APIServer 
 }
 
 func (s *APIServer) Start() error {
-	if s.cfg.APIServer == "" {
+	cfg := s.currentConfig()
+	if cfg.APIServer == "" {
 		return nil
 	}
 
@@ -50,9 +54,7 @@ func (s *APIServer) Start() error {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 
-	if s.cfg.APIServerSecret != "" {
-		r.Use(s.authMiddleware)
-	}
+	r.Use(s.authMiddleware)
 
 	// api routes
 	r.Get("/version", s.handleVersion)
@@ -127,6 +129,9 @@ func (s *APIServer) CloseSystem() {
 }
 
 func (s *APIServer) RestartSystem() error {
+	s.restartMu.Lock()
+	defer s.restartMu.Unlock()
+
 	newCfg, err := config.ReloadFromFile()
 	if err != nil {
 		return err
@@ -154,8 +159,17 @@ func (s *APIServer) RestartSystem() error {
 			s.Helper = newHelper
 		}
 	}
+	s.cfgMu.Lock()
+	s.cfg = newCfg
+	s.cfgMu.Unlock()
 	slog.Info("ua3f restarted successfully")
 	return nil
+}
+
+func (s *APIServer) currentConfig() *config.Config {
+	s.cfgMu.RLock()
+	defer s.cfgMu.RUnlock()
+	return s.cfg
 }
 
 func slogMiddleware(next http.Handler) http.Handler {
@@ -173,6 +187,11 @@ func slogMiddleware(next http.Handler) http.Handler {
 
 func (s *APIServer) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		secret := s.currentConfig().APIServerSecret
+		if secret == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		token := ""
 		if auth := r.Header.Get("Authorization"); auth != "" {
 			if len(auth) > 7 && auth[:7] == "Bearer " {
@@ -184,7 +203,7 @@ func (s *APIServer) authMiddleware(next http.Handler) http.Handler {
 		if token == "" {
 			token = r.URL.Query().Get("secret")
 		}
-		if subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.APIServerSecret)) != 1 {
+		if subtle.ConstantTimeCompare([]byte(token), []byte(secret)) != 1 {
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}

@@ -14,7 +14,7 @@ func (s *APIServer) handleVersion(w http.ResponseWriter, r *http.Request) {
 
 func (s *APIServer) handleConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(s.cfg)
+	_ = json.NewEncoder(w).Encode(s.currentConfig())
 }
 
 func (s *APIServer) handleRules(w http.ResponseWriter, r *http.Request) {
