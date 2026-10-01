@@ -15,7 +15,7 @@ RUN apk add --no-cache llvm clang linux-headers libbpf-dev
 RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o ua3f
 
-FROM --platform=$BUILDPLATFORM alpine
+FROM alpine
 
 WORKDIR /app
 
