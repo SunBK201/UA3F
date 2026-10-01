@@ -63,7 +63,7 @@ func NewTC(cfg *config.L3RewriteConfig) (*TC, error) {
 	if !targetTTL.Constant() {
 		return nil, fmt.Errorf("configure target TTL: variable target_ttl is not constant")
 	}
-	if err := targetTTL.Set(cfg.TTLValue); err != nil {
+	if err := targetTTL.Set(uint8(cfg.TTLValue)); err != nil {
 		return nil, fmt.Errorf("configure target TTL: %w", err)
 	}
 	if err := spec.LoadAndAssign(&objs, nil); err != nil {

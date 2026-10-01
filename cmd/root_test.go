@@ -21,6 +21,32 @@ func TestTTLValueConfigurationSources(t *testing.T) {
 		}
 	})
 
+	for _, value := range []string{"0", "256", "257", "-1", "1.5", "true"} {
+		t.Run("invalid environment "+value, func(t *testing.T) {
+			t.Setenv("UA3F_L3_REWRITE_TTL_VALUE", value)
+			if _, err := config.BuildConfigFromViper(); err == nil {
+				t.Fatalf("expected error for TTL environment value %s", value)
+			}
+		})
+	}
+
+	for _, value := range []string{"0", "256", "257", "511"} {
+		t.Run("invalid command line "+value, func(t *testing.T) {
+			flag := rootCmd.Flags().Lookup("l3-rewrite-ttl-value")
+			originalValue, originalChanged := flag.Value.String(), flag.Changed
+			t.Cleanup(func() {
+				_ = flag.Value.Set(originalValue)
+				flag.Changed = originalChanged
+			})
+			if err := rootCmd.Flags().Set("l3-rewrite-ttl-value", value); err != nil {
+				t.Fatalf("set TTL flag: %v", err)
+			}
+			if _, err := config.BuildConfigFromViper(); err == nil {
+				t.Fatalf("expected error for TTL command line value %s", value)
+			}
+		})
+	}
+
 	t.Run("command line overrides environment", func(t *testing.T) {
 		flag := rootCmd.Flags().Lookup("l3-rewrite-ttl-value")
 		if flag == nil {
@@ -32,7 +58,7 @@ func TestTTLValueConfigurationSources(t *testing.T) {
 			flag.Changed = originalChanged
 		})
 
-		t.Setenv("UA3F_L3_REWRITE_TTL_VALUE", "130")
+		t.Setenv("UA3F_L3_REWRITE_TTL_VALUE", "257")
 		if err := rootCmd.Flags().Set("l3-rewrite-ttl-value", "131"); err != nil {
 			t.Fatalf("set l3-rewrite-ttl-value flag: %v", err)
 		}

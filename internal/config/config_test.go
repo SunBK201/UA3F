@@ -472,13 +472,21 @@ func TestValidation_TTLValue(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
-		want    uint8
+		want    uint
 		wantErr bool
 	}{
 		{name: "minimum", value: "1", want: 1},
 		{name: "maximum", value: "255", want: 255},
+		{name: "quoted_integer", value: "\"128\"", want: 128},
 		{name: "zero", value: "0", wantErr: true},
 		{name: "too_large", value: "256", wantErr: true},
+		{name: "wraps_to_one", value: "257", wantErr: true},
+		{name: "wraps_to_44", value: "300", wantErr: true},
+		{name: "wraps_to_maximum", value: "511", wantErr: true},
+		{name: "negative", value: "-1", wantErr: true},
+		{name: "quoted_negative", value: "\"-1\"", wantErr: true},
+		{name: "quoted_overflow", value: "\"257\"", wantErr: true},
+		{name: "quoted_fraction", value: "\"1.5\"", wantErr: true},
 	}
 
 	for _, tt := range tests {

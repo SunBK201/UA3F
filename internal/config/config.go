@@ -27,7 +27,7 @@ const (
 	RewriteModeDirect RewriteMode = "DIRECT"
 	RewriteModeRule   RewriteMode = "RULE"
 
-	DefaultTTL uint8 = 64
+	DefaultTTL uint = 64
 )
 
 type Config struct {
@@ -90,13 +90,13 @@ type DesyncConfig struct {
 }
 
 type L3RewriteConfig struct {
-	BPFOffload bool  `yaml:"bpf-offload"`
-	TTL        bool  `yaml:"ttl"`
-	TTLValue   uint8 `yaml:"ttl-value" validate:"min=1,max=255"`
-	IPID       bool  `yaml:"ipid"`
-	TCPWIN     bool  `yaml:"tcpwin"`
-	TCPTS      bool  `yaml:"tcpts"`
-	BLOCKQUIC  bool  `yaml:"block-quic"`
+	BPFOffload bool `yaml:"bpf-offload"`
+	TTL        bool `yaml:"ttl"`
+	TTLValue   uint `yaml:"ttl-value" validate:"min=1,max=255"`
+	IPID       bool `yaml:"ipid"`
+	TCPWIN     bool `yaml:"tcpwin"`
+	TCPTS      bool `yaml:"tcpts"`
+	BLOCKQUIC  bool `yaml:"block-quic"`
 }
 
 type Rule struct {

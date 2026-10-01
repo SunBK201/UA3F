@@ -107,7 +107,7 @@ func (s *Server) NftSetTTLIngress(nft knftables.Interface, table *knftables.Tabl
 	rule := &knftables.Rule{
 		Chain: chain.Name,
 		Rule: knftables.Concat(
-			fmt.Sprintf("ip ttl set %d", ingressTTL(s.cfg.TTLValue)),
+			fmt.Sprintf("ip ttl set %d", ingressTTL(uint8(s.cfg.TTLValue))),
 		),
 	}
 	tx.Add(chain)

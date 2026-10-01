@@ -19,7 +19,7 @@ const (
 	POSTROUTING = "POSTROUTING"
 )
 
-func ruleTTL(ttl uint8) []string {
+func ruleTTL(ttl uint) []string {
 	return []string{
 		"-m", "mark",
 		"!", "--mark", strconv.Itoa(base.SO_INJECT_MARK),
