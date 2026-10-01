@@ -146,10 +146,6 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) Restart(cfg *config.Config) (common.Server, error) {
-	if err := s.Close(); err != nil {
-		return nil, err
-	}
-
 	newRewriter, err := rewrite.New(cfg, s.Recorder)
 	if err != nil {
 		slog.Error("rewrite.New", slog.Any("error", err))
