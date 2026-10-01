@@ -172,6 +172,8 @@ l3-rewrite:
 
 L3 eBPF acceleration requires Linux kernel `>= 5.15`. See [L3 Rewrite](/l3/overview.md) and [eBPF Acceleration](/ebpf/l3-rewrite.md).
 
+On the netfilter path with software flow offload enabled, forwarded packets on the offload path leave with TTL `254` when `ttl-value: 255` is configured. See [TTL rewrite limitations](/l3/ttl.md).
+
 ## Desync
 
 Desync enables TCP segment reordering and TCP obfuscation injection.

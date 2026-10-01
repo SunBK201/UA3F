@@ -172,6 +172,8 @@ l3-rewrite:
 
 L3 eBPF 加速要求 Linux 内核 `>= 5.15`。详见 [L3 重写](/zh/l3/overview.md) 与 [eBPF 加速](/zh/ebpf/l3-rewrite.md)。
 
+netfilter 路径开启软件流量卸载时，`ttl-value: 255` 的卸载转发包实际出站 TTL 为 `254`。详见 [TTL 重写限制](/zh/l3/ttl.md)。
+
 ## Desync
 
 Desync 用于 TCP 分片乱序发射和 TCP 混淆注入。
