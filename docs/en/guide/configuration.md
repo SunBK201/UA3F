@@ -83,6 +83,8 @@ user-agent-partial-replace: false
 
 Rule configuration is used only when `rewrite-mode: RULE` is enabled. YAML is better for maintained configs; CLI flags and environment variables accept JSON strings for automation.
 
+Rules are enabled by default in both YAML and JSON. Set `enabled: false` to disable a rule.
+
 ```yaml
 rewrite-mode: RULE
 

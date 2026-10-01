@@ -83,6 +83,8 @@ user-agent-partial-replace: false
 
 规则配置仅在 `rewrite-mode: RULE` 时使用。YAML 适合长期维护；命令行参数和环境变量接收 JSON 字符串，适合自动化注入。
 
+YAML 和 JSON 规则均默认启用，设置 `enabled: false` 可禁用规则。
+
 ```yaml
 rewrite-mode: RULE
 

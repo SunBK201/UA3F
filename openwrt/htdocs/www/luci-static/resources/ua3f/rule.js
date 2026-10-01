@@ -342,7 +342,7 @@
                         var checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
                         checkbox.className = 'cbi-input-checkbox';
-                        checkbox.checked = rule.enabled;
+                        checkbox.checked = rule.enabled !== false;
                         if (isFinal) {
                             checkbox.disabled = true;
                             checkbox.checked = true;
@@ -693,7 +693,7 @@
             }
 
             // Preserve enabled state
-            newRule.enabled = index >= 0 ? this.rules[index].enabled : true;
+            newRule.enabled = index >= 0 ? this.rules[index].enabled !== false : true;
 
             // Custom validation
             if (this.config.onValidate) {

@@ -100,7 +100,7 @@ type L3RewriteConfig struct {
 }
 
 type Rule struct {
-	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
 	Type string `json:"type" yaml:"type" validate:"required,oneof=HEADER-KEYWORD HEADER-REGEX DEST-PORT IP-CIDR SRC-IP DOMAIN-SUFFIX DOMAIN-KEYWORD DOMAIN DOMAIN-SET URL-REGEX FINAL"`
 

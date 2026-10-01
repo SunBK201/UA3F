@@ -27,7 +27,6 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 
 	if ruleSet != nil && len(*ruleSet) > 0 {
 		for i := range *ruleSet {
-			(*ruleSet)[i].Enabled = true
 			rulesCfg = append(rulesCfg, &(*ruleSet)[i])
 		}
 	} else {
@@ -44,13 +43,12 @@ func NewEngine(rulesJSON string, ruleSet *[]config.Rule, recorder *statistics.Re
 
 	var r common.Rule
 	for _, rule := range rulesCfg {
-		if !rule.Enabled {
+		if rule.Enabled != nil && !*rule.Enabled {
 			continue
 		}
 
 		if err := validate.Struct(rule); err != nil {
 			slog.Warn("Invalid rule", slog.Any("rule", rule), slog.Any("error", err))
-			rule.Enabled = false
 			continue
 		}
 

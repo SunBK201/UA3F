@@ -93,7 +93,7 @@ Response shape:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `enabled` | boolean | Whether the rule is enabled |
+| `enabled` | boolean | Whether the rule is enabled; defaults to `true` when omitted |
 | `type` | string | Match type |
 | `match_header` | string | Header name for header-based matches |
 | `match_value` | string | Match value |

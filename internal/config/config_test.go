@@ -893,6 +893,8 @@ header-rewrite:
     match-value: "22"
     action: DIRECT
     enabled: false
+  - type: FINAL
+    action: DIRECT
 `
 	path := writeConfigFile(t, yaml)
 	loadConfigFile(t, path)
@@ -902,14 +904,17 @@ header-rewrite:
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(cfg.HeaderRules) != 2 {
-		t.Fatalf("HeaderRules count = %d, want 2", len(cfg.HeaderRules))
+	if len(cfg.HeaderRules) != 3 {
+		t.Fatalf("HeaderRules count = %d, want 3", len(cfg.HeaderRules))
 	}
-	if !cfg.HeaderRules[0].Enabled {
+	if cfg.HeaderRules[0].Enabled == nil || !*cfg.HeaderRules[0].Enabled {
 		t.Error("HeaderRules[0].Enabled should be true")
 	}
-	if cfg.HeaderRules[1].Enabled {
+	if cfg.HeaderRules[1].Enabled == nil || *cfg.HeaderRules[1].Enabled {
 		t.Error("HeaderRules[1].Enabled should be false")
+	}
+	if cfg.HeaderRules[2].Enabled != nil {
+		t.Error("omitted Enabled should remain nil for default enablement")
 	}
 }
 
