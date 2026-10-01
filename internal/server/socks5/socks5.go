@@ -50,19 +50,20 @@ func New(cfg *config.Config, rw common.Rewriter, rc *statistics.Recorder, middle
 	}
 }
 
-func (s *Server) Start() (err error) {
+func (s *Server) Start() error {
 	if s.listener == nil {
 		// first time start, create listener
 		listenAddr := fmt.Sprintf("%s:%d", s.Cfg.BindAddress, s.Cfg.Port)
-		if s.listener, err = net.Listen("tcp", listenAddr); err != nil {
+		listener, err := net.Listen("tcp", listenAddr)
+		if err != nil {
 			return fmt.Errorf("net.Listen: %w", err)
 		}
+		s.listener = listener
 	}
 
 	s.Recorder.Start()
 
 	go func() {
-		var client net.Conn
 		for {
 			select {
 			case <-s.done:
@@ -70,7 +71,8 @@ func (s *Server) Start() (err error) {
 			default:
 			}
 
-			if client, err = s.listener.Accept(); err != nil {
+			client, err := s.listener.Accept()
+			if err != nil {
 				if errors.Is(err, syscall.EMFILE) {
 					time.Sleep(time.Second)
 				} else if errors.Is(err, net.ErrClosed) {
