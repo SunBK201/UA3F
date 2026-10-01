@@ -13,3 +13,5 @@ header-rewrite:
 `rewrite-direction` must be either `REQUEST` or `RESPONSE`.
 
 Use `REJECT` when the flow should stop explicitly after a match.
+
+For ordinary HTTP requests in HTTP server mode, `REJECT` returns `503 Service Unavailable`. In the REQUEST direction, the request is not sent upstream. In the RESPONSE direction, a local 503 response replaces the upstream response without forwarding its content.
