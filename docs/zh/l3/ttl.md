@@ -8,6 +8,6 @@ l3-rewrite:
   ttl-value: 128
 ```
 
-`ttl-value` 可设置为 `1` 到 `255`，默认值为 `64`。也可以通过命令行参数 `--ttl-value`，或者环境变量 `UA3F_L3_REWRITE_TTL_VALUE` 指定。netfilter 与 eBPF 加速路径都会使用相同的目标值。
+`ttl-value` 可设置为 `1` 到 `255`，默认值为 `64`。也可以通过命令行参数 `--l3-rewrite-ttl-value`，或者环境变量 `UA3F_L3_REWRITE_TTL_VALUE` 指定。netfilter 与 eBPF 加速路径都会使用相同的目标值。
 
 TTL 重写适合在网关侧规范化出站包 TTL。
