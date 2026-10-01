@@ -33,6 +33,7 @@ func (r *Redirect307) Execute(metadata *common.Metadata) (bool, error) {
 
 	response := fmt.Sprintf("HTTP/1.1 307 Temporary Redirect\r\n"+
 		"Location: %s\r\n"+
+		"Content-Length: 0\r\n"+
 		"\r\n", url)
 
 	if metadata.ConnLink == nil || metadata.ConnLink.LConn == nil {

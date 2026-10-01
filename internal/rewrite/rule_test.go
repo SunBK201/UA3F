@@ -121,7 +121,7 @@ func TestURLRulesAfterHeaderStage(t *testing.T) {
 				req := httptest.NewRequest("GET", "http://example.com"+path, nil)
 				decision := r.RewriteRequest(&common.Metadata{Request: req})
 				if match {
-					if req.URL.Path != "/destination" || decision.MatchedRule == nil || decision.Action.Type() != common.ActionRedirectHeader {
+					if req.URL.Path != "/destination" || decision.MatchedRule == nil || decision.Action.Type() != common.ActionRedirectHeader || decision.Redirect {
 						t.Fatal("URL rule was not executed after the Header stage")
 					}
 				} else if req.URL.Path != path || decision.Action != action.DirectAction || decision.Redirect {
@@ -164,8 +164,26 @@ func TestURLOnlyRedirectResponseActions(t *testing.T) {
 			}
 			decision := r.RewriteRequest(metadata)
 			response := conn.written.String()
-			if decision.MatchedRule == nil || !strings.HasPrefix(response, "HTTP/1.1 "+terminal[len("REDIRECT-"):]) || !strings.Contains(response, "Location: http://example.com/destination\r\n") {
+			if !decision.Redirect || decision.MatchedRule == nil || !strings.HasPrefix(response, "HTTP/1.1 "+terminal[len("REDIRECT-"):]) || !strings.Contains(response, "Location: http://example.com/destination\r\n") || !strings.Contains(response, "Content-Length: 0\r\n") {
 				t.Fatalf("URL-only redirect action was not executed: %q", response)
+			}
+		})
+	}
+}
+
+func TestURLActionsWithoutResponseKeepForwarding(t *testing.T) {
+	for _, terminal := range []string{"DIRECT", "REDIRECT-302", "REDIRECT-307", "REDIRECT-HEADER"} {
+		t.Run(terminal, func(t *testing.T) {
+			cfg := &config.Config{URLRedirectRules: []config.Rule{{Type: "FINAL", Action: terminal, RewriteRegex: "/absent$", RewriteValue: "/destination"}}}
+			r, err := NewRuleRewriter(cfg, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			conn := &redirectCaptureConn{}
+			metadata := &common.Metadata{Request: httptest.NewRequest("GET", "http://example.com/echo", nil), ConnLink: &common.ConnLink{LConn: conn, RConn: conn}}
+			decision := r.RewriteRequest(metadata)
+			if decision.Redirect || conn.written.Len() != 0 || metadata.Request.URL.Path != "/echo" {
+				t.Fatal("action without a response stopped forwarding or changed the request")
 			}
 		})
 	}

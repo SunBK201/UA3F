@@ -238,6 +238,11 @@ func (s *Server) ProcessLR(c *common.ConnLink) (err error) {
 
 		decision := s.Rewriter.RewriteRequest(c.Metadata)
 		if decision.Redirect {
+			// Discard unread request data before parsing the next request.
+			if err := req.Body.Close(); err != nil {
+				c.Skipped = true
+				return fmt.Errorf("close redirected request body: %w", err)
+			}
 			continue
 		}
 
