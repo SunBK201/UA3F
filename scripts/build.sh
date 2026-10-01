@@ -8,7 +8,8 @@
 set -e
 
 project_name="ua3f"
-release_version="3.6.0"
+release_version="3.7.0"
+build_ldflags="-s -w -X main.appVersion=v${release_version}"
 target=main.go
 
 LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
@@ -47,25 +48,25 @@ for target_item in $TARGET_LIST; do
 
     case "$goarch" in
     mipsle-softfloat)
-        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=softfloat go build -trimpath -ldflags="$build_ldflags" -o "$obj_name" "$target"
         ;;
     mipsle-hardfloat)
-        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=mipsle GOMIPS=hardfloat go build -trimpath -ldflags="$build_ldflags" -o "$obj_name" "$target"
         ;;
     armv7)
-        CGO_ENABLED=0 GOOS=$goos GOARCH=arm GOARM=7 go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH=arm GOARM=7 go build -trimpath -ldflags="$build_ldflags" -o "$obj_name" "$target"
         ;;
     armv8)
         alias_name=$project_name-$release_version-${goos}-arm64
         if [ ! -f "$project_root/dist/bin/$alias_name" ]; then
             echo ">>> Building $goos/arm64 (for armv8 alias)"
-            CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
+            CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="$build_ldflags" -o "$alias_name" "$target"
             cp "$alias_name" "$project_root/dist/bin/"
         fi
         cp "$project_root/dist/bin/$alias_name" "$obj_name"
         ;;
     *)
-        CGO_ENABLED=0 GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$obj_name" "$target"
+        CGO_ENABLED=0 GOOS=$goos GOARCH="$goarch" go build -trimpath -ldflags="$build_ldflags" -o "$obj_name" "$target"
         ;;
     esac
 

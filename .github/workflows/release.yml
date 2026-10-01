@@ -102,13 +102,16 @@ jobs:
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+            echo "APP_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           else
             echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+            echo "APP_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           fi
 
       - name: Build binary
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
+          APP_VERSION="${{ steps.get_version.outputs.APP_VERSION }}"
           GOOS="${{ matrix.goos }}"
           GOARCH="${{ matrix.goarch }}"
 
@@ -117,7 +120,7 @@ jobs:
           go generate ./...
 
           CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
-            go build -trimpath -ldflags="-s -w" -o ua3f main.go
+            go build -trimpath -ldflags="-s -w -X main.appVersion=${APP_VERSION}" -o ua3f main.go
 
           mkdir -p dist
 
