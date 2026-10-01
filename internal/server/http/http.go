@@ -147,13 +147,13 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		return
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	// Capture the original body before a terminal response action returns nil.
+	defer resp.Body.Close()
 
 	metadata.UpdateResponse(resp)
 	resp, err = s.rewriteResponse(metadata)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
@@ -168,6 +168,10 @@ func (s *Server) handleHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) rewriteRequest(metadata *common.Metadata) (*http.Request, error) {
 	decision := s.Rewriter.RewriteRequest(metadata)
+	if decision.Action == action.RejectRequestAction {
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request rejected by rule")
+		return nil, fmt.Errorf("request rejected by rule")
+	}
 	if decision.Action == action.DropRequestAction {
 		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Request dropped by rule")
 		return nil, fmt.Errorf("request dropped by rule")
@@ -188,6 +192,10 @@ func (s *Server) rewriteRequest(metadata *common.Metadata) (*http.Request, error
 
 func (s *Server) rewriteResponse(metadata *common.Metadata) (*http.Response, error) {
 	decision := s.Rewriter.RewriteResponse(metadata)
+	if decision.Action == action.RejectResponseAction {
+		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Response rejected by rule")
+		return nil, fmt.Errorf("response rejected by rule")
+	}
 	if decision.Action == action.DropResponseAction {
 		log.LogInfoWithAddr(metadata.SrcAddr(), metadata.DestAddr(), "Response dropped by rule")
 		return nil, fmt.Errorf("response dropped by rule")
