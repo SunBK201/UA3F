@@ -35,6 +35,9 @@ func (r *Redirect302) Execute(metadata *common.Metadata) (bool, error) {
 		"Location: %s\r\n"+
 		"\r\n", url)
 
+	if metadata.ConnLink == nil || metadata.ConnLink.LConn == nil {
+		return false, fmt.Errorf("redirect client connection is nil")
+	}
 	_, err = metadata.ConnLink.LConn.Write([]byte(response))
 
 	return false, err

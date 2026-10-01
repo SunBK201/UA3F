@@ -2,6 +2,7 @@ package redirect
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/url"
 
@@ -40,6 +41,9 @@ func (r *RedirectHeader) Execute(metadata *common.Metadata) (bool, error) {
 	if metadata.Request.Host == u.Host {
 		metadata.Request.URL = u
 		return true, nil
+	}
+	if metadata.ConnLink == nil || metadata.ConnLink.LConn == nil {
+		return false, fmt.Errorf("redirect client connection is nil")
 	}
 
 	clientReq := metadata.Request.Clone(metadata.Request.Context())
