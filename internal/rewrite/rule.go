@@ -56,8 +56,7 @@ func (r *RuleRewriter) RewriteRequest(metadata *common.Metadata) (decision *comm
 	for {
 		matchedRule, index = r.HeaderRuleEngine.MatchWithRuleIndex(metadata, index+1, common.DirectionRequest)
 		if matchedRule == nil {
-			_, _ = decision.Action.Execute(metadata)
-			return
+			break
 		}
 		decision.MatchedRule = matchedRule
 		decision.Action = matchedRule.Action()
