@@ -74,6 +74,7 @@ uci -q commit ua3f
 	uci -q delete ucitrack.ua3f
 	uci -q commit ucitrack
 }
+exit 0
 endef
 
 $(eval $(call GoBinPackage,ua3f))
